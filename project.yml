@@ -30,6 +30,7 @@ targets:
         INFOPLIST_KEY_UILaunchScreen_Generation: "YES"
         INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
         TARGETED_DEVICE_FAMILY: "1"
+        INFOPLIST_KEY_UIBackgroundModes: remote-notification
   WadeMoneyTests:
     type: bundle.unit-test
     platform: iOS
