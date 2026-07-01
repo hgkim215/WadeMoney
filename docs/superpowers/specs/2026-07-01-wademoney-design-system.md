@@ -193,10 +193,10 @@ Pretendard Variable, letter-spacing는 큰 제목일수록 음수.
 
 ## 9. 구현 시 결정할 것 (열린 항목)
 
-1. **아이콘 세트**: 프로토타입은 Material Symbols Rounded. iOS 네이티브 관례는 SF Symbols.
-   - (A) **Material Symbols Rounded 폰트 번들** → 디자인과 픽셀 일치. 카테고리 아이콘 이름 그대로 사용.
-   - (B) **SF Symbols로 매핑** → 네이티브·용량 이점, 단 모양이 약간 달라짐(예: `restaurant`→`fork.knife`).
-   - → §사용자 확인 필요(아래 대화에서 질문).
+1. **아이콘 세트**: **결정 = Material Symbols Rounded 폰트 번들**(디자인 픽셀 일치).
+   - Material Symbols Rounded 변수 폰트(`FILL 0..1`, `wght`)를 앱에 번들(OFL).
+   - SwiftUI에선 폰트 리거처/코드포인트로 렌더(예: 작은 `Icon(name:)` 헬퍼로 아이콘 이름→글리프 매핑). 채움은 `FILL 1` 축 사용.
+   - 카테고리·UI 아이콘 이름은 §5·§6에 적힌 Material 이름 그대로 사용. SF Symbols 매핑 불필요.
 2. **Pretendard**: 앱 번들 폰트로 포함(무료 OFL). 시스템 한글 대비 디자인 일치 위해 권장.
 3. **다크모드**: 라이트/다크 2벌 모두 v1 포함(토큰 완비).
 4. **앱 아이콘 자산**: 디자이너 최종 렌더 또는 벡터로 export 후 등록.
