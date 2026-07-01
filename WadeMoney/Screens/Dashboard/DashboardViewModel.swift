@@ -120,7 +120,44 @@ final class DashboardViewModel {
             pace: pace,
             dayBudget: dayBudget,
             donut: legend,
-            trend: []   // 추세 막대는 Task 6에서 대시보드 화면과 함께 채운다(엔진 월별 합계 조합)
+            trend: buildTrend(currentPeriodStart: s.period.start)
         )
+    }
+
+    private func buildTrend(currentPeriodStart: Date) -> [TrendBar] {
+        let calc = periodCalculator()
+        let count: Int
+        switch kind {
+        case .day: count = 7
+        case .month: count = 6
+        case .year: count = 12
+        }
+        let txns = (try? repository.allTransactions()) ?? []
+        var raw: [(label: String, value: Decimal, isCurrent: Bool)] = []
+        for i in stride(from: count - 1, through: 0, by: -1) {
+            let p = calc.period(kind, offset: offset - i, from: now)
+            let total = Aggregator.totalExpense(txns, in: p)
+            raw.append((label: barLabel(for: p), value: total, isCurrent: i == 0))
+        }
+        let maxV = raw.map(\.value).max() ?? 0
+        return raw.enumerated().map { idx, r in
+            let frac = maxV > 0 ? (r.value / maxV).doubleValue : 0
+            return TrendBar(id: idx, label: r.label, valueText: Won.string(r.value),
+                            heightFraction: frac, isCurrent: r.isCurrent)
+        }
+    }
+
+    private func periodCalculator() -> PeriodCalculator {
+        let monthStartDay = (try? repository.settingsMonthStartDay()) ?? 1
+        return PeriodCalculator(calendar: calendar, monthStartDay: monthStartDay)
+    }
+
+    private func barLabel(for p: Period) -> String {
+        let c = calendar.dateComponents([.year, .month, .day], from: p.start)
+        switch kind {
+        case .day: return "\(c.day ?? 0)"
+        case .month: return "\(c.month ?? 0)월"
+        case .year: return "\(c.year ?? 0)"
+        }
     }
 }

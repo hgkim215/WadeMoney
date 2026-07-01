@@ -8,6 +8,12 @@ struct Icon: View {
     var size: CGFloat = 20
     var filled: Bool = true
 
+    init(_ name: String, size: CGFloat = 20, filled: Bool = true) {
+        self.name = name
+        self.size = size
+        self.filled = filled
+    }
+
     var body: some View {
         Text(name).font(Font(Icon.symbolFont(size: size, filled: filled)))
     }

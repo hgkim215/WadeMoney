@@ -26,6 +26,10 @@ final class LedgerRepository {
             .map { $0.toRecord() }
     }
 
+    func settingsMonthStartDay() throws -> Int {
+        try SettingsStore(context: context).settings().monthStartDay
+    }
+
     // MARK: - Writes
 
     func addTransaction(
