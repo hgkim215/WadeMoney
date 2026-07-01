@@ -1,0 +1,54 @@
+name: WadeMoney
+options:
+  bundleIdPrefix: com.kimhyeongi
+  deploymentTarget:
+    iOS: "26.0"
+  developmentLanguage: ko
+packages:
+  WadeMoneyCore:
+    path: WadeMoneyCore
+settings:
+  base:
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    SWIFT_VERSION: "6.0"
+    GENERATE_INFOPLIST_FILE: "YES"
+    SWIFT_EMIT_LOC_STRINGS: "YES"
+targets:
+  WadeMoney:
+    type: application
+    platform: iOS
+    sources:
+      - WadeMoney
+    dependencies:
+      - package: WadeMoneyCore
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.kimhyeongi.WadeMoney
+        CODE_SIGN_ENTITLEMENTS: WadeMoney/WadeMoney.entitlements
+        INFOPLIST_KEY_CFBundleDisplayName: WadeMoney
+        INFOPLIST_KEY_UILaunchScreen_Generation: "YES"
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
+        TARGETED_DEVICE_FAMILY: "1"
+        INFOPLIST_KEY_UIBackgroundModes: remote-notification
+  WadeMoneyTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - WadeMoneyTests
+    dependencies:
+      - target: WadeMoney
+      - package: WadeMoneyCore
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.kimhyeongi.WadeMoneyTests
+        GENERATE_INFOPLIST_FILE: "YES"
+schemes:
+  WadeMoney:
+    build:
+      targets:
+        WadeMoney: all
+        WadeMoneyTests: [test]
+    test:
+      targets:
+        - WadeMoneyTests
