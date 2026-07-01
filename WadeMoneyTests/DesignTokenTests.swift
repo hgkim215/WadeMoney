@@ -15,4 +15,11 @@ struct DesignTokenTests {
         #expect(WadeRadius.listCard == 20)
         #expect(WadeRadius.pill == 999)
     }
+
+    @Test func filledAndOutlineIconsUseDifferentFonts() {
+        let filled = Icon.symbolFont(size: 20, filled: true)
+        let outline = Icon.symbolFont(size: 20, filled: false)
+        // FILL 축이 실제로 적용되면 두 폰트 디스크립터가 달라진다
+        #expect(filled.fontDescriptor != outline.fontDescriptor)
+    }
 }
