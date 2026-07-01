@@ -23,6 +23,7 @@ final class DashboardViewModel {
         let colorHex: String
         let percentText: String
         let isOther: Bool
+        let fraction: Double
     }
     struct TrendBar: Equatable, Identifiable {
         let id: Int
@@ -97,7 +98,8 @@ final class DashboardViewModel {
                 name: name,
                 colorHex: color,
                 percentText: "\(pct)%",
-                isOther: slice.isOther
+                isOther: slice.isOther,
+                fraction: slice.fraction
             )
         }
 

@@ -6,6 +6,7 @@ struct DashboardScreen: View {
     @Environment(\.colorScheme) private var scheme
     @Environment(\.modelContext) private var modelContext
     @State private var viewModel: DashboardViewModel?
+    var refreshToken: Int = 0
 
     var body: some View {
         ScrollView {
@@ -42,5 +43,6 @@ struct DashboardScreen: View {
                 viewModel = vm
             }
         }
+        .onChange(of: refreshToken) { viewModel?.load() }
     }
 }

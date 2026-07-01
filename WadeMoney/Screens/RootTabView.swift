@@ -10,10 +10,10 @@ struct RootTabView: View {
         ZStack(alignment: .bottom) {
             Group {
                 switch selection {
-                case 0: DashboardScreen().id(dashboardRefreshToken)
+                case 0: DashboardScreen(refreshToken: dashboardRefreshToken)
                 case 1: PlaceholderScreen(title: "내역")
                 case 4: PlaceholderScreen(title: "설정")
-                default: DashboardScreen().id(dashboardRefreshToken)
+                default: DashboardScreen(refreshToken: dashboardRefreshToken)
                 }
             }
             tabBar
@@ -62,7 +62,7 @@ struct RootTabView: View {
             Icon("add", size: 30).foregroundStyle(.white)
                 .frame(width: 58, height: 58)
                 .background(WadeColors.primary(scheme), in: RoundedRectangle(cornerRadius: WadeRadius.fab, style: .continuous))
-                .shadow(color: WadeColors.primary(scheme).opacity(0.4), radius: 20, y: 8)
+                .shadow(color: WadeColors.primaryglow(scheme), radius: 20, y: 8)
         }.buttonStyle(.plain).offset(y: -14).frame(width: 60)
     }
 }

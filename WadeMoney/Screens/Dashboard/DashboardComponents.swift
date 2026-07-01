@@ -139,18 +139,26 @@ struct DonutRing: View {
     let legend: [DashboardViewModel.DonutLegendItem]
     let centerTotal: String
     @Environment(\.colorScheme) private var scheme
+
+    private var arcs: [(start: Double, end: Double, color: Color)] {
+        var result: [(Double, Double, Color)] = []
+        var cursor = 0.0
+        let total = max(legend.reduce(0) { $0 + $1.fraction }, 0.0001)
+        for item in legend {
+            let sweep = item.fraction / total
+            result.append((cursor, cursor + sweep, Color(hex: item.colorHex)))
+            cursor += sweep
+        }
+        return result
+    }
+
     var body: some View {
         ZStack {
-            let fracs = legend.map { Double($0.percentText.dropLast()) ?? 0 }
-            let total = max(fracs.reduce(0,+), 1)
-            var start = 0.0
-            ForEach(Array(legend.enumerated()), id: \.offset) { idx, item in
-                let sweep = (Double(item.percentText.dropLast()) ?? 0) / total
+            ForEach(Array(arcs.enumerated()), id: \.offset) { _, arc in
                 Circle()
-                    .trim(from: start, to: start + sweep)
-                    .stroke(Color(hex: item.colorHex), lineWidth: 22)
+                    .trim(from: arc.start, to: arc.end)
+                    .stroke(arc.color, lineWidth: 22)
                     .rotationEffect(.degrees(-90))
-                let _ = (start += sweep)
             }
             VStack(spacing: 1) {
                 Text("총지출").font(WadeFont.pretendard(10.5, weight: .semibold)).foregroundStyle(WadeColors.ink3(scheme))

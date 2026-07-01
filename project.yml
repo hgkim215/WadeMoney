@@ -28,7 +28,6 @@ targets:
         CODE_SIGN_ENTITLEMENTS: WadeMoney/WadeMoney.entitlements
         GENERATE_INFOPLIST_FILE: "NO"
         INFOPLIST_FILE: WadeMoney/Info.plist
-        INFOPLIST_KEY_UIBackgroundModes: remote-notification
         TARGETED_DEVICE_FAMILY: "1"
   WadeMoneyTests:
     type: bundle.unit-test

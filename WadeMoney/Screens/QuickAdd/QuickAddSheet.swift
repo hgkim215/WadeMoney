@@ -50,8 +50,13 @@ struct QuickAddSheet: View {
             keypad(vm)
 
             Button {
-                try? vm.save(date: Date())
-                onSaved(); dismiss()
+                do {
+                    try vm.save(date: Date())
+                    onSaved()
+                    dismiss()
+                } catch {
+                    // 저장 실패 시 시트를 닫지 않는다(성공을 가장하지 않음). 오류 토스트는 후속.
+                }
             } label: {
                 HStack(spacing: 6) { Icon("check", size: 22); Text("저장하기").font(WadeFont.pretendard(17, weight: .heavy)) }
                     .foregroundStyle(vm.canSave ? .white : WadeColors.ink3(scheme))

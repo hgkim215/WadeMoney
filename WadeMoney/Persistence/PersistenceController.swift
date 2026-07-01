@@ -22,14 +22,20 @@ enum PersistenceController {
     /// (실제 동기화는 유료 Apple Developer 계정 + 프로비저닝된 iCloud 컨테이너 + 실기기 필요.)
     static func makeAppContainer() throws -> ModelContainer {
         guard isAppGroupAvailable else {
-            return try makeLocalContainer()
+            return try makeLocalContainer()   // unsigned simulator: plain on-disk
         }
-        let config = ModelConfiguration(
-            schema: sharedSchema,
-            groupContainer: .identifier(AppIDs.appGroup),
-            cloudKitDatabase: .private(AppIDs.iCloudContainer)
-        )
-        return try ModelContainer(for: sharedSchema, configurations: [config])
+        do {
+            let config = ModelConfiguration(
+                schema: sharedSchema,
+                groupContainer: .identifier(AppIDs.appGroup),
+                cloudKitDatabase: .private(AppIDs.iCloudContainer)
+            )
+            return try ModelContainer(for: sharedSchema, configurations: [config])
+        } catch {
+            // CloudKit init 실패 시에도 App Group 공유 저장소는 유지(위젯이 읽을 수 있게).
+            let config = ModelConfiguration(schema: sharedSchema, groupContainer: .identifier(AppIDs.appGroup))
+            return try ModelContainer(for: sharedSchema, configurations: [config])
+        }
     }
 
     /// 로컬 온디스크 폴백: 그룹·CloudKit 없는 플레인 저장소.
