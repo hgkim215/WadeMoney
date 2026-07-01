@@ -60,4 +60,13 @@ struct PeriodCalculatorTests {
         // 구간 종료 이후 → 전체 길이(31)
         #expect(cal.daysElapsed(in: p, asOf: TS.date(2026, 9, 1)) == 31)
     }
+
+    @Test func yearBoundaryWithCustomMonthStartDay() {
+        let c = PeriodCalculator(calendar: TS.utc, monthStartDay: 15)
+        // Jan 5 2026 falls in the budget-month Dec 15 2025 → Jan 15 2026,
+        // so its year period is anchored to Jan 15 2025.
+        let p = c.period(.year, containing: TS.date(2026, 1, 5))
+        #expect(p.start == TS.date(2025, 1, 15))
+        #expect(p.end == TS.date(2026, 1, 15))
+    }
 }

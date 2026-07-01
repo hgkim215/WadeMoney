@@ -88,6 +88,7 @@ public struct PeriodCalculator: Sendable {
         return Period(kind: .month, start: start, end: end)
     }
 
+    /// With a non-default monthStartDay, a date in early January can fall in the previous year's year-period (e.g. Jan 10 with monthStartDay=25 → year period starts the previous January's monthStartDay). This is intentional and follows from the boundary definition.
     private func yearPeriod(containing date: Date) -> Period {
         let m = monthPeriod(containing: date)
         let startYear = calendar.component(.year, from: m.start)

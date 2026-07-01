@@ -1,6 +1,7 @@
 import Foundation
 
 public struct BudgetSnapshot: Equatable, Sendable {
+    /// A budget-month is labeled by the calendar year-month of its START date. With a non-default monthStartDay, e.g. the Jun-25→Jul-25 period is labeled YearMonth(year: …, month: 6). The persistence layer must set effectiveMonth from the period's start month.
     public let effectiveMonth: YearMonth
     public let amount: Decimal
 
