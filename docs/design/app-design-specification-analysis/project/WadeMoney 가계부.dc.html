@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..0">
+<script src="wade-data.js"></script>
+<style>
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  body{margin:0;}
+  .msr{font-family:'Material Symbols Rounded';font-weight:500;line-height:1;font-style:normal;-webkit-font-smoothing:antialiased;user-select:none;}
+  .msf{font-variation-settings:'FILL' 1;}
+  ::-webkit-scrollbar{width:0;height:0;}
+  @keyframes sheetUp{from{transform:translateY(102%);}to{transform:translateY(0);}}
+  @keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+  @keyframes toastIn{0%{opacity:0;transform:translate(-50%,14px) scale(.96);}12%{opacity:1;transform:translate(-50%,0) scale(1);}82%{opacity:1;transform:translate(-50%,0) scale(1);}100%{opacity:0;transform:translate(-50%,-8px) scale(.98);}}
+</style>
+</helmet>
+
+<div style="min-height:var(--minh);background:var(--stage);color:var(--ink);font-family:'Pretendard Variable',Pretendard,-apple-system,system-ui,sans-serif;display:flex;flex-direction:column;align-items:center;gap:26px;padding:var(--pad);--minh:100vh;--pad:44px 24px 72px;--stage:#EBE1D2;--bg:#F6F0E6;--card:#FFFFFF;--card2:#F6F0E7;--ink:#2E2A25;--ink2:#6C6358;--ink3:#7F7466;--line:#EFE7DB;--primary:#3E9E7A;--primarysoft:#DFF0E9;--primaryglow:rgba(62,158,122,0.4);--track:#EDE4D7;--barmuted:#F2CBB9;--good:#4E9E6A;--goodsoft:#E4F0E7;--bad:#DB5B45;--badsoft:#FBE3DE;--shadow:rgba(120,90,60,0.10);--sheet:#FFFFFF;--tabbar:rgba(246,240,230,0.82);--aitint1:#EFF7F2;--aitint2:#DFF0E9;--toastbg:#2E2A25;--toastfg:#FFFFFF;{{ themeVars }}">
+
+  <sc-if value="{{ chromeOn }}" hint-placeholder-val="{{ true }}">
+  <div style="display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;">
+    <div style="display:flex;align-items:center;gap:11px;">
+      <dc-import name="WadeMoney 아이콘" size="42" hint-size="42px,42px" style="flex:none;box-shadow:0 6px 16px var(--primaryglow);border-radius:10px;"></dc-import>
+      <div style="text-align:left;">
+        <div style="font-size:22px;font-weight:800;letter-spacing:-0.4px;line-height:1;">WadeMoney</div>
+        <div style="font-size:12.5px;color:var(--ink3);margin-top:3px;">가볍게 기록하는 하루 지출 · 온디바이스 가계부</div>
+      </div>
+    </div>
+    <div style="display:flex;background:var(--card);border-radius:999px;padding:4px;box-shadow:inset 0 0 0 1px var(--line);">
+      <button onClick="{{ onLight }}" style="border:0;cursor:pointer;background:{{ lightBg }};color:{{ lightFg }};font-family:inherit;font-weight:700;font-size:12.5px;padding:7px 16px;border-radius:999px;display:flex;align-items:center;gap:5px;transition:.2s;">
+        <span class="msr" style="font-size:16px;">light_mode</span>라이트</button>
+      <button onClick="{{ onDark }}" style="border:0;cursor:pointer;background:{{ darkBg }};color:{{ darkFg }};font-family:inherit;font-weight:700;font-size:12.5px;padding:7px 16px;border-radius:999px;display:flex;align-items:center;gap:5px;transition:.2s;">
+        <span class="msr" style="font-size:16px;">dark_mode</span>다크</button>
+    </div>
+  </div>
+  </sc-if>
+
+  <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" dark="{{ isDark }}" hint-size="402px,874px" style="flex:none;">
+
+    <div style="position:absolute;inset:0;z-index:1;overflow:hidden;background:var(--bg);color:var(--ink);font-family:'Pretendard Variable',Pretendard,-apple-system,system-ui,sans-serif;-webkit-font-smoothing:antialiased;">
+
+      <div style="position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;padding:60px 0 104px;">
+
+        <sc-if value="{{ tabHome }}" hint-placeholder-val="{{ true }}">
+        <div style="padding:0 18px;">
+          <div style="display:flex;align-items:baseline;justify-content:space-between;margin:6px 2px 16px;">
+            <div style="font-size:30px;font-weight:800;letter-spacing:-0.6px;">한눈에</div>
+            <button onClick="{{ onOpenAI }}" style="border:0;cursor:pointer;background:var(--primarysoft);color:var(--primary);font-family:inherit;font-weight:700;font-size:12.5px;padding:7px 12px 7px 9px;border-radius:999px;display:flex;align-items:center;gap:4px;">
+              <span class="msr msf" style="font-size:16px;">auto_awesome</span>리포트</button>
+          </div>
+
+          <div style="position:relative;display:flex;background:var(--card2);border-radius:14px;padding:4px;box-shadow:inset 0 0 0 1px var(--line);margin-bottom:12px;">
+            <div style="position:absolute;top:4px;left:4px;bottom:4px;width:calc((100% - 8px)/3);border-radius:11px;background:var(--card);box-shadow:0 2px 6px rgba(0,0,0,0.08);transition:transform .25s cubic-bezier(.4,0,.2,1);transform:translateX({{ periodSeg }});"></div>
+            <sc-for list="{{ periods }}" as="p" hint-placeholder-count="3">
+              <button onClick="{{ p.on }}" style="position:relative;z-index:1;flex:1;border:0;background:none;cursor:pointer;font-family:inherit;font-weight:700;font-size:14px;padding:9px 0;color:{{ p.color }};transition:.2s;">{{ p.label }}</button>
+            </sc-for>
+          </div>
+
+          <div style="display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:16px;">
+            <button onClick="{{ onPrev }}" style="border:0;background:var(--card);cursor:pointer;width:30px;height:30px;border-radius:999px;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,0.06);"><span class="msr" style="font-size:19px;color:var(--ink2);">chevron_left</span></button>
+            <div style="font-size:15px;font-weight:700;min-width:150px;text-align:center;">{{ pd.periodLabel }}</div>
+            <button onClick="{{ onNext }}" style="border:0;background:var(--card);cursor:pointer;width:30px;height:30px;border-radius:999px;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,0.06);"><span class="msr" style="font-size:19px;color:var(--ink2);">chevron_right</span></button>
+          </div>
+
+          <div style="background:var(--card);border-radius:24px;padding:20px;box-shadow:0 1px 2px rgba(0,0,0,0.04),0 10px 26px var(--shadow);margin-bottom:14px;">
+            <div style="display:flex;align-items:center;gap:18px;">
+              <div style="position:relative;width:104px;height:104px;flex:none;border-radius:999px;background:{{ pd.ringGradient }};display:flex;align-items:center;justify-content:center;">
+                <div style="width:80px;height:80px;border-radius:999px;background:var(--card);display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                  <div style="font-size:23px;font-weight:800;letter-spacing:-0.5px;color:var(--primary);">{{ pd.pctDisplay }}</div>
+                  <div style="font-size:10.5px;color:var(--ink3);font-weight:600;margin-top:1px;">소진</div>
+                </div>
+              </div>
+              <div style="flex:1;min-width:0;">
+                <div style="font-size:12.5px;color:var(--ink3);font-weight:600;">{{ pd.scope }}</div>
+                <div style="display:flex;align-items:baseline;gap:2px;margin:3px 0 8px;">
+                  <span style="font-size:13px;font-weight:700;color:var(--ink2);">₩</span>
+                  <span style="font-size:30px;font-weight:800;letter-spacing:-1px;font-variant-numeric:tabular-nums;">{{ pd.totalDisplay }}</span>
+                </div>
+                <sc-if value="{{ pd.hasPace }}" hint-placeholder-val="{{ true }}">
+                  <div style="display:inline-flex;align-items:center;gap:3px;background:{{ pd.paceSoft }};color:{{ pd.paceColor }};font-weight:700;font-size:12.5px;padding:5px 10px 5px 6px;border-radius:999px;">
+                    <span class="msr msf" style="font-size:17px;">{{ pd.paceIcon }}</span>{{ pd.paceDisplay }}
+                  </div>
+                  <div style="font-size:11px;color:var(--ink3);margin-top:5px;">{{ pd.paceNote }}</div>
+                </sc-if>
+                <sc-if value="{{ pd.dayMode }}" hint-placeholder-val="{{ false }}">
+                  <div style="display:inline-flex;align-items:center;gap:3px;background:var(--goodsoft);color:var(--good);font-weight:700;font-size:12.5px;padding:5px 10px 5px 6px;border-radius:999px;">
+                    <span class="msr msf" style="font-size:17px;">check_circle</span>일예산 여유
+                  </div>
+                  <div style="font-size:11px;color:var(--ink3);margin-top:5px;">일예산 {{ pd.dayBudgetDisplay }}원 중 {{ pd.remainDisplay }}원 남음</div>
+                </sc-if>
+              </div>
+            </div>
+            <div style="height:8px;border-radius:999px;background:var(--track);margin-top:16px;overflow:hidden;">
+              <div style="height:100%;border-radius:999px;background:var(--primary);width:{{ pd.pctDisplay }};transition:width .4s;"></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:12px;margin-top:8px;">
+              <span style="color:var(--ink3);">예산 {{ pd.budgetDisplay }}원</span>
+              <span style="color:var(--ink2);font-weight:700;">{{ pd.remainDisplay }}원 남음</span>
+            </div>
+          </div>
+
+          <sc-if value="{{ aiOn }}" hint-placeholder-val="{{ true }}">
+          <div onClick="{{ onOpenAI }}" style="cursor:pointer;background:linear-gradient(135deg,var(--aitint1),var(--aitint2));border-radius:24px;padding:17px 18px;margin-bottom:14px;box-shadow:0 1px 2px rgba(0,0,0,0.04),0 10px 26px var(--shadow);">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:9px;">
+              <span class="msr msf" style="font-size:19px;color:var(--primary);">auto_awesome</span>
+              <span style="font-size:12.5px;font-weight:800;color:var(--primary);letter-spacing:.2px;">AI 인사이트</span>
+              <span style="margin-left:auto;font-size:10.5px;font-weight:700;color:{{ pd.insightColor }};background:{{ pd.insightSoft }};padding:3px 8px;border-radius:999px;">{{ pd.insightTag }}</span>
+            </div>
+            <div style="font-size:14.5px;line-height:1.55;font-weight:500;text-wrap:pretty;color:var(--ink);">{{ pd.insightText }}</div>
+            <div style="display:flex;align-items:center;gap:2px;margin-top:10px;font-size:12.5px;font-weight:700;color:var(--primary);">자세히 보기<span class="msr" style="font-size:16px;">chevron_right</span></div>
+          </div>
+          </sc-if>
+
+          <div style="background:var(--card);border-radius:24px;padding:20px;box-shadow:0 1px 2px rgba(0,0,0,0.04),0 10px 26px var(--shadow);margin-bottom:14px;">
+            <div style="font-size:15px;font-weight:800;margin-bottom:16px;">카테고리 비중</div>
+            <div style="display:flex;align-items:center;gap:20px;">
+              <div style="position:relative;width:128px;height:128px;flex:none;border-radius:999px;background:{{ pd.donutGradient }};">
+                <div style="position:absolute;inset:19px;border-radius:999px;background:var(--card);display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                  <div style="font-size:10.5px;color:var(--ink3);font-weight:600;">총지출</div>
+                  <div style="font-size:16px;font-weight:800;letter-spacing:-0.4px;">{{ pd.totalDisplay }}</div>
+                </div>
+              </div>
+              <div style="flex:1;display:flex;flex-direction:column;gap:9px;">
+                <sc-for list="{{ pd.donutLegend }}" as="s" hint-placeholder-count="5">
+                  <button onClick="{{ s.on }}" style="border:0;background:none;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:8px;padding:0;text-align:left;">
+                    <span style="width:10px;height:10px;border-radius:3px;background:{{ s.color }};flex:none;"></span>
+                    <span style="font-size:13px;font-weight:600;color:var(--ink);flex:1;">{{ s.name }}</span>
+                    <span style="font-size:13px;font-weight:800;color:var(--ink2);font-variant-numeric:tabular-nums;">{{ s.pctDisplay }}</span>
+                  </button>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+
+          <div style="background:var(--card);border-radius:24px;padding:20px;box-shadow:0 1px 2px rgba(0,0,0,0.04),0 10px 26px var(--shadow);">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:18px;">
+              <div style="font-size:15px;font-weight:800;">지출 추세</div>
+              <div style="font-size:11.5px;color:var(--ink3);">{{ pd.trendNote }}</div>
+            </div>
+            <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:5px;height:112px;">
+              <sc-for list="{{ pd.trend }}" as="b" hint-placeholder-count="6">
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:7px;height:100%;justify-content:flex-end;">
+                  <div style="font-size:9.5px;font-weight:800;color:{{ b.valColor }};font-variant-numeric:tabular-nums;">{{ b.valDisplay }}</div>
+                  <div style="width:100%;max-width:20px;border-radius:6px 6px 3px 3px;background:{{ b.color }};height:{{ b.h }};transition:height .4s;"></div>
+                  <div style="font-size:9.5px;color:{{ b.labelColor }};font-weight:{{ b.labelWeight }};">{{ b.label }}</div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+        </sc-if>
+
+        <sc-if value="{{ tabList }}" hint-placeholder-val="{{ false }}">
+        <div style="padding:0 18px;">
+          <div style="font-size:30px;font-weight:800;letter-spacing:-0.6px;margin:6px 2px 16px;">내역</div>
+          <div style="display:flex;gap:7px;overflow-x:auto;padding:0 18px 4px;margin:0 -18px 16px;">
+            <sc-for list="{{ filters }}" as="f" hint-placeholder-count="6">
+              <button onClick="{{ f.on }}" style="flex:none;border:0;cursor:pointer;font-family:inherit;font-weight:700;font-size:13px;padding:8px 14px;border-radius:999px;background:{{ f.bg }};color:{{ f.fg }};transition:.15s;">{{ f.label }}</button>
+            </sc-for>
+          </div>
+          <sc-for list="{{ listGroups }}" as="g" hint-placeholder-count="3">
+            <div style="margin-bottom:20px;">
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:0 4px 9px;">
+                <div style="display:flex;align-items:center;gap:7px;">
+                  <span style="font-size:13.5px;font-weight:800;">{{ g.date }}</span>
+                  <sc-if value="{{ g.tag }}" hint-placeholder-val="{{ false }}"><span style="font-size:10.5px;font-weight:700;color:var(--primary);background:var(--primarysoft);padding:2px 8px;border-radius:999px;">{{ g.tagLabel }}</span></sc-if>
+                </div>
+                <span style="font-size:12.5px;font-weight:700;color:{{ g.sumColor }};font-variant-numeric:tabular-nums;">{{ g.sumDisplay }}</span>
+              </div>
+              <div style="background:var(--card);border-radius:20px;box-shadow:0 1px 2px rgba(0,0,0,0.04),0 8px 22px var(--shadow);overflow:hidden;">
+                <sc-for list="{{ g.items }}" as="t" hint-placeholder-count="3">
+                  <div style="display:flex;align-items:center;gap:13px;padding:13px 16px;border-bottom:{{ t.border }};">
+                    <div style="width:38px;height:38px;flex:none;border-radius:12px;background:{{ t.iconBg }};display:flex;align-items:center;justify-content:center;">
+                      <span class="msr msf" style="font-size:21px;color:{{ t.iconFg }};">{{ t.icon }}</span>
+                    </div>
+                    <div style="flex:1;min-width:0;">
+                      <div style="font-size:14.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ t.name }}</div>
+                      <div style="font-size:11.5px;color:var(--ink3);margin-top:2px;">{{ t.catName }} · {{ t.time }}</div>
+                    </div>
+                    <div style="font-size:15px;font-weight:800;color:{{ t.amtColor }};font-variant-numeric:tabular-nums;">{{ t.amountDisplay }}</div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </sc-for>
+          <sc-if value="{{ listEmpty }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:11px;padding:64px 24px 40px;text-align:center;">
+            <div style="width:74px;height:74px;border-radius:999px;background:var(--card2);display:flex;align-items:center;justify-content:center;"><span class="msr" style="font-size:38px;color:var(--ink3);">receipt_long</span></div>
+            <div style="font-size:16px;font-weight:800;color:var(--ink2);">{{ emptyText }}</div>
+            <div style="font-size:13px;color:var(--ink3);">{{ emptySub }}</div>
+          </div>
+          </sc-if>
+        </div>
+        </sc-if>
+
+        <sc-if value="{{ tabSettings }}" hint-placeholder-val="{{ false }}">
+        <div style="padding:0 18px;">
+          <div style="font-size:30px;font-weight:800;letter-spacing:-0.6px;margin:6px 2px 20px;">설정</div>
+
+          <div style="font-size:12.5px;font-weight:700;color:var(--ink3);padding:0 4px 8px;">예산</div>
+          <div style="background:var(--card);border-radius:20px;box-shadow:0 1px 2px rgba(0,0,0,0.04),0 8px 22px var(--shadow);overflow:hidden;margin-bottom:22px;">
+            <button onClick="{{ onOpenBudget }}" style="width:100%;border:0;background:none;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:13px;padding:15px 16px;border-bottom:0.5px solid var(--line);">
+              <div style="width:36px;height:36px;border-radius:10px;background:var(--primarysoft);display:flex;align-items:center;justify-content:center;"><span class="msr msf" style="font-size:20px;color:var(--primary);">account_balance_wallet</span></div>
+              <span style="flex:1;text-align:left;font-size:15px;font-weight:600;color:var(--ink);">이번 달 예산</span>
+              <span style="font-size:15px;font-weight:800;color:var(--ink);font-variant-numeric:tabular-nums;">₩{{ budgetDisplay }}</span>
+              <span class="msr" style="font-size:20px;color:var(--ink3);">chevron_right</span>
+            </button>
+            <div style="display:flex;align-items:center;gap:13px;padding:15px 16px;">
+              <div style="width:36px;height:36px;border-radius:10px;background:var(--card2);display:flex;align-items:center;justify-content:center;"><span class="msr" style="font-size:20px;color:var(--ink2);">event</span></div>
+              <span style="flex:1;font-size:15px;font-weight:600;">월 시작일</span>
+              <span style="font-size:14px;color:var(--ink2);">매월 1일</span>
+            </div>
+          </div>
+
+          <div style="font-size:12.5px;font-weight:700;color:var(--ink3);padding:0 4px 8px;">카테고리 · AI</div>
+          <div style="background:var(--card);border-radius:20px;box-shadow:0 1px 2px rgba(0,0,0,0.04),0 8px 22px var(--shadow);overflow:hidden;margin-bottom:22px;">
+            <button onClick="{{ onOpenCats }}" style="width:100%;border:0;background:none;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:13px;padding:15px 16px;border-bottom:0.5px solid var(--line);">
+              <div style="width:36px;height:36px;border-radius:10px;background:var(--card2);display:flex;align-items:center;justify-content:center;"><span class="msr" style="font-size:20px;color:var(--ink2);">category</span></div>
+              <span style="flex:1;text-align:left;font-size:15px;font-weight:600;color:var(--ink);">카테고리 관리</span>
+              <span style="font-size:14px;color:var(--ink3);">8개</span>
+              <span class="msr" style="font-size:20px;color:var(--ink3);">chevron_right</span>
+            </button>
+            <div style="display:flex;align-items:center;gap:13px;padding:15px 16px;">
+              <div style="width:36px;height:36px;border-radius:10px;background:var(--aitint2);display:flex;align-items:center;justify-content:center;"><span class="msr msf" style="font-size:20px;color:var(--primary);">auto_awesome</span></div>
+              <div style="flex:1;">
+                <div style="font-size:15px;font-weight:600;">AI 기능</div>
+                <div style="font-size:11.5px;color:var(--ink3);margin-top:2px;">온디바이스 · Apple Intelligence</div>
+              </div>
+              <button onClick="{{ onToggleAI }}" style="border:0;cursor:pointer;width:51px;height:31px;border-radius:999px;background:{{ aiSwitchBg }};position:relative;transition:.2s;padding:0;">
+                <span style="position:absolute;top:2px;width:27px;height:27px;border-radius:999px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.3);transition:.22s;left:{{ aiKnobLeft }};"></span>
+              </button>
+            </div>
+          </div>
+
+          <div style="font-size:12.5px;font-weight:700;color:var(--ink3);padding:0 4px 8px;">동기화 · 데이터</div>
+          <div style="background:var(--card);border-radius:20px;box-shadow:0 1px 2px rgba(0,0,0,0.04),0 8px 22px var(--shadow);overflow:hidden;">
+            <div style="display:flex;align-items:center;gap:13px;padding:15px 16px;border-bottom:0.5px solid var(--line);">
+              <div style="width:36px;height:36px;border-radius:10px;background:var(--goodsoft);display:flex;align-items:center;justify-content:center;"><span class="msr msf" style="font-size:20px;color:var(--good);">cloud_done</span></div>
+              <div style="flex:1;">
+                <div style="font-size:15px;font-weight:600;">iCloud 동기화</div>
+                <div style="font-size:11.5px;color:var(--good);font-weight:600;margin-top:2px;">방금 전 동기화됨</div>
+              </div>
+            </div>
+            <button onClick="{{ onToast }}" style="width:100%;border:0;background:none;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:13px;padding:15px 16px;">
+              <div style="width:36px;height:36px;border-radius:10px;background:var(--card2);display:flex;align-items:center;justify-content:center;"><span class="msr" style="font-size:20px;color:var(--ink2);">ios_share</span></div>
+              <span style="flex:1;text-align:left;font-size:15px;font-weight:600;color:var(--ink);">CSV 내보내기</span>
+              <span class="msr" style="font-size:20px;color:var(--ink3);">chevron_right</span>
+            </button>
+          </div>
+          <div style="text-align:center;font-size:11.5px;color:var(--ink3);margin-top:22px;">WadeMoney v1.0 · 데이터는 이 기기에만 있어요</div>
+        </div>
+        </sc-if>
+
+        <sc-if value="{{ subCats }}" hint-placeholder-val="{{ false }}">
+        <div style="padding:0 18px;">
+          <button onClick="{{ onBack }}" style="border:0;background:none;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:2px;color:var(--primary);font-weight:700;font-size:15px;margin:2px 0 12px;padding:0;"><span class="msr" style="font-size:22px;">chevron_left</span>설정</button>
+          <div style="font-size:28px;font-weight:800;letter-spacing:-0.5px;margin:0 2px 18px;">카테고리 관리</div>
+          <div style="font-size:12.5px;font-weight:700;color:var(--ink3);padding:0 4px 8px;">사용 중</div>
+          <div style="background:var(--card);border-radius:20px;box-shadow:0 1px 2px rgba(0,0,0,0.04),0 8px 22px var(--shadow);overflow:hidden;margin-bottom:18px;">
+            <sc-for list="{{ manageCats }}" as="c" hint-placeholder-count="6">
+              <div style="display:flex;align-items:center;gap:13px;padding:13px 16px;border-bottom:{{ c.border }};">
+                <span class="msr" style="font-size:20px;color:var(--ink3);cursor:grab;">drag_indicator</span>
+                <div style="width:36px;height:36px;flex:none;border-radius:11px;background:{{ c.iconBg }};display:flex;align-items:center;justify-content:center;"><span class="msr msf" style="font-size:20px;color:{{ c.color }};">{{ c.icon }}</span></div>
+                <div style="flex:1;">
+                  <div style="font-size:15px;font-weight:600;">{{ c.name }}</div>
+                  <div style="font-size:11.5px;color:var(--ink3);margin-top:2px;">{{ c.usage }}</div>
+                </div>
+                <span class="msr" style="font-size:20px;color:var(--ink3);">chevron_right</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="font-size:12.5px;font-weight:700;color:var(--ink3);padding:0 4px 8px;">보관됨</div>
+          <div style="background:var(--card);border-radius:20px;box-shadow:0 1px 2px rgba(0,0,0,0.04),0 8px 22px var(--shadow);overflow:hidden;margin-bottom:18px;">
+            <div style="display:flex;align-items:center;gap:13px;padding:13px 16px;opacity:.62;">
+              <div style="width:36px;height:36px;flex:none;border-radius:11px;background:var(--card2);display:flex;align-items:center;justify-content:center;"><span class="msr msf" style="font-size:20px;color:var(--ink3);">flight</span></div>
+              <div style="flex:1;"><div style="font-size:15px;font-weight:600;">여행</div><div style="font-size:11.5px;color:var(--ink3);margin-top:2px;">과거 내역엔 유지돼요</div></div>
+              <button onClick="{{ onToast }}" style="border:0;background:var(--card2);cursor:pointer;font-family:inherit;font-size:12px;font-weight:700;color:var(--ink2);padding:6px 12px;border-radius:999px;">복원</button>
+            </div>
+          </div>
+          <button onClick="{{ onToast }}" style="width:100%;border:1.5px dashed var(--line);background:none;cursor:pointer;font-family:inherit;font-weight:700;font-size:14.5px;color:var(--primary);padding:15px;border-radius:18px;display:flex;align-items:center;justify-content:center;gap:5px;"><span class="msr" style="font-size:20px;">add</span>새 카테고리</button>
+        </div>
+        </sc-if>
+
+        <sc-if value="{{ subAI }}" hint-placeholder-val="{{ false }}">
+        <div style="padding:0 18px;">
+          <button onClick="{{ onBack }}" style="border:0;background:none;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:2px;color:var(--primary);font-weight:700;font-size:15px;margin:2px 0 14px;padding:0;"><span class="msr" style="font-size:22px;">chevron_left</span>대시보드</button>
+          <div style="display:flex;align-items:center;gap:8px;margin:0 2px 4px;">
+            <span class="msr msf" style="font-size:24px;color:var(--primary);">auto_awesome</span>
+            <div style="font-size:27px;font-weight:800;letter-spacing:-0.5px;">7월 소비 리포트</div>
+          </div>
+          <div style="font-size:12.5px;color:var(--ink3);margin:0 2px 18px;">2026년 7월 · 15일 경과</div>
+
+          <div style="background:linear-gradient(135deg,var(--aitint1),var(--aitint2));border-radius:22px;padding:20px;box-shadow:0 1px 2px rgba(0,0,0,0.04),0 10px 26px var(--shadow);margin-bottom:14px;">
+            <div style="font-size:11px;font-weight:800;color:var(--bad);background:var(--badsoft);display:inline-block;padding:3px 10px;border-radius:999px;margin-bottom:11px;">주의</div>
+            <div style="font-size:16.5px;line-height:1.6;font-weight:600;text-wrap:pretty;">이번 달은 카페에 평소보다 자주 들르고 있어요. 카페 지출이 지난달 같은 시점보다 <span style="color:var(--bad);">32% 늘었고</span>, 전체 지출도 9.7% 많아요.</div>
+          </div>
+
+          <div style="background:var(--card);border-radius:22px;padding:18px;box-shadow:0 1px 2px rgba(0,0,0,0.04),0 8px 22px var(--shadow);margin-bottom:14px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <div><div style="font-size:12.5px;color:var(--ink3);font-weight:600;">이번 달 예상 지출</div>
+              <div style="font-size:26px;font-weight:800;letter-spacing:-0.6px;margin-top:3px;font-variant-numeric:tabular-nums;">₩1,841,000</div></div>
+              <div style="text-align:right;"><div style="font-size:11px;font-weight:800;color:var(--bad);background:var(--badsoft);padding:4px 10px;border-radius:999px;">예산 초과 예상</div>
+              <div style="font-size:12.5px;color:var(--bad);font-weight:700;margin-top:6px;">+541,000원</div></div>
+            </div>
+          </div>
+
+          <div style="background:var(--card);border-radius:22px;padding:18px;box-shadow:0 1px 2px rgba(0,0,0,0.04),0 8px 22px var(--shadow);margin-bottom:14px;">
+            <div style="font-size:14px;font-weight:800;margin-bottom:14px;">지난달 대비 변화</div>
+            <div style="display:flex;flex-direction:column;gap:13px;">
+              <sc-for list="{{ aiChanges }}" as="c" hint-placeholder-count="4">
+                <div style="display:flex;align-items:center;gap:11px;">
+                  <div style="width:32px;height:32px;flex:none;border-radius:9px;background:{{ c.iconBg }};display:flex;align-items:center;justify-content:center;"><span class="msr msf" style="font-size:18px;color:{{ c.color }};">{{ c.icon }}</span></div>
+                  <span style="flex:1;font-size:14.5px;font-weight:600;">{{ c.name }}</span>
+                  <span style="display:inline-flex;align-items:center;gap:1px;font-size:13.5px;font-weight:800;color:{{ c.deltaColor }};"><span class="msr msf" style="font-size:18px;">{{ c.deltaIcon }}</span>{{ c.delta }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+
+          <div style="background:var(--primarysoft);border-radius:22px;padding:17px 18px;margin-bottom:16px;display:flex;gap:11px;align-items:flex-start;">
+            <span class="msr msf" style="font-size:22px;color:var(--primary);">lightbulb</span>
+            <div style="font-size:14.5px;line-height:1.55;font-weight:600;color:var(--ink);text-wrap:pretty;">이번 주 카페를 <b>2번만 줄여도</b> 예산 안에 들어올 수 있어요.</div>
+          </div>
+
+          <div style="display:flex;align-items:center;justify-content:center;gap:6px;color:var(--ink3);font-size:11.5px;text-align:center;padding-bottom:6px;">
+            <span class="msr" style="font-size:15px;">lock</span>온디바이스에서 생성됨 · 데이터는 기기를 벗어나지 않아요
+          </div>
+        </div>
+        </sc-if>
+
+      </div>
+
+      <div style="position:absolute;left:0;right:0;bottom:0;z-index:30;padding:10px 26px 26px;display:flex;align-items:center;justify-content:space-between;background:var(--tabbar);backdrop-filter:blur(18px) saturate(180%);-webkit-backdrop-filter:blur(18px) saturate(180%);border-top:0.5px solid var(--line);">
+        <button onClick="{{ onTabHome }}" style="border:0;background:none;cursor:pointer;font-family:inherit;display:flex;flex-direction:column;align-items:center;gap:3px;flex:1;">
+          <span class="msr msf" style="font-size:26px;color:{{ homeColor }};">space_dashboard</span>
+          <span style="font-size:10px;font-weight:700;color:{{ homeColor }};">한눈에</span>
+        </button>
+        <button onClick="{{ onTabList }}" style="border:0;background:none;cursor:pointer;font-family:inherit;display:flex;flex-direction:column;align-items:center;gap:3px;flex:1;">
+          <span class="msr msf" style="font-size:26px;color:{{ listColor }};">receipt_long</span>
+          <span style="font-size:10px;font-weight:700;color:{{ listColor }};">내역</span>
+        </button>
+        <div style="flex:none;width:60px;display:flex;justify-content:center;">
+          <button onClick="{{ onOpenAdd }}" style="border:0;cursor:pointer;width:58px;height:58px;border-radius:20px;background:var(--primary);display:flex;align-items:center;justify-content:center;box-shadow:0 8px 20px var(--primaryglow);transform:translateY(-14px);">
+            <span class="msr" style="font-size:30px;color:#fff;font-weight:400;">add</span>
+          </button>
+        </div>
+        <button onClick="{{ onTabStats }}" style="border:0;background:none;cursor:pointer;font-family:inherit;display:flex;flex-direction:column;align-items:center;gap:3px;flex:1;opacity:0.5;">
+          <div style="position:relative;">
+            <span class="msr msf" style="font-size:26px;color:{{ statsColor }};">insights</span>
+            <span style="position:absolute;top:-5px;right:-15px;font-size:8px;font-weight:800;color:#fff;background:var(--ink3);padding:1px 4px;border-radius:999px;">v1.1</span>
+          </div>
+          <span style="font-size:10px;font-weight:700;color:{{ statsColor }};">통계</span>
+        </button>
+        <button onClick="{{ onTabSettings }}" style="border:0;background:none;cursor:pointer;font-family:inherit;display:flex;flex-direction:column;align-items:center;gap:3px;flex:1;">
+          <span class="msr msf" style="font-size:26px;color:{{ setColor }};">settings</span>
+          <span style="font-size:10px;font-weight:700;color:{{ setColor }};">설정</span>
+        </button>
+      </div>
+
+      <sc-if value="{{ sheetOpen }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;inset:0;z-index:40;">
+        <div onClick="{{ onCloseSheet }}" style="position:absolute;inset:0;background:rgba(20,15,10,0.42);animation:fadeIn .2s ease;"></div>
+        <div style="position:absolute;left:0;right:0;bottom:0;background:var(--sheet);border-radius:30px 30px 0 0;padding:10px 20px 30px;box-shadow:0 -10px 40px rgba(0,0,0,0.2);animation:sheetUp .32s cubic-bezier(.2,.8,.2,1);max-height:94%;overflow-y:auto;">
+          <div style="width:38px;height:5px;border-radius:999px;background:var(--track);margin:0 auto 14px;"></div>
+
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+            <div style="font-size:20px;font-weight:800;">{{ sheetTitle }}</div>
+            <sc-if value="{{ isAddSheet }}" hint-placeholder-val="{{ true }}">
+            <div style="position:relative;display:flex;background:var(--card2);border-radius:999px;padding:3px;box-shadow:inset 0 0 0 1px var(--line);">
+              <div style="position:absolute;top:3px;left:3px;bottom:3px;width:calc((100% - 6px)/2);border-radius:999px;background:{{ typePillBg }};box-shadow:0 2px 5px rgba(0,0,0,0.1);transition:transform .22s,background .22s;transform:translateX({{ typeSeg }});"></div>
+              <button onClick="{{ onExpense }}" style="position:relative;z-index:1;border:0;background:none;cursor:pointer;font-family:inherit;font-weight:700;font-size:12.5px;padding:7px 15px;color:{{ expFg }};">지출</button>
+              <button onClick="{{ onIncome }}" style="position:relative;z-index:1;border:0;background:none;cursor:pointer;font-family:inherit;font-weight:700;font-size:12.5px;padding:7px 15px;color:{{ incFg }};">수입</button>
+            </div>
+            </sc-if>
+          </div>
+
+          <div style="text-align:center;padding:14px 0 6px;">
+            <div style="display:inline-flex;align-items:baseline;gap:4px;">
+              <span style="font-size:26px;font-weight:700;color:{{ amountColor }};">₩</span>
+              <span style="font-size:52px;font-weight:800;letter-spacing:-1.5px;color:{{ amountColor }};font-variant-numeric:tabular-nums;">{{ amountDisplay }}</span>
+            </div>
+          </div>
+
+          <sc-if value="{{ isAddSheet }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;align-items:center;justify-content:center;gap:7px;margin:6px 0 16px;">
+            <sc-for list="{{ steps }}" as="s" hint-placeholder-count="3">
+              <div style="display:flex;align-items:center;gap:5px;padding:5px 11px;border-radius:999px;background:{{ s.bg }};transition:.2s;">
+                <span class="msr" style="font-size:15px;color:{{ s.fg }};">{{ s.icon }}</span>
+                <span style="font-size:11.5px;font-weight:700;color:{{ s.fg }};">{{ s.label }}</span>
+              </div>
+              <sc-if value="{{ s.arrow }}" hint-placeholder-val="{{ false }}"><span class="msr" style="font-size:15px;color:var(--ink3);">chevron_right</span></sc-if>
+            </sc-for>
+          </div>
+
+          <sc-if value="{{ showCatPicker }}" hint-placeholder-val="{{ true }}">
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px;">
+            <sc-for list="{{ addCats }}" as="c" hint-placeholder-count="8">
+              <button onClick="{{ c.on }}" style="border:0;cursor:pointer;font-family:inherit;background:{{ c.cardBg }};border-radius:16px;padding:11px 4px 9px;display:flex;flex-direction:column;align-items:center;gap:6px;box-shadow:{{ c.ring }};transition:.15s;">
+                <div style="width:38px;height:38px;border-radius:12px;background:{{ c.iconBg }};display:flex;align-items:center;justify-content:center;"><span class="msr msf" style="font-size:21px;color:{{ c.color }};">{{ c.icon }}</span></div>
+                <span style="font-size:11.5px;font-weight:700;color:{{ c.labelFg }};">{{ c.name }}</span>
+              </button>
+            </sc-for>
+          </div>
+          </sc-if>
+
+          <div style="display:flex;gap:8px;margin-bottom:14px;">
+            <input value="{{ memo }}" onChange="{{ onMemo }}" placeholder="메모 (선택)" style="flex:1;border:0;background:var(--card2);border-radius:14px;padding:13px 15px;font-family:inherit;font-size:14.5px;color:var(--ink);outline:none;box-shadow:inset 0 0 0 1px var(--line);"/>
+            <button onClick="{{ onPolish }}" style="border:0;cursor:pointer;font-family:inherit;background:{{ polishBg }};color:{{ polishFg }};font-weight:700;font-size:13px;padding:0 15px;border-radius:14px;display:flex;align-items:center;gap:4px;white-space:nowrap;transition:.2s;"><span class="msr msf" style="font-size:17px;">auto_awesome</span>{{ polishLabel }}</button>
+          </div>
+          <sc-if value="{{ polished }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;align-items:center;gap:6px;background:var(--aitint2);border-radius:12px;padding:9px 13px;margin-bottom:14px;font-size:12.5px;color:var(--ink2);">
+            <span class="msr msf" style="font-size:16px;color:var(--primary);">auto_awesome</span>메모를 다듬고 <b style="color:var(--primary);margin:0 3px;">{{ suggestCat }}</b> 카테고리를 추천했어요
+          </div>
+          </sc-if>
+          </sc-if>
+
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:14px;">
+            <sc-for list="{{ keys }}" as="k" hint-placeholder-count="12">
+              <button onClick="{{ k.on }}" style="border:0;cursor:pointer;font-family:inherit;background:{{ k.bg }};border-radius:16px;height:56px;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:700;color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,0.05);">
+                <sc-if value="{{ k.isIcon }}" hint-placeholder-val="{{ false }}"><span class="msr" style="font-size:26px;color:var(--ink2);">{{ k.label }}</span></sc-if>
+                <sc-if value="{{ k.isText }}" hint-placeholder-val="{{ true }}">{{ k.label }}</sc-if>
+              </button>
+            </sc-for>
+          </div>
+
+          <button onClick="{{ onSave }}" style="width:100%;border:0;cursor:pointer;font-family:inherit;background:{{ saveBg }};color:{{ saveFg }};font-weight:800;font-size:17px;padding:17px;border-radius:18px;display:flex;align-items:center;justify-content:center;gap:6px;transition:.2s;">
+            <span class="msr msf" style="font-size:22px;">{{ saveIcon }}</span>{{ saveLabel }}
+          </button>
+        </div>
+      </div>
+      </sc-if>
+
+      <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;bottom:120px;left:50%;z-index:70;background:var(--toastbg);color:var(--toastfg);font-weight:700;font-size:14px;padding:12px 20px;border-radius:999px;box-shadow:0 8px 24px rgba(0,0,0,0.25);display:flex;align-items:center;gap:7px;animation:toastIn 1.8s ease forwards;white-space:nowrap;">
+        <span class="msr msf" style="font-size:19px;color:var(--good);">check_circle</span>{{ toastMsg }}
+      </div>
+      </sc-if>
+
+    </div>
+  </x-import>
+
+  <sc-if value="{{ showWidgets }}" hint-placeholder-val="{{ true }}">
+  <div style="display:flex;flex-direction:column;align-items:center;gap:16px;width:100%;max-width:402px;">
+    <div style="display:flex;align-items:center;gap:6px;color:var(--ink3);font-size:12.5px;font-weight:700;"><span class="msr" style="font-size:16px;">widgets</span>앱 밖 진입점 · 위젯</div>
+    <div style="display:flex;gap:16px;flex-wrap:wrap;justify-content:center;align-items:stretch;">
+      <div style="width:200px;display:flex;flex-direction:column;">
+        <div style="font-size:11px;color:var(--ink3);font-weight:700;text-align:center;margin-bottom:8px;">홈 화면</div>
+        <div style="background:var(--card);border-radius:24px;padding:16px;box-shadow:0 1px 2px rgba(0,0,0,0.04),0 12px 30px var(--shadow);flex:1;">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:12px;">
+            <div style="width:20px;height:20px;border-radius:6px;background:var(--primary);display:flex;align-items:center;justify-content:center;"><span class="msr msf" style="font-size:13px;color:#fff;">savings</span></div>
+            <span style="font-size:11.5px;font-weight:800;color:var(--ink2);">WadeMoney</span>
+          </div>
+          <div style="font-size:10.5px;color:var(--ink3);font-weight:600;">오늘 지출</div>
+          <div style="font-size:22px;font-weight:800;letter-spacing:-0.6px;margin:2px 0 12px;font-variant-numeric:tabular-nums;">₩23,400</div>
+          <div style="height:7px;border-radius:999px;background:var(--track);overflow:hidden;"><div style="height:100%;width:69%;border-radius:999px;background:var(--primary);"></div></div>
+          <div style="font-size:11px;color:var(--ink2);font-weight:700;margin-top:7px;">이달 예산 409,000원 남음</div>
+        </div>
+      </div>
+      <div style="width:200px;display:flex;flex-direction:column;">
+        <div style="font-size:11px;color:var(--ink3);font-weight:700;text-align:center;margin-bottom:8px;">잠금화면</div>
+        <div style="background:linear-gradient(155deg,#3a3330,#1c1815);border-radius:24px;padding:18px;box-shadow:0 12px 30px rgba(0,0,0,0.3);flex:1;display:flex;flex-direction:column;justify-content:space-between;">
+          <div style="font-size:34px;font-weight:300;color:#fff;letter-spacing:-1px;">9:41</div>
+          <div style="display:flex;align-items:center;gap:11px;">
+            <div style="position:relative;width:46px;height:46px;flex:none;border-radius:999px;background:conic-gradient(#3E9E7A 248deg,rgba(255,255,255,0.2) 248deg);"><div style="position:absolute;inset:5px;border-radius:999px;background:#221c19;display:flex;align-items:center;justify-content:center;"><span class="msr msf" style="font-size:18px;color:#3E9E7A;">savings</span></div></div>
+            <div style="flex:1;min-width:0;"><div style="font-size:11px;color:rgba(255,255,255,0.6);font-weight:600;">남은 예산</div><div style="font-size:16px;font-weight:800;color:#fff;font-variant-numeric:tabular-nums;letter-spacing:-0.4px;white-space:nowrap;">₩409,000</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="font-size:11.5px;color:var(--ink3);text-align:center;max-width:320px;line-height:1.5;">위젯을 탭하면 빠른 입력으로, Siri·단축어·액션 버튼으로도 "커피 4천원 기록"처럼 바로 저장돼요.</div>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ chromeOn }}" hint-placeholder-val="{{ true }}">
+  <div style="width:100%;display:flex;flex-direction:column;align-items:center;margin-top:22px;">
+    <div style="display:flex;align-items:center;gap:7px;color:var(--ink2);font-size:14px;font-weight:800;"><span class="msr msf" style="font-size:18px;">grid_view</span>정적 디자인 · 전체 화면</div>
+    <div style="color:var(--ink3);font-size:12.5px;margin:6px 0 4px;text-align:center;">탭하지 않고 한 판에서 모든 화면과 라이트·다크 테마를 확인하세요</div>
+    <div style="display:flex;flex-wrap:wrap;gap:44px 34px;justify-content:center;align-items:flex-start;margin-top:24px;">
+
+      <div style="display:flex;flex-direction:column;align-items:center;gap:14px;">
+        <div style="font-size:12.5px;font-weight:800;color:var(--ink2);background:var(--card);padding:6px 15px;border-radius:999px;box-shadow:0 1px 3px rgba(0,0,0,0.06);">01 · 대시보드 (월)</div>
+        <dc-import name="WadeMoney App" chrome="{{ F }}" theme="light" start-tab="home" start-period="month" hint-size="402px,874px" style="flex:none;"></dc-import>
+      </div>
+
+      <div style="display:flex;flex-direction:column;align-items:center;gap:14px;">
+        <div style="font-size:12.5px;font-weight:800;color:var(--ink2);background:var(--card);padding:6px 15px;border-radius:999px;box-shadow:0 1px 3px rgba(0,0,0,0.06);">02 · 빠른 입력 (3탭)</div>
+        <dc-import name="WadeMoney App" chrome="{{ F }}" theme="light" start-sheet="add" preset-fill="{{ T }}" hint-size="402px,874px" style="flex:none;"></dc-import>
+      </div>
+
+      <div style="display:flex;flex-direction:column;align-items:center;gap:14px;">
+        <div style="font-size:12.5px;font-weight:800;color:var(--ink2);background:var(--card);padding:6px 15px;border-radius:999px;box-shadow:0 1px 3px rgba(0,0,0,0.06);">03 · 내역</div>
+        <dc-import name="WadeMoney App" chrome="{{ F }}" theme="light" start-tab="list" hint-size="402px,874px" style="flex:none;"></dc-import>
+      </div>
+
+      <div style="display:flex;flex-direction:column;align-items:center;gap:14px;">
+        <div style="font-size:12.5px;font-weight:800;color:var(--ink2);background:var(--card);padding:6px 15px;border-radius:999px;box-shadow:0 1px 3px rgba(0,0,0,0.06);">04 · 설정 · 카테고리</div>
+        <dc-import name="WadeMoney App" chrome="{{ F }}" theme="light" start-tab="settings" start-sub="cats" hint-size="402px,874px" style="flex:none;"></dc-import>
+      </div>
+
+      <div style="display:flex;flex-direction:column;align-items:center;gap:14px;">
+        <div style="font-size:12.5px;font-weight:800;color:#fff;background:#2A241E;padding:6px 15px;border-radius:999px;box-shadow:0 1px 3px rgba(0,0,0,0.12);">05 · AI 리포트 (다크)</div>
+        <dc-import name="WadeMoney App" chrome="{{ F }}" theme="dark" start-tab="home" start-sub="ai" hint-size="402px,874px" style="flex:none;"></dc-import>
+      </div>
+
+      <div style="display:flex;flex-direction:column;align-items:center;gap:14px;">
+        <div style="font-size:12.5px;font-weight:800;color:#fff;background:#2A241E;padding:6px 15px;border-radius:999px;box-shadow:0 1px 3px rgba(0,0,0,0.12);">06 · 대시보드 · 연 (다크)</div>
+        <dc-import name="WadeMoney App" chrome="{{ F }}" theme="dark" start-tab="home" start-period="year" hint-size="402px,874px" style="flex:none;"></dc-import>
+      </div>
+
+    </div>
+  </div>
+  </sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#3E9E7A&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;options&quot;:[&quot;#3E9E7A&quot;,&quot;#D98B3F&quot;,&quot;#4E9E6A&quot;,&quot;#6F79D8&quot;],&quot;section&quot;:&quot;테마&quot;},&quot;aiEnabled&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;기능&quot;},&quot;showWidgets&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;기능&quot;}}">
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    const D = window.WadeData || { cats:[], groups:[], usage:{} };
+    this.cats = D.cats;
+    this.catMap = {};
+    this.cats.forEach(c => this.catMap[c.key] = c);
+    this.groups = D.groups;
+    this.usage = D.usage;
+    const pf = props.presetFill;
+    this.state = {
+      theme: props.theme || 'light',
+      tab: props.startTab || 'home',
+      sub: props.startSub || null,
+      period: props.startPeriod || 'month', pOffset:0,
+      sheet: props.startSheet || null,
+      sheetMode: props.startSheet === 'budget' ? 'budget' : 'add',
+      listFilter:'all',
+      aiOn: props.aiEnabled !== false, budget:1300000, added:[],
+      amount: pf ? '4800' : '',
+      type:'expense',
+      catId: pf ? 'cafe' : null,
+      memo: pf ? '스타벅스 아메리카노' : '',
+      polished: !!pf,
+      suggest: pf ? '카페' : '',
+      toast:false, toastMsg:'',
+    };
+  }
+
+  fmt(n){ return Math.round(n).toLocaleString('ko-KR'); }
+  isDark(){ return this.state.theme === 'dark'; }
+  showToast(m){ clearTimeout(this._t); this.setState({ toast:true, toastMsg:m }); this._t = setTimeout(()=>this.setState({ toast:false }), 1750); }
+
+  donut(list){
+    const tot = list.reduce((s,x)=>s+x.value,0) || 1;
+    let a=0; const st=[], lg=[];
+    list.forEach(x=>{
+      const s0=a/tot*360; a+=x.value; const s1=a/tot*360;
+      st.push(x.color+' '+s0.toFixed(1)+'deg '+s1.toFixed(1)+'deg');
+      lg.push({ name:x.name, color:x.color, key:x.key, amountDisplay:this.fmt(x.value), pctDisplay:Math.round(x.value/tot*100)+'%' });
+    });
+    return { gradient:'conic-gradient('+st.join(',')+')', legend:lg };
+  }
+  ring(pct){ const d=Math.min(100,pct)*3.6; return 'conic-gradient(var(--primary) '+d+'deg, var(--track) '+d+'deg)'; }
+  trend(vals,labels,hi,hiDisplay){
+    const max=Math.max.apply(null,vals)||1;
+    return vals.map((v,i)=>{
+      const on=i===hi, fut=(v===0&&i>hi);
+      return { h:Math.max(6,v/max*100).toFixed(0)+'%', color:on?'var(--primary)':(fut?'var(--track)':'var(--barmuted)'),
+        label:labels[i], labelColor:on?'var(--ink)':'var(--ink3)', labelWeight:on?'800':'600',
+        valDisplay:on?hiDisplay:'', valColor:on?'var(--primary)':'transparent' };
+    });
+  }
+  pLabel(){
+    const P=this.state.period, o=this.state.pOffset;
+    if(P==='day') return '7월 '+(15+o)+'일'+(o===0?' (오늘)':'');
+    if(P==='year') return (2026+o)+'년';
+    const mi=7+o, yr=2026+Math.floor((mi-1)/12), mo=((mi-1)%12+12)%12+1;
+    return yr+'년 '+mo+'월';
+  }
+  cd(key,name,value){ return { key, name, color:this.catMap[key].color, value }; }
+  pd(){
+    const P=this.state.period, b=this.state.budget;
+    if(P==='day'){
+      const t=23400, db=Math.round(b/31), rem=db-t, pct=Math.round(t/db*100);
+      const d=this.donut([this.cd('food','식비',9000),this.cd('cafe','카페',8000),this.cd('etc','기타',3600),this.cd('bus','교통',2800)]);
+      return { scope:'오늘 지출', totalDisplay:this.fmt(t), budgetDisplay:this.fmt(db), remainDisplay:this.fmt(rem), pct, pctDisplay:pct+'%', ringGradient:this.ring(pct),
+        hasPace:false, dayMode:true, dayBudgetDisplay:this.fmt(db), donutGradient:d.gradient, donutLegend:d.legend,
+        trend:this.trend([41,33,71,25,53,62,23],['9','10','11','12','13','14','15'],6,'2.3만'), trendNote:'최근 7일',
+        insightText:'오늘은 일예산 안에서 잘 쓰고 있어요. 카페에 두 번 들렀네요.', insightTag:'양호', insightColor:'var(--good)', insightSoft:'var(--goodsoft)', periodLabel:this.pLabel() };
+    }
+    if(P==='year'){
+      const t=8070000, yb=b*12, rem=yb-t, pct=Math.round(t/yb*100);
+      const d=this.donut([this.cd('food','식비',2820000),this.cd('cafe','카페',1270000),this.cd('house','주거',1160000),this.cd('shop','쇼핑',980000),this.cd('bus','교통',670000),this.cd('etc','기타',1170000)]);
+      return { scope:'올해 총지출', totalDisplay:this.fmt(t), budgetDisplay:this.fmt(yb), remainDisplay:this.fmt(rem), pct, pctDisplay:pct+'%', ringGradient:this.ring(pct),
+        hasPace:true, dayMode:false, paceUp:true, paceDisplay:'4.4%', paceIcon:'arrow_drop_up', paceColor:'var(--bad)', paceSoft:'var(--badsoft)', paceNote:'작년 같은 시점보다',
+        donutGradient:d.gradient, donutLegend:d.legend,
+        trend:this.trend([104,112,128,119,131,124,89,0,0,0,0,0],['1','2','3','4','5','6','7','8','9','10','11','12'],6,'89만'), trendNote:'2026년 월별',
+        insightText:'올해는 작년과 비슷한 페이스예요. 상반기에는 식비 비중이 가장 컸어요.', insightTag:'양호', insightColor:'var(--good)', insightSoft:'var(--goodsoft)', periodLabel:this.pLabel() };
+    }
+    const t=891000, rem=b-t, pct=Math.round(t/b*100);
+    const d=this.donut([this.cd('food','식비',312000),this.cd('cafe','카페',168000),this.cd('shop','쇼핑',145000),this.cd('bus','교통',88000),this.cd('etc','기타',178000)]);
+    return { scope:'이번 달 총지출', totalDisplay:this.fmt(t), budgetDisplay:this.fmt(b), remainDisplay:this.fmt(rem), pct, pctDisplay:pct+'%', ringGradient:this.ring(pct),
+      hasPace:true, dayMode:false, paceUp:true, paceDisplay:'9.7%', paceIcon:'arrow_drop_up', paceColor:'var(--bad)', paceSoft:'var(--badsoft)', paceNote:'지난달 같은 시점보다',
+      donutGradient:d.gradient, donutLegend:d.legend,
+      trend:this.trend([112,128,119,131,124,89],['2월','3월','4월','5월','6월','7월'],5,'89만'), trendNote:'최근 6개월',
+      insightText:'이번 달은 카페 지출이 지난달보다 32% 늘었어요. 이 속도라면 예산을 약 18만원 넘길 수 있어요.', insightTag:'주의', insightColor:'var(--bad)', insightSoft:'var(--badsoft)', periodLabel:this.pLabel() };
+  }
+
+  press(l){
+    let a=this.state.amount;
+    if(l==='back'){ a=a.slice(0,-1); }
+    else { if(a===''&&(l==='0'||l==='00')) return; if(a.length>=10) return; a=a+l; }
+    this.setState({ amount:a });
+  }
+  polish(){
+    let m=(this.state.memo||'').trim(); if(!m) m='스벅 아메';
+    const has=(arr)=>arr.some(w=>m.indexOf(w)>=0);
+    let key='etc', clean=m;
+    if(has(['커피','카페','스벅','아메','라떼','빈'])){ key='cafe'; clean='스타벅스 아메리카노'; }
+    else if(has(['점심','저녁','밥','식당','국','찌개','파스타','마트'])){ key='food'; clean='점심 식사'; }
+    else if(has(['택시','버스','지하철','교통','기차'])){ key='bus'; clean='대중교통'; }
+    else if(has(['영화','넷플','공연','전시','CGV'])){ key='culture'; clean='영화 관람'; }
+    this.setState({ memo:clean, polished:true, suggest:this.catMap[key].name, catId:this.state.type==='expense'?key:null });
+  }
+  save(){
+    const s=this.state, amt=Number(s.amount)||0;
+    if(s.sheetMode==='budget'){ if(amt<=0) return; this.setState({ budget:amt, sheet:null }); this.showToast('예산을 '+this.fmt(amt)+'원으로 저장했어요'); return; }
+    if(!(amt>0 && (s.type==='income'||s.catId))) return;
+    const c=s.type==='income'?null:this.catMap[s.catId];
+    const item={ name:s.memo||(c?c.name:'수입'), catKey:s.catId, income:s.type==='income', amount:amt, time:'방금' };
+    this.setState({ added:[item, ...s.added], sheet:null });
+    this.showToast('저장했어요');
+  }
+
+  renderVals(){
+    const s=this.state, dark=this.isDark();
+    const pd=this.pd();
+    pd.donutLegend=pd.donutLegend.map(l=>({ ...l, on:()=>this.setState({ tab:'list', sub:null, listFilter:l.key }) }));
+
+    const activeTab = s.sub==='cats' ? 'settings' : (s.sub==='ai' ? 'home' : s.tab);
+    const col=(a)=> a ? 'var(--primary)' : 'var(--ink3)';
+
+    const pkeys=[['day','일'],['month','월'],['year','연']];
+    const periods=pkeys.map(p=>({ label:p[1], color:s.period===p[0]?'var(--primary)':'var(--ink2)', on:()=>this.setState({ period:p[0], pOffset:0 }) }));
+    const pidx={day:0,month:1,year:2}[s.period];
+
+    const filters=[{key:'all',label:'전체'}].concat(this.cats.map(c=>({key:c.key,label:c.name}))).concat([{key:'income',label:'수입'}]).map(f=>{
+      const on=s.listFilter===f.key;
+      return { label:f.label, bg:on?'var(--primary)':'var(--card)', fg:on?'#fff':'var(--ink2)', on:()=>this.setState({ listFilter:f.key }) };
+    });
+
+    const groups=this.groups.map(g=>({ ...g, items:[...g.items] }));
+    s.added.forEach(a=>groups[0].items.unshift(a));
+    const listGroups=[];
+    groups.forEach(g=>{
+      let exp=0, inc=0; g.items.forEach(it=>{ if(it.income) inc+=it.amount; else exp+=it.amount; });
+      const shown = s.listFilter==='all' ? g.items : (s.listFilter==='income' ? g.items.filter(it=>it.income) : g.items.filter(it=>!it.income && it.catKey===s.listFilter));
+      if(!shown.length) return;
+      listGroups.push({
+        date:g.date, tag:!!g.tag, tagLabel:g.tag||'',
+        sumDisplay:(inc>0&&exp===0)?('+'+this.fmt(inc)):('−'+this.fmt(exp)),
+        sumColor:(inc>0&&exp===0)?'var(--good)':'var(--ink2)',
+        items: shown.map((it,i)=>{
+          const c=it.income?null:this.catMap[it.catKey];
+          const clr=it.income?'#4E9E6A':(c?c.color:'#A69B8C');
+          return { name:it.name, catName:it.income?'수입':(c?c.name:'기타'), time:it.time,
+            amountDisplay:(it.income?'+':'−')+this.fmt(it.amount), amtColor:it.income?'var(--good)':'var(--ink)',
+            icon:it.income?'trending_up':(c?c.icon:'category'), iconFg:it.income?'var(--good)':clr, iconBg:it.income?'var(--goodsoft)':(clr+'22'),
+            border: i<shown.length-1 ? '0.5px solid var(--line)' : '0' };
+        })
+      });
+    });
+
+    const listEmpty = listGroups.length===0;
+    const emptyText = s.listFilter==='all' ? '아직 기록이 없어요' : '조건에 맞는 내역이 없어요';
+    const emptySub = s.listFilter==='all' ? '+ 버튼으로 첫 지출을 기록해보세요' : '다른 필터를 선택해보세요';
+
+    const manageCats=this.cats.map((c,i)=>({ name:c.name, icon:c.icon, color:c.color, iconBg:c.color+'22',
+      usage: this.usage[c.key] ? ('이번 달 '+this.fmt(this.usage[c.key])+'원') : '이번 달 사용 없음',
+      border: i<this.cats.length-1 ? '0.5px solid var(--line)' : '0' }));
+
+    const order=['cafe','food','bus','shop','culture','medical','house','etc'];
+    const addCats=order.map(k=>{ const c=this.catMap[k], sel=s.catId===k;
+      return { name:c.name, icon:c.icon, color:c.color, iconBg:c.color+'22',
+        cardBg:sel?'var(--primarysoft)':'var(--card2)', ring:sel?'inset 0 0 0 2px var(--primary)':'inset 0 0 0 1px var(--line)',
+        labelFg:sel?'var(--primary)':'var(--ink2)', on:()=>this.setState({ catId:k }) }; });
+
+    const mk=(l)=>({ label:l, isText:true, isIcon:false, bg:'var(--card2)', on:()=>this.press(l) });
+    const keys=['1','2','3','4','5','6','7','8','9','00','0'].map(mk);
+    keys.push({ label:'backspace', isText:false, isIcon:true, bg:'var(--card2)', on:()=>this.press('back') });
+
+    const amt=Number(s.amount)||0, inc=s.type==='income';
+    let idx; if(!amt) idx=0; else if(s.type==='expense'&&!s.catId) idx=1; else idx=2;
+    const stepDefs=[['payments','금액'],['category','카테고리'],['check_circle','저장']];
+    const steps=stepDefs.map((d,i)=>{ const hot=i<=idx; return { icon:d[0], label:d[1], bg:hot?'var(--primarysoft)':'var(--card2)', fg:hot?'var(--primary)':'var(--ink3)', arrow:i<2 }; });
+
+    const canSave = s.sheetMode==='budget' ? amt>0 : (amt>0 && (inc||s.catId));
+
+    let tv='';
+    if(dark) tv='--stage:#0E0C0B;--bg:#161311;--card:#221D19;--card2:#2A241E;--ink:#F3ECE3;--ink2:#B0A498;--ink3:#9A8E7F;--line:#332B24;--primary:#4DB48C;--primarysoft:#15251E;--primaryglow:rgba(77,180,140,0.35);--track:#2E2820;--barmuted:#5A392C;--good:#5FB07E;--goodsoft:#22302A;--bad:#EC7962;--badsoft:#3A2420;--shadow:rgba(0,0,0,0.4);--sheet:#221D19;--tabbar:rgba(34,29,25,0.82);--aitint1:#17251F;--aitint2:#1E332B;--toastbg:#F3ECE3;--toastfg:#221D19;';
+    if(this.props.accent) tv+='--primary:'+this.props.accent+';--primaryglow:'+this.props.accent+'66;';
+    const chromeOn = this.props.chrome !== false;
+    if(!chromeOn) tv+='--pad:0;--stage:transparent;--minh:0px;';
+
+    const chg=[['cafe','32%',true],['food','8%',false],['shop','15%',true],['bus','3%',false]];
+    const aiChanges=chg.map(x=>{ const c=this.catMap[x[0]]; return { name:c.name, icon:c.icon, color:c.color, iconBg:c.color+'22', delta:x[1], deltaColor:x[2]?'var(--bad)':'var(--good)', deltaIcon:x[2]?'arrow_drop_up':'arrow_drop_down' }; });
+
+    return {
+      themeVars:tv, isDark:dark,
+      lightBg:!dark?'var(--primary)':'transparent', lightFg:!dark?'#fff':'var(--ink2)',
+      darkBg:dark?'var(--primary)':'transparent', darkFg:dark?'#fff':'var(--ink2)',
+      onLight:()=>this.setState({ theme:'light' }), onDark:()=>this.setState({ theme:'dark' }),
+
+      pd, periods, periodSeg:(pidx*100)+'%',
+      onPrev:()=>this.setState({ pOffset:s.pOffset-1 }), onNext:()=>this.setState({ pOffset:s.pOffset+1 }),
+
+      tabHome: s.tab==='home'&&!s.sub, tabList: s.tab==='list'&&!s.sub, tabSettings: s.tab==='settings'&&!s.sub,
+      subCats: s.sub==='cats', subAI: s.sub==='ai',
+      homeColor:col(activeTab==='home'), listColor:col(activeTab==='list'), statsColor:'var(--ink3)', setColor:col(activeTab==='settings'),
+      onTabHome:()=>this.setState({ tab:'home', sub:null }), onTabList:()=>this.setState({ tab:'list', sub:null }),
+      onTabStats:()=>this.showToast('심화 통계는 v1.1에 추가돼요'), onTabSettings:()=>this.setState({ tab:'settings', sub:null }),
+      onOpenAI:()=>this.setState({ sub:'ai' }), onOpenCats:()=>this.setState({ sub:'cats' }), onBack:()=>this.setState({ sub:null }),
+      onToast:()=>this.showToast('데모에서 준비 중인 기능이에요'),
+
+      aiOn:s.aiOn, onToggleAI:()=>this.setState({ aiOn:!s.aiOn }),
+      aiSwitchBg:s.aiOn?'var(--primary)':'var(--track)', aiKnobLeft:s.aiOn?'22px':'2px',
+      budgetDisplay:this.fmt(s.budget),
+
+      filters, listGroups, listEmpty, emptyText, emptySub, manageCats, aiChanges,
+
+      onOpenAdd:()=>this.setState({ sheet:'add', sheetMode:'add', amount:'', type:'expense', catId:null, memo:'', polished:false, suggest:'' }),
+      onOpenBudget:()=>this.setState({ sheet:'budget', sheetMode:'budget', amount:String(s.budget) }),
+      onCloseSheet:()=>this.setState({ sheet:null }),
+      sheetOpen:!!s.sheet, isAddSheet:s.sheetMode==='add', sheetTitle: s.sheetMode==='budget'?'이번 달 예산':(inc?'새 수입':'새 지출'),
+      showCatPicker: s.type==='expense' && s.sheetMode==='add',
+
+      typeSeg:inc?'100%':'0%', typePillBg:inc?'var(--good)':'var(--primary)', expFg:inc?'var(--ink2)':'#fff', incFg:inc?'#fff':'var(--ink2)',
+      onExpense:()=>this.setState({ type:'expense' }), onIncome:()=>this.setState({ type:'income', catId:null }),
+
+      amountDisplay: s.amount==='' ? '0' : Number(s.amount).toLocaleString('ko-KR'),
+      amountColor: amt>0 ? (s.sheetMode==='budget'?'var(--primary)':(inc?'var(--good)':'var(--ink)')) : 'var(--ink3)',
+      steps, addCats, keys,
+      memo:s.memo, onMemo:(e)=>this.setState({ memo:e.target.value, polished:false }),
+      onPolish:()=>this.polish(), polished:s.polished, suggestCat:s.suggest,
+      polishLabel:s.polished?'정리됨':'AI 다듬기', polishBg:s.polished?'var(--goodsoft)':'var(--aitint2)', polishFg:s.polished?'var(--good)':'var(--primary)',
+      onSave:()=>this.save(), saveBg:canSave?'var(--primary)':'var(--track)', saveFg:canSave?'#fff':'var(--ink3)', saveIcon:'check', saveLabel:s.sheetMode==='budget'?'예산 저장':'저장하기',
+
+      toast:s.toast, toastMsg:s.toastMsg,
+      chromeOn, T:true, F:false,
+      showWidgets: (this.props.showWidgets !== false) && chromeOn,
+    };
+  }
+}
+</script>
+</body>
+</html>

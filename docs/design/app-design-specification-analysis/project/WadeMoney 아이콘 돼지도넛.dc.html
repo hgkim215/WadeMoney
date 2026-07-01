@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..0">
+<style>*{box-sizing:border-box;}body{margin:0;}.msr{font-family:'Material Symbols Rounded';line-height:1;}</style>
+</helmet>
+
+<div style="min-height:100vh;background:#EBE1D2;color:#2E2A25;font-family:'Pretendard Variable',Pretendard,-apple-system,system-ui,sans-serif;-webkit-font-smoothing:antialiased;display:flex;flex-direction:column;align-items:center;gap:8px;padding:52px 30px 90px;">
+
+  <div style="text-align:center;max-width:640px;">
+    <div style="font-size:13px;font-weight:800;color:#3E9E7A;letter-spacing:.4px;">WADEMONEY · APP ICON · FINAL</div>
+    <div style="font-size:30px;font-weight:800;letter-spacing:-0.6px;margin-top:8px;">최종 앱 아이콘 · 도넛 먹는 돼지</div>
+    <div style="font-size:14px;color:#7C7268;margin-top:10px;line-height:1.6;text-wrap:pretty;">정든 돼지를 주인공으로 키우고, 카테고리 ₩ 도넛을 곁들여 '가계부'를 남겼어요. 하나의 컴포넌트로 앱·위젯 로고에도 그대로 재사용됩니다.</div>
+  </div>
+
+  <!-- HERO -->
+  <div style="display:flex;align-items:center;gap:48px;flex-wrap:wrap;justify-content:center;margin-top:44px;">
+    <dc-import name="WadeMoney 아이콘" size="240" hint-size="240px,240px" style="flex:none;"></dc-import>
+    <!-- size ladder -->
+    <div style="display:flex;align-items:flex-end;gap:22px;">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:9px;"><dc-import name="WadeMoney 아이콘" size="120" hint-size="120px,120px" style="flex:none;"></dc-import><span style="font-size:11px;color:#7C7268;font-weight:700;">120</span></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:9px;"><dc-import name="WadeMoney 아이콘" size="87" hint-size="87px,87px" style="flex:none;"></dc-import><span style="font-size:11px;color:#7C7268;font-weight:700;">87</span></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:9px;"><dc-import name="WadeMoney 아이콘" size="60" hint-size="60px,60px" style="flex:none;"></dc-import><span style="font-size:11px;color:#7C7268;font-weight:700;">60</span></div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:9px;"><dc-import name="WadeMoney 아이콘" size="40" hint-size="40px,40px" style="flex:none;"></dc-import><span style="font-size:11px;color:#7C7268;font-weight:700;">40</span></div>
+    </div>
+  </div>
+
+  <!-- HOME PREVIEW -->
+  <div style="display:flex;flex-direction:column;align-items:center;gap:18px;margin-top:56px;width:100%;">
+    <div style="display:flex;align-items:center;gap:7px;color:#7C7268;font-size:13px;font-weight:800;"><span class="msr" style="font-size:18px;font-variation-settings:'FILL' 1;">grid_view</span>실사이즈 · 홈 화면에서</div>
+    <div style="display:flex;gap:26px;flex-wrap:wrap;justify-content:center;">
+
+      <div style="width:250px;border-radius:34px;background:radial-gradient(120% 90% at 30% 15%,#F4E6D4,#E6D2BA);padding:26px 24px;box-shadow:0 18px 44px rgba(90,66,40,0.2);">
+        <div style="text-align:center;font-size:13px;font-weight:600;color:#5A4F42;margin-bottom:18px;">라이트</div>
+        <div style="display:flex;justify-content:space-around;">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:7px;"><dc-import name="WadeMoney 아이콘" size="60" hint-size="60px,60px" style="flex:none;"></dc-import><span style="font-size:10px;color:#5A4F42;font-weight:700;">WadeMoney</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:7px;"><dc-import name="WadeMoney 아이콘" size="60" hint-size="60px,60px" style="flex:none;"></dc-import><span style="font-size:10px;color:#5A4F42;font-weight:700;">WadeMoney</span></div>
+        </div>
+      </div>
+
+      <div style="width:250px;border-radius:34px;background:radial-gradient(120% 90% at 30% 15%,#2A211B,#0E0B09);padding:26px 24px;box-shadow:0 18px 44px rgba(0,0,0,0.35);">
+        <div style="text-align:center;font-size:13px;font-weight:600;color:rgba(255,255,255,0.6);margin-bottom:18px;">다크</div>
+        <div style="display:flex;justify-content:space-around;">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:7px;"><dc-import name="WadeMoney 아이콘" size="60" hint-size="60px,60px" style="flex:none;"></dc-import><span style="font-size:10px;color:rgba(255,255,255,0.75);font-weight:700;">WadeMoney</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:7px;"><dc-import name="WadeMoney 아이콘" size="60" hint-size="60px,60px" style="flex:none;"></dc-import><span style="font-size:10px;color:rgba(255,255,255,0.75);font-weight:700;">WadeMoney</span></div>
+        </div>
+      </div>
+
+    </div>
+    <div style="max-width:540px;text-align:center;font-size:12.5px;color:#7C7268;line-height:1.6;margin-top:8px;text-wrap:pretty;">이 아이콘은 <b style="color:#2E8E6E;">WadeMoney 아이콘.dc.html</b> 컴포넌트예요. 앱 상단·위젯 기록 화면의 브랜드 칩에도 이 마스코트가 들어갔습니다.</div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>
