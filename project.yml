@@ -26,11 +26,10 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.kimhyeongi.WadeMoney
         CODE_SIGN_ENTITLEMENTS: WadeMoney/WadeMoney.entitlements
-        INFOPLIST_KEY_CFBundleDisplayName: WadeMoney
-        INFOPLIST_KEY_UILaunchScreen_Generation: "YES"
-        INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
-        TARGETED_DEVICE_FAMILY: "1"
+        GENERATE_INFOPLIST_FILE: "NO"
+        INFOPLIST_FILE: WadeMoney/Info.plist
         INFOPLIST_KEY_UIBackgroundModes: remote-notification
+        TARGETED_DEVICE_FAMILY: "1"
   WadeMoneyTests:
     type: bundle.unit-test
     platform: iOS
