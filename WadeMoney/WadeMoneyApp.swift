@@ -12,12 +12,15 @@ struct WadeMoneyApp: App {
             container = try! PersistenceController.makeInMemoryContainer()
             return
         }
+        let resolved: ModelContainer
         do {
-            container = try PersistenceController.makeAppContainer()
+            resolved = try PersistenceController.makeAppContainer()
         } catch {
             // 최초 마이그레이션/프로비저닝 실패 시 로컬 인메모리로 폴백(앱은 뜬다).
-            container = try! PersistenceController.makeInMemoryContainer()
+            resolved = try! PersistenceController.makeInMemoryContainer()
         }
+        container = resolved
+        try? CategorySeeder.seedIfNeeded(resolved.mainContext)
     }
 
     var body: some Scene {
