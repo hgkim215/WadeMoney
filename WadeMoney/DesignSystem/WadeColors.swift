@@ -14,6 +14,11 @@ enum WadeColors {
     static func ink3(_ s: ColorScheme) -> Color { pick(s, light: "#7F7466", dark: "#9A8E7F") }
     static func line(_ s: ColorScheme) -> Color { pick(s, light: "#EFE7DB", dark: "#332B24") }
     static func primary(_ s: ColorScheme) -> Color { pick(s, light: "#3E9E7A", dark: "#4DB48C") }
+    static func primaryglow(_ s: ColorScheme) -> Color {
+        s == .dark
+            ? Color(red: 77/255, green: 180/255, blue: 140/255).opacity(0.35)
+            : Color(red: 62/255, green: 158/255, blue: 122/255).opacity(0.40)
+    }
     static func primarysoft(_ s: ColorScheme) -> Color { pick(s, light: "#DFF0E9", dark: "#15251E") }
     static func track(_ s: ColorScheme) -> Color { pick(s, light: "#EDE4D7", dark: "#2E2820") }
     static func barmuted(_ s: ColorScheme) -> Color { pick(s, light: "#F2CBB9", dark: "#5A392C") }
@@ -26,5 +31,9 @@ enum WadeColors {
     static func aitint2(_ s: ColorScheme) -> Color { pick(s, light: "#DFF0E9", dark: "#1E332B") }
     static func toastbg(_ s: ColorScheme) -> Color { pick(s, light: "#2E2A25", dark: "#F3ECE3") }
     static func toastfg(_ s: ColorScheme) -> Color { pick(s, light: "#FFFFFF", dark: "#221D19") }
-    static func shadow(_ s: ColorScheme) -> Color { Color.black.opacity(s == .dark ? 0.4 : 0.10) }
+    static func shadow(_ s: ColorScheme) -> Color {
+        s == .dark
+            ? Color.black.opacity(0.40)
+            : Color(red: 120/255, green: 90/255, blue: 60/255).opacity(0.10)
+    }
 }

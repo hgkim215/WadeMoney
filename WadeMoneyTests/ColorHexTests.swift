@@ -21,4 +21,8 @@ struct ColorHexTests {
     @Test func lightAndDarkTokensDiffer() {
         #expect(WadeColors.primary(.light) != WadeColors.primary(.dark))
     }
+
+    @Test func primaryGlowTokenExists() {
+        #expect(WadeColors.primaryglow(.light) != WadeColors.primaryglow(.dark))
+    }
 }
