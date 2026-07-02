@@ -58,6 +58,7 @@ final class DashboardViewModel {
     private(set) var insightText: String?
     private(set) var insightIsGood: Bool?
     private(set) var isLoadingInsight = false
+    private var insightTask: Task<Void, Never>?
 
     init(
         repository: LedgerRepository, now: Date, calendar: Calendar,
@@ -82,16 +83,17 @@ final class DashboardViewModel {
     }
 
     func refreshInsight() async {
+        insightTask?.cancel()
+
         guard
             let d = display, let pace = d.pace,
             aiAvailability.isAvailable,
             (try? repository.aiEnabled()) == true
         else {
+            insightTask = nil
             insightText = nil
             return
         }
-        isLoadingInsight = true
-        defer { isLoadingInsight = false }
         let top = d.donut.first { !$0.isOther }
         let input = InsightInput(
             periodLabel: d.periodLabel,
@@ -101,13 +103,30 @@ final class DashboardViewModel {
             topCategoryName: top?.name,
             topCategoryPercentText: top?.percentText
         )
-        do {
-            insightText = try await insightGenerator.generate(input)
-            insightIsGood = pace.direction == .down
-        } catch {
-            insightText = nil
-            insightIsGood = nil
+        isLoadingInsight = true
+        let task = Task { [insightGenerator] in
+            let result: Result<String, Error>
+            do {
+                result = .success(try await insightGenerator.generate(input))
+            } catch {
+                result = .failure(error)
+            }
+            // A newer refreshInsight() call may have superseded this one while we
+            // were suspended above — discard the result instead of overwriting
+            // state for a period that's no longer displayed.
+            guard !Task.isCancelled else { return }
+            switch result {
+            case .success(let sentence):
+                self.insightText = sentence
+                self.insightIsGood = pace.direction == .down
+            case .failure:
+                self.insightText = nil
+                self.insightIsGood = nil
+            }
+            self.isLoadingInsight = false
         }
+        insightTask = task
+        await task.value
     }
 
     private func build(_ s: LedgerRepository.DashboardSummary, categories: [CategoryRef]) -> DashboardDisplay {

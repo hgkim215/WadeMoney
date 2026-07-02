@@ -106,4 +106,74 @@ struct DashboardInsightTests {
         #expect(vm.insightText == nil)
         _ = container
     }
+
+    @Test func supersededInsightRefreshDoesNotOverwriteNewerResult() async throws {
+        let (repo, settings, container) = try makeRepo()
+        try settings.setAIEnabled(true)
+        try seedComparablePace(repo)
+
+        let gate = SteppableInsightGate()
+        let generator = SteppableInsightGenerator(gate: gate, firstResult: "오래된 결과", secondResult: "최신 결과")
+
+        let vm = DashboardViewModel(repository: repo, now: date(2026, 7, 15), calendar: utc,
+                                     aiAvailability: FakeAIAvailability(isAvailable: true),
+                                     insightGenerator: generator)
+        vm.kind = .month
+        vm.load()
+
+        // Start a first refresh and let it suspend inside generate() (simulating a slow
+        // real Foundation Models call), then start a second refresh before it resolves.
+        let staleTask = Task { await vm.refreshInsight() }
+        while await gate.firstCallStarted == false { await Task.yield() }
+
+        await vm.refreshInsight()
+        #expect(vm.insightText == "최신 결과")
+
+        // Now let the superseded first call resolve. Its (stale) result must not
+        // clobber the newer one that already landed.
+        await gate.release()
+        await staleTask.value
+
+        #expect(vm.insightText == "최신 결과")
+        _ = container
+    }
+}
+
+private actor SteppableInsightGate {
+    private(set) var firstCallStarted = false
+    private var continuation: CheckedContinuation<Void, Never>?
+
+    func markFirstCallStarted() {
+        firstCallStarted = true
+    }
+
+    func waitForRelease() async {
+        await withCheckedContinuation { continuation = $0 }
+    }
+
+    func release() {
+        continuation?.resume()
+        continuation = nil
+    }
+}
+
+private actor SteppableInsightGenerator: InsightGenerating {
+    private let gate: SteppableInsightGate
+    private let firstResult: String
+    private let secondResult: String
+    private var callCount = 0
+
+    init(gate: SteppableInsightGate, firstResult: String, secondResult: String) {
+        self.gate = gate
+        self.firstResult = firstResult
+        self.secondResult = secondResult
+    }
+
+    func generate(_ input: InsightInput) async throws -> String {
+        callCount += 1
+        guard callCount == 1 else { return secondResult }
+        await gate.markFirstCallStarted()
+        await gate.waitForRelease()
+        return firstResult
+    }
 }
