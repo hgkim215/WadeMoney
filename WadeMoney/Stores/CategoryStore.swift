@@ -1,5 +1,6 @@
 import Foundation
 import SwiftData
+import WidgetKit
 import WadeMoneyCore
 
 @MainActor
@@ -23,6 +24,7 @@ final class CategoryStore {
             .map(\.sortOrder).max() ?? -1
         context.insert(CategoryModel(name: name, iconName: iconName, colorHex: colorHex, sortOrder: maxOrder + 1))
         try context.save()
+        WidgetCenter.shared.reloadAllTimelines()
     }
 
     func update(id: UUID, name: String, iconName: String, colorHex: String) throws {
@@ -31,18 +33,21 @@ final class CategoryStore {
         m.iconName = iconName
         m.colorHex = colorHex
         try context.save()
+        WidgetCenter.shared.reloadAllTimelines()
     }
 
     func archive(id: UUID) throws {
         guard let m = try model(id) else { return }
         m.isArchived = true
         try context.save()
+        WidgetCenter.shared.reloadAllTimelines()
     }
 
     func restore(id: UUID) throws {
         guard let m = try model(id) else { return }
         m.isArchived = false
         try context.save()
+        WidgetCenter.shared.reloadAllTimelines()
     }
 
     func reorder(_ orderedIDs: [UUID]) throws {
@@ -52,6 +57,7 @@ final class CategoryStore {
             byID[id]?.sortOrder = index
         }
         try context.save()
+        WidgetCenter.shared.reloadAllTimelines()
     }
 
     private func model(_ id: UUID) throws -> CategoryModel? {
