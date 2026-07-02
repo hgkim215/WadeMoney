@@ -72,6 +72,10 @@ final class DashboardViewModel {
         self.insightGenerator = insightGenerator
     }
 
+    var showsAIReportEntry: Bool {
+        aiAvailability.isAvailable && (try? repository.aiEnabled()) == true
+    }
+
     func load() {
         do {
             let summary = try repository.dashboardSummary(kind: kind, offset: offset, now: now, calendar: calendar)

@@ -17,15 +17,17 @@ struct DashboardScreen: View {
                         Text("한눈에").font(WadeFont.pretendard(30, weight: .heavy))
                             .foregroundStyle(WadeColors.ink(scheme))
                         Spacer()
-                        Button { showReport = true } label: {
-                            HStack(spacing: 5) {
-                                Icon("auto_awesome", size: 15)
-                                Text("리포트").font(WadeFont.pretendard(12.5, weight: .bold))
-                            }
-                            .foregroundStyle(WadeColors.primary(scheme))
-                            .padding(.horizontal, 13).padding(.vertical, 8)
-                            .background(WadeColors.primarysoft(scheme), in: Capsule())
-                        }.buttonStyle(.plain)
+                        if let vm = viewModel, vm.showsAIReportEntry {
+                            Button { showReport = true } label: {
+                                HStack(spacing: 5) {
+                                    Icon("auto_awesome", size: 15)
+                                    Text("리포트").font(WadeFont.pretendard(12.5, weight: .bold))
+                                }
+                                .foregroundStyle(WadeColors.primary(scheme))
+                                .padding(.horizontal, 13).padding(.vertical, 8)
+                                .background(WadeColors.primarysoft(scheme), in: Capsule())
+                            }.buttonStyle(.plain)
+                        }
                     }
                     .frame(maxWidth: .infinity)
 

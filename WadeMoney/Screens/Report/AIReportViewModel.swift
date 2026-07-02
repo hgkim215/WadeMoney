@@ -31,15 +31,21 @@ final class AIReportViewModel {
     private let now: Date
     private let calendar: Calendar
     private let narrator: ReportNarrating
+    private let aiAvailability: AIAvailabilityChecking
 
     private(set) var display: Display?
     private(set) var isLoading = false
 
-    init(repository: LedgerRepository, now: Date, calendar: Calendar, narrator: ReportNarrating = FoundationModelsReportNarrator()) {
+    init(
+        repository: LedgerRepository, now: Date, calendar: Calendar,
+        narrator: ReportNarrating = FoundationModelsReportNarrator(),
+        aiAvailability: AIAvailabilityChecking = SystemLanguageModelAvailability()
+    ) {
         self.repository = repository
         self.now = now
         self.calendar = calendar
         self.narrator = narrator
+        self.aiAvailability = aiAvailability
     }
 
     func load() async {
@@ -91,7 +97,8 @@ final class AIReportViewModel {
             topDecrease: topDecrease.map { (name: $0.name, percentText: $0.percentText) }
         )
 
-        let narration = try? await narrator.narrate(input)
+        let aiOn = aiAvailability.isAvailable && (try? repository.aiEnabled()) == true
+        let narration = aiOn ? try? await narrator.narrate(input) : nil
 
         display = Display(
             monthLabel: monthLabel,

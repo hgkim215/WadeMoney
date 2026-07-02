@@ -60,6 +60,44 @@ struct AIReportViewModelTests {
         _ = container
     }
 
+    @Test func skipsNarrationWhenAIDisabledButNumbersStillShow() async throws {
+        let (repo, settings, container) = try makeRepo()
+        try settings.setMonthlyBudget(300_000, for: YearMonth(year: 2026, month: 7))
+        try settings.setAIEnabled(false)
+        let food = try catID(repo, "식비")
+        try repo.addTransaction(amount: 50_000, type: .expense, categoryID: food, memo: nil, date: date(2026, 7, 5))
+
+        let spy = SpyReportNarrator(result: .success(ReportNarration(summarySentence: "요약", tipSentence: "팁")))
+        let vm = AIReportViewModel(repository: repo, now: date(2026, 7, 15), calendar: utc, narrator: spy,
+                                    aiAvailability: FakeAIAvailability(isAvailable: true))
+        await vm.load()
+
+        #expect(spy.lastInput == nil)
+        #expect(vm.display?.summarySentence == nil)
+        #expect(vm.display?.tipSentence == nil)
+        #expect(vm.display?.totalText == "50,000")
+        _ = container
+    }
+
+    @Test func skipsNarrationWhenModelUnavailableButNumbersStillShow() async throws {
+        let (repo, settings, container) = try makeRepo()
+        try settings.setMonthlyBudget(300_000, for: YearMonth(year: 2026, month: 7))
+        try settings.setAIEnabled(true)
+        let food = try catID(repo, "식비")
+        try repo.addTransaction(amount: 50_000, type: .expense, categoryID: food, memo: nil, date: date(2026, 7, 5))
+
+        let spy = SpyReportNarrator(result: .success(ReportNarration(summarySentence: "요약", tipSentence: "팁")))
+        let vm = AIReportViewModel(repository: repo, now: date(2026, 7, 15), calendar: utc, narrator: spy,
+                                    aiAvailability: FakeAIAvailability(isAvailable: false))
+        await vm.load()
+
+        #expect(spy.lastInput == nil)
+        #expect(vm.display?.summarySentence == nil)
+        #expect(vm.display?.tipSentence == nil)
+        #expect(vm.display?.totalText == "50,000")
+        _ = container
+    }
+
     @Test func overBudgetTextSetWhenProjectedExceedsBudget() async throws {
         let (repo, settings, container) = try makeRepo()
         try settings.setMonthlyBudget(30_000, for: YearMonth(year: 2026, month: 7))

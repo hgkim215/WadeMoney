@@ -91,6 +91,42 @@ struct DashboardInsightTests {
         _ = container
     }
 
+    @Test func showsAIReportEntryWhenEnabledAndAvailable() async throws {
+        let (repo, settings, container) = try makeRepo()
+        try settings.setAIEnabled(true)
+
+        let vm = DashboardViewModel(repository: repo, now: date(2026, 7, 15), calendar: utc,
+                                     aiAvailability: FakeAIAvailability(isAvailable: true),
+                                     insightGenerator: FakeInsightGenerator())
+
+        #expect(vm.showsAIReportEntry == true)
+        _ = container
+    }
+
+    @Test func hidesAIReportEntryWhenAIDisabled() async throws {
+        let (repo, settings, container) = try makeRepo()
+        try settings.setAIEnabled(false)
+
+        let vm = DashboardViewModel(repository: repo, now: date(2026, 7, 15), calendar: utc,
+                                     aiAvailability: FakeAIAvailability(isAvailable: true),
+                                     insightGenerator: FakeInsightGenerator())
+
+        #expect(vm.showsAIReportEntry == false)
+        _ = container
+    }
+
+    @Test func hidesAIReportEntryWhenModelUnavailable() async throws {
+        let (repo, settings, container) = try makeRepo()
+        try settings.setAIEnabled(true)
+
+        let vm = DashboardViewModel(repository: repo, now: date(2026, 7, 15), calendar: utc,
+                                     aiAvailability: FakeAIAvailability(isAvailable: false),
+                                     insightGenerator: FakeInsightGenerator())
+
+        #expect(vm.showsAIReportEntry == false)
+        _ = container
+    }
+
     @Test func fallsBackSilentlyOnGenerationFailure() async throws {
         let (repo, settings, container) = try makeRepo()
         try settings.setAIEnabled(true)
