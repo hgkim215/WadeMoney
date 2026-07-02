@@ -49,15 +49,26 @@ final class DashboardViewModel {
     private let repository: LedgerRepository
     private let now: Date
     private let calendar: Calendar
+    private let aiAvailability: AIAvailabilityChecking
+    private let insightGenerator: InsightGenerating
 
     var kind: PeriodKind = .month
     var offset: Int = 0
     private(set) var display: DashboardDisplay?
+    private(set) var insightText: String?
+    private(set) var insightIsGood: Bool?
+    private(set) var isLoadingInsight = false
 
-    init(repository: LedgerRepository, now: Date, calendar: Calendar) {
+    init(
+        repository: LedgerRepository, now: Date, calendar: Calendar,
+        aiAvailability: AIAvailabilityChecking = SystemLanguageModelAvailability(),
+        insightGenerator: InsightGenerating = FoundationModelsInsightGenerator()
+    ) {
         self.repository = repository
         self.now = now
         self.calendar = calendar
+        self.aiAvailability = aiAvailability
+        self.insightGenerator = insightGenerator
     }
 
     func load() {
@@ -67,6 +78,35 @@ final class DashboardViewModel {
             display = build(summary, categories: categories)
         } catch {
             display = nil
+        }
+    }
+
+    func refreshInsight() async {
+        guard
+            let d = display, let pace = d.pace,
+            aiAvailability.isAvailable,
+            (try? repository.aiEnabled()) == true
+        else {
+            insightText = nil
+            return
+        }
+        isLoadingInsight = true
+        defer { isLoadingInsight = false }
+        let top = d.donut.first { !$0.isOther }
+        let input = InsightInput(
+            periodLabel: d.periodLabel,
+            totalExpenseText: d.totalText,
+            paceDeltaPercentText: pace.deltaText,
+            paceIncreased: pace.direction == .up,
+            topCategoryName: top?.name,
+            topCategoryPercentText: top?.percentText
+        )
+        do {
+            insightText = try await insightGenerator.generate(input)
+            insightIsGood = pace.direction == .down
+        } catch {
+            insightText = nil
+            insightIsGood = nil
         }
     }
 
