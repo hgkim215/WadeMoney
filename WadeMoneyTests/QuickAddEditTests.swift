@@ -30,7 +30,7 @@ struct QuickAddEditTests {
 
         vm.selectedCategoryID = cafe
         vm.amountDigits = "7000"
-        try vm.save(date: date())
+        try vm.save()
 
         let updated = try #require(try r.transactionRecord(id: rec.id))
         #expect(updated.amount == 7000)
@@ -39,7 +39,7 @@ struct QuickAddEditTests {
         _ = c
     }
 
-    @Test func editingPreservesOriginalTransactionDate() throws {
+    @Test func editingPreservesOriginalDateByDefault() throws {
         let (r, c) = try repo()
         let food = try catID(r, "식비")
         let originalDate = date()
@@ -47,9 +47,10 @@ struct QuickAddEditTests {
         let rec = try r.transactions(filter: .all)[0]
 
         let vm = QuickAddViewModel(repository: r, editing: rec)
+        #expect(vm.date == originalDate)   // 편집 시작 시 날짜가 원본으로 프리필됨
         vm.amountDigits = "6000"
-        // 다음 날 수정해도 거래 날짜는 원래 날짜를 유지해야 한다(일별 합계·예산 구간 이동 방지).
-        try vm.save(date: originalDate.addingTimeInterval(86_400))
+        // 날짜를 건드리지 않고 금액만 고치면 원래 날짜가 유지되어야 한다.
+        try vm.save()
 
         let updated = try #require(try r.transactionRecord(id: rec.id))
         #expect(updated.amount == 6000)
@@ -57,14 +58,20 @@ struct QuickAddEditTests {
         _ = c
     }
 
-    @Test func deleteRemovesTransaction() throws {
+    @Test func editingAllowsChangingTransactionDate() throws {
         let (r, c) = try repo()
         let food = try catID(r, "식비")
-        try r.addTransaction(amount: 5000, type: .expense, categoryID: food, memo: nil, date: date())
+        let originalDate = date()
+        try r.addTransaction(amount: 5000, type: .expense, categoryID: food, memo: nil, date: originalDate)
         let rec = try r.transactions(filter: .all)[0]
+
         let vm = QuickAddViewModel(repository: r, editing: rec)
-        try vm.delete()
-        #expect(try r.transactions(filter: .all).isEmpty)
+        let newDate = originalDate.addingTimeInterval(86_400)
+        vm.date = newDate
+        try vm.save()
+
+        let updated = try #require(try r.transactionRecord(id: rec.id))
+        #expect(updated.date == newDate)
         _ = c
     }
 }

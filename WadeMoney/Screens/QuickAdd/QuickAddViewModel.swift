@@ -21,7 +21,7 @@ final class QuickAddViewModel {
     private var polishedMemoSnapshot: String?
     private(set) var categories: [CategoryRef] = []
     private let editingID: UUID?
-    private let editingDate: Date?
+    var date: Date
     var isEditing: Bool { editingID != nil }
     private(set) var isPolishing = false
     private(set) var hasPolished = false
@@ -45,14 +45,14 @@ final class QuickAddViewModel {
         self.categories = (try? repository.allCategories(includeArchived: false)) ?? []
         if let editing {
             self.editingID = editing.id
-            self.editingDate = editing.date
+            self.date = editing.date
             self.amountDigits = "\(NSDecimalNumber(decimal: editing.amount).intValue)"
             self.type = editing.type == .income ? .income : .expense
             self.selectedCategoryID = editing.categoryID
             self.memo = editing.memo ?? ""
         } else {
             self.editingID = nil
-            self.editingDate = nil
+            self.date = Date()
             // 딥링크로 받은 카테고리가 보관(아카이브)됐다면 무시한다 — 화면에 없는 카테고리가 몰래 저장되는 것 방지.
             self.selectedCategoryID = categories.contains { $0.id == preselectedCategoryID } ? preselectedCategoryID : nil
         }
@@ -104,21 +104,15 @@ final class QuickAddViewModel {
         amountDigits.removeLast()
     }
 
-    func save(date: Date) throws {
+    func save() throws {
         guard canSave else { return }
         let catID = type == .income ? nil : selectedCategoryID
         if let editingID {
-            // 수정 시에는 거래의 원래 날짜를 보존한다 — 저장 시점 날짜로 바뀌면 일별 합계·예산 구간이 옮겨간다.
             try repository.updateTransaction(id: editingID, amount: amountDecimal, type: type,
-                                             categoryID: catID, memo: memo.isEmpty ? nil : memo, date: editingDate ?? date)
+                                             categoryID: catID, memo: memo.isEmpty ? nil : memo, date: date)
         } else {
             try repository.addTransaction(amount: amountDecimal, type: type,
                                           categoryID: catID, memo: memo.isEmpty ? nil : memo, date: date)
         }
-    }
-
-    func delete() throws {
-        guard let editingID else { return }
-        try repository.deleteTransaction(id: editingID)
     }
 }

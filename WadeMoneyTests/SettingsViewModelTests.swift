@@ -30,6 +30,19 @@ struct SettingsViewModelTests {
         _ = c
     }
 
+    @Test func budgetRowTextShowsUnsetWhenZero() throws {
+        let (vm, c) = try vm()
+        vm.load()
+        #expect(vm.budgetRowText == "설정 안 함")   // 시드 직후 기본값
+
+        vm.setBudget(500_000)
+        #expect(vm.budgetRowText == "₩500,000")
+
+        vm.setBudget(0)   // "예산 설정 안 함" 선택
+        #expect(vm.budgetRowText == "설정 안 함")
+        _ = c
+    }
+
     @Test func toggleAIPersists() throws {
         let (vm, c) = try vm()
         vm.load()

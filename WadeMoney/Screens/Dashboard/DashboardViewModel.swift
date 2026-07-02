@@ -198,7 +198,8 @@ final class DashboardViewModel {
         switch kind {
         case .day: count = 7
         case .month: count = 6
-        case .year: count = 12
+        // 12년치를 다 보여주면 라벨이 좁은 칸에 겹쳐 잘린다 — 월 뷰(6개)와 같은 컨벤션으로 맞춘다.
+        case .year: count = 6
         }
         let txns = (try? repository.allTransactions()) ?? []
         var raw: [(label: String, value: Decimal, isCurrent: Bool)] = []

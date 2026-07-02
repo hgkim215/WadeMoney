@@ -38,19 +38,6 @@ struct QuickAddSheet: View {
                          : (vm.type == .income ? "새 수입" : "새 지출"))
                         .font(WadeFont.pretendard(20, weight: .heavy))
                     Spacer()
-                    if vm.isEditing {
-                        Button {
-                            do {
-                                try vm.delete()
-                                onSaved()
-                                dismiss()
-                            } catch {
-                                // 삭제 실패 시 시트를 닫지 않는다(성공을 가장하지 않음) — 저장 경로와 동일한 규칙.
-                            }
-                        } label: {
-                            Icon("delete", size: 20).foregroundStyle(WadeColors.bad(scheme))
-                        }.buttonStyle(.plain).padding(.trailing, 10)
-                    }
                     typeToggle(vm)
                 }
                 .padding(.top, 16)
@@ -63,6 +50,8 @@ struct QuickAddSheet: View {
                 .foregroundStyle(vm.amountDecimal > 0
                     ? (vm.type == .income ? WadeColors.good(scheme) : WadeColors.ink(scheme))
                     : WadeColors.ink3(scheme))
+
+                dateRow(vm)
 
                 if !vm.isEditing { stepChips(vm) }
 
@@ -104,7 +93,7 @@ struct QuickAddSheet: View {
 
                 Button {
                     do {
-                        try vm.save(date: Date())
+                        try vm.save()
                         onSaved()
                         dismiss()
                     } catch {
@@ -121,6 +110,22 @@ struct QuickAddSheet: View {
             }
             .padding(.horizontal, 24).padding(.bottom, 34)
         }
+    }
+
+    private func dateRow(_ vm: QuickAddViewModel) -> some View {
+        HStack {
+            Icon("event", size: 17, filled: false).foregroundStyle(WadeColors.ink3(scheme))
+            Text("날짜").font(WadeFont.pretendard(13, weight: .semibold)).foregroundStyle(WadeColors.ink3(scheme))
+            Spacer()
+            DatePicker(
+                "", selection: Binding(get: { vm.date }, set: { vm.date = $0 }),
+                in: ...Date(), displayedComponents: [.date]
+            )
+            .labelsHidden()
+            .tint(WadeColors.primary(scheme))
+        }
+        .padding(.horizontal, 14).padding(.vertical, 10)
+        .background(WadeColors.card2(scheme), in: RoundedRectangle(cornerRadius: WadeRadius.segment))
     }
 
     private func typeToggle(_ vm: QuickAddViewModel) -> some View {

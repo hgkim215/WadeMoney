@@ -106,7 +106,7 @@ struct HeroBudgetCard: View {
                 }
                 if let remain = display.remainText, let budget = display.budgetText {
                     ProgressView(value: min(1, display.consumedFraction ?? 0))
-                        .tint(WadeColors.primary(scheme))
+                        .tint(WadeColors.budgetPace(scheme, fraction: display.consumedFraction ?? 0))
                     HStack {
                         Text("예산 \(budget)원").font(WadeFont.pretendard(12)).foregroundStyle(WadeColors.ink3(scheme))
                         Spacer()
@@ -123,18 +123,20 @@ private struct BudgetProgressRing: View {
     let fraction: Double
     let percentText: String
 
+    private var paceColor: Color { WadeColors.budgetPace(scheme, fraction: fraction) }
+
     var body: some View {
         ZStack {
             Circle()
                 .trim(from: 0, to: min(1, fraction))
-                .stroke(WadeColors.primary(scheme), style: StrokeStyle(lineWidth: 12, lineCap: .round))
+                .stroke(paceColor, style: StrokeStyle(lineWidth: 12, lineCap: .round))
                 .rotationEffect(.degrees(-90))
                 .background(Circle().stroke(WadeColors.track(scheme), lineWidth: 12))
                 .frame(width: 104, height: 104)
             VStack(spacing: 1) {
                 Text(percentText)
                     .font(WadeFont.pretendard(23, weight: .heavy))
-                    .foregroundStyle(WadeColors.primary(scheme))
+                    .foregroundStyle(paceColor)
                 Text("소진").font(WadeFont.pretendard(10.5, weight: .semibold))
                     .foregroundStyle(WadeColors.ink3(scheme))
             }
@@ -232,7 +234,7 @@ struct DonutCard: View {
                     emptyState
                 } else {
                     HStack(spacing: 28) {
-                        DonutRing(legend: legend, centerTotal: total, outerSize: ringSize, lineWidth: ringLineWidth)
+                        DonutRing(legend: legend, outerSize: ringSize, lineWidth: ringLineWidth)
                             .frame(width: ringSize, height: ringSize)
                         VStack(alignment: .leading, spacing: 10) {
                             ForEach(legend) { item in
@@ -282,10 +284,12 @@ struct DonutCard: View {
 
 struct DonutRing: View {
     let legend: [DashboardViewModel.DonutLegendItem]
-    let centerTotal: String
     let outerSize: CGFloat
     let lineWidth: CGFloat
     @Environment(\.colorScheme) private var scheme
+
+    /// legend는 Donut.slices()가 이미 지출액 내림차순으로 정렬해 준다 — 첫 항목이 곧 최다 지출 카테고리.
+    private var top: DashboardViewModel.DonutLegendItem? { legend.first }
 
     private var arcs: [(start: Double, end: Double, color: Color)] {
         var result: [(Double, Double, Color)] = []
@@ -310,9 +314,14 @@ struct DonutRing: View {
                     .rotationEffect(.degrees(-90))
                     .frame(width: pathSize, height: pathSize)
             }
-            VStack(spacing: 1) {
-                Text("총지출").font(WadeFont.pretendard(10.5, weight: .semibold)).foregroundStyle(WadeColors.ink3(scheme))
-                Text(centerTotal).font(WadeFont.pretendard(16, weight: .heavy)).foregroundStyle(WadeColors.ink(scheme))
+            if let top {
+                VStack(spacing: 1) {
+                    Text("최다 지출").font(WadeFont.pretendard(10.5, weight: .semibold)).foregroundStyle(WadeColors.ink3(scheme))
+                    Text(top.name).font(WadeFont.pretendard(15, weight: .heavy)).foregroundStyle(WadeColors.ink(scheme))
+                        .lineLimit(1).minimumScaleFactor(0.7)
+                    Text(top.percentText).font(WadeFont.pretendard(13, weight: .heavy)).foregroundStyle(WadeColors.ink2(scheme))
+                }
+                .padding(.horizontal, 8)
             }
         }
         .frame(width: outerSize, height: outerSize)

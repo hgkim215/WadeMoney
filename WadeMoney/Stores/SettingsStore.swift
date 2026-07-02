@@ -79,4 +79,14 @@ final class SettingsStore {
         model.aiEnabled = enabled
         try context.save()
     }
+
+    func appearance() throws -> AppAppearance {
+        AppAppearance(rawValue: try settingsModel().appearanceRaw) ?? .system
+    }
+
+    func setAppearance(_ appearance: AppAppearance) throws {
+        let model = try settingsModel()
+        model.appearanceRaw = appearance.rawValue
+        try context.save()
+    }
 }

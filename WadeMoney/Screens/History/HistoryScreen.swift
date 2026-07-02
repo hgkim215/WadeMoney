@@ -8,6 +8,7 @@ struct HistoryScreen: View {
     @State private var viewModel: HistoryViewModel?
     @State private var repository: LedgerRepository?
     @State private var editingRecord: TransactionRecord?
+    @State private var pendingDeleteID: UUID?
     let refreshToken: Int
 
     var body: some View {
@@ -52,6 +53,17 @@ struct HistoryScreen: View {
         .sheet(item: $editingRecord) { rec in
             QuickAddSheet(onSaved: { viewModel?.load() }, editing: rec)
         }
+        .confirmationDialog(
+            "이 내역을 삭제할까요?",
+            isPresented: Binding(get: { pendingDeleteID != nil }, set: { if !$0 { pendingDeleteID = nil } }),
+            titleVisibility: .visible
+        ) {
+            Button("삭제", role: .destructive) {
+                if let id = pendingDeleteID { try? repository?.deleteTransaction(id: id); viewModel?.load() }
+                pendingDeleteID = nil
+            }
+            Button("취소", role: .cancel) { pendingDeleteID = nil }
+        }
         .onChange(of: refreshToken) { viewModel?.load() }
         .onAppear {
             if viewModel == nil {
@@ -82,6 +94,14 @@ struct HistoryScreen: View {
                 ForEach(group.rows) { row in
                     Button { editingRecord = try? recordFor(row.id) } label: { rowView(row) }
                         .buttonStyle(.plain)
+                        .contextMenu {
+                            Button { editingRecord = try? recordFor(row.id) } label: {
+                                Label("수정", systemImage: "pencil")
+                            }
+                            Button(role: .destructive) { pendingDeleteID = row.id } label: {
+                                Label("삭제", systemImage: "trash")
+                            }
+                        }
                     if row.id != group.rows.last?.id {
                         Divider().overlay(WadeColors.line(scheme)).padding(.leading, 16)
                     }

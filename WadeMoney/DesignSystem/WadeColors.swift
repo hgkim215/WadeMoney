@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 enum WadeColors {
     private static func pick(_ scheme: ColorScheme, light: String, dark: String) -> Color {
@@ -38,4 +39,31 @@ enum WadeColors {
     }
     /// primary/good 등 채워진 배경 위에 올라가는 텍스트·아이콘 색(라이트/다크 공통 흰색).
     static func onPrimary(_ s: ColorScheme) -> Color { .white }
+
+    /// 예산 소진율에 따른 경고 색. 70%까지는 기본 primary(초록), 70~100%는 primary→bad(빨강)로
+    /// 점진 보간, 100% 이상은 완전한 bad. "다가갈수록 점차 빨개지는" 효과를 위한 것.
+    static func budgetPace(_ s: ColorScheme, fraction: Double) -> Color {
+        let warnStart = 0.7
+        guard fraction > warnStart else { return primary(s) }
+        let t = min((fraction - warnStart) / (1 - warnStart), 1)
+        return lerp(primary(s), bad(s), t)
+    }
+
+    private static func lerp(_ from: Color, _ to: Color, _ t: Double) -> Color {
+        let a = UIColor(from).rgba
+        let b = UIColor(to).rgba
+        return Color(
+            red: a.r + (b.r - a.r) * t,
+            green: a.g + (b.g - a.g) * t,
+            blue: a.b + (b.b - a.b) * t
+        )
+    }
+}
+
+private extension UIColor {
+    var rgba: (r: Double, g: Double, b: Double) {
+        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+        getRed(&r, green: &g, blue: &b, alpha: &a)
+        return (Double(r), Double(g), Double(b))
+    }
 }

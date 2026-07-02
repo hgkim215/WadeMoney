@@ -174,12 +174,15 @@ final class LedgerRepository {
         let total = Aggregator.totalExpense(txns, in: period)
 
         let book = try settingsStore.budgetBook()
-        let budget: Decimal?
+        let rawBudget: Decimal?
         switch kind {
-        case .day:   budget = book.dailyAmount(on: period.start, calc: calc)
-        case .month: budget = book.monthlyAmount(on: period.start, calc: calc)
-        case .year:  budget = book.yearAmount(on: period.start, calc: calc)
+        case .day:   rawBudget = book.dailyAmount(on: period.start, calc: calc)
+        case .month: rawBudget = book.monthlyAmount(on: period.start, calc: calc)
+        case .year:  rawBudget = book.yearAmount(on: period.start, calc: calc)
         }
+        // 0원은 "예산을 명시적으로 설정하지 않음"을 뜻한다(BudgetSheet의 "예산 설정 안 함") —
+        // 스냅샷 없음과 동일하게 취급해 화면에서 "예산 미설정"으로 보이게 한다.
+        let budget = rawBudget.flatMap { $0 > 0 ? $0 : nil }
 
         let remaining = budget.map { $0 - total }
         let consumed: Double? = budget.flatMap { b in

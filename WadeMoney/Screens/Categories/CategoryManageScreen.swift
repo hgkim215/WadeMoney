@@ -15,6 +15,15 @@ struct CategoryManageScreen: View {
                     Section("사용 중") {
                         ForEach(vm.activeItems) { item in
                             Button { editingItem = item } label: { rowContent(item) }.buttonStyle(.plain)
+                                .swipeActions(edge: .trailing) {
+                                    // 실수로 만들어 거래가 하나도 없는 카테고리만 즉시 삭제를 노출한다.
+                                    // 거래 기록이 있으면(canDelete == false) 기존처럼 편집 시트의 "보관"만 가능.
+                                    if item.canDelete {
+                                        Button(role: .destructive) { vm.delete(id: item.id) } label: {
+                                            Label("삭제", systemImage: "trash")
+                                        }
+                                    }
+                                }
                         }
                         .onMove { vm.move(from: $0, to: $1) }
                     }
@@ -34,6 +43,10 @@ struct CategoryManageScreen: View {
                 .listStyle(.insetGrouped)
                 .scrollContentBackground(.hidden)
                 .background(WadeColors.bg(scheme))
+                // 커스텀 하단 탭바가 이 화면 위에 별도 레이어로 떠 있어(RootTabView의 ZStack),
+                // List 콘텐츠가 자체적으로는 탭바 높이를 모른다 — 마지막 섹션이 가려 스크롤이 안 되는
+                // 것처럼 보였다. 탭바 높이만큼 스크롤 여백을 직접 확보한다.
+                .safeAreaInset(edge: .bottom) { Color.clear.frame(height: WadeSpacing.contentBottom) }
             } else {
                 // vm 로드 전에도 destination이 빈 뷰가 되지 않도록(비어 있으면 NavigationStack이
                 // onAppear를 발화하지 않아 영원히 로드되지 않는 문제 회피).

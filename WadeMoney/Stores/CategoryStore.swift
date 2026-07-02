@@ -43,6 +43,21 @@ final class CategoryStore {
         WidgetCenter.shared.reloadAllTimelines()
     }
 
+    /// 이 카테고리를 참조하는 거래가 전체 기간(이번 달뿐 아니라 과거 전체) 통틀어 하나도 없는지.
+    /// 참으로 나올 때만 하드 삭제를 허용해 과거 통계 무결성을 지킨다.
+    func isUnused(_ id: UUID) throws -> Bool {
+        try context.fetchCount(FetchDescriptor<TransactionModel>(predicate: #Predicate { $0.category?.id == id })) == 0
+    }
+
+    /// 실수로 만든, 한 번도 쓰이지 않은 카테고리를 즉시 삭제한다(보관 없이).
+    /// 거래 기록이 있는 카테고리는 archive(_:)만 허용 — 과거 도넛·통계가 카테고리를 잃지 않도록.
+    func delete(id: UUID) throws {
+        guard try isUnused(id), let m = try model(id) else { return }
+        context.delete(m)
+        try context.save()
+        WidgetCenter.shared.reloadAllTimelines()
+    }
+
     func restore(id: UUID) throws {
         guard let m = try model(id) else { return }
         m.isArchived = false

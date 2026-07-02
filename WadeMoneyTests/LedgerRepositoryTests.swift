@@ -67,4 +67,15 @@ struct LedgerRepositoryTests {
         #expect(s.pace != nil)
         _ = container
     }
+
+    @Test func explicitZeroBudgetShowsAsUnset() throws {
+        // BudgetSheet의 "예산 설정 안 함"은 0원으로 저장한다 — 스냅샷 없음과 동일하게
+        // "예산 미설정"으로 보여야 한다(0원 예산으로 노출되면 안 됨).
+        let (repo, settings, container) = try freshRepo()
+        try settings.setMonthlyBudget(0, for: YearMonth(year: 2026, month: 7))
+        let s = try repo.dashboardSummary(kind: .month, offset: 0, now: date(2026, 7, 15), calendar: utc)
+        #expect(s.budget == nil)
+        #expect(s.remaining == nil)
+        _ = container
+    }
 }

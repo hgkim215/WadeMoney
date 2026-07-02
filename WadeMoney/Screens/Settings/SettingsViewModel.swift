@@ -12,10 +12,13 @@ final class SettingsViewModel {
 
     private(set) var budget: Decimal = 0
     private(set) var budgetText: String = "0"
+    /// 0원은 "설정 안 함"을 뜻한다 — LedgerRepository의 예산 표시 규칙과 동일.
+    var budgetRowText: String { budget > 0 ? "₩\(budgetText)" : "설정 안 함" }
     private(set) var monthStartDay: Int = 1
     private(set) var monthStartDayText: String = "매월 1일"
     private(set) var aiEnabled: Bool = true
     private(set) var categoryCountText: String = "0개"
+    private(set) var appearance: AppAppearance = .system
 
     init(settingsStore: SettingsStore, categoryStore: CategoryStore, now: Date, calendar: Calendar) {
         self.settingsStore = settingsStore
@@ -39,6 +42,12 @@ final class SettingsViewModel {
         budgetText = Won.string(amount)
         let count = (try? categoryStore.active().count) ?? 0
         categoryCountText = "\(count)개"
+        appearance = (try? settingsStore.appearance()) ?? .system
+    }
+
+    func setAppearance(_ appearance: AppAppearance) {
+        try? settingsStore.setAppearance(appearance)
+        load()
     }
 
     func setBudget(_ amount: Decimal) {

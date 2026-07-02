@@ -5,6 +5,7 @@ import WadeMoneyCore
 struct SettingsScreen: View {
     @Environment(\.colorScheme) private var scheme
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.openURL) private var openURL
     @State private var viewModel: SettingsViewModel?
     @State private var showBudget = false
     @State private var showMonthStartDay = false
@@ -24,7 +25,7 @@ struct SettingsScreen: View {
                     if let vm = viewModel {
                         section("예산") {
                             row(icon: "account_balance_wallet", tint: WadeColors.primary(scheme), label: "이번 달 예산",
-                                trailing: "₩\(vm.budgetText)") { showBudget = true }
+                                trailing: vm.budgetRowText) { showBudget = true }
                             row(icon: "event", tint: WadeColors.ink2(scheme), label: "월 시작일", trailing: vm.monthStartDayText) { showMonthStartDay = true }
                         }
                         section("카테고리 · AI") {
@@ -32,10 +33,21 @@ struct SettingsScreen: View {
                                 trailing: vm.categoryCountText) { showCategories = true }
                             aiToggleRow(vm)
                         }
+                        section("화면") {
+                            appearanceRow(vm)
+                        }
                         section("동기화 · 데이터") {
                             row(icon: "cloud_done", tint: WadeColors.good(scheme), label: "iCloud 동기화",
                                 subtitle: "iCloud에 안전하게 보관돼요", subtitleColor: WadeColors.good(scheme), trailing: nil, action: nil)
                             row(icon: "ios_share", tint: WadeColors.ink2(scheme), label: "CSV 내보내기", trailing: nil) { exportCSV() }
+                        }
+                        section("정보") {
+                            row(icon: "description", tint: WadeColors.ink2(scheme), label: "이용약관", trailing: nil) {
+                                openURL(WadeMoneyLegal.termsOfService)
+                            }
+                            row(icon: "privacy_tip", tint: WadeColors.ink2(scheme), label: "개인정보처리방침", trailing: nil) {
+                                openURL(WadeMoneyLegal.privacyPolicy)
+                            }
                         }
                         Text("WadeMoney v\(Self.appVersion) · 데이터는 내 기기와 iCloud에만 보관돼요")
                             .font(WadeFont.pretendard(11.5)).foregroundStyle(WadeColors.ink3(scheme))
@@ -119,6 +131,23 @@ struct SettingsScreen: View {
         } else {
             content
         }
+    }
+
+    private func appearanceRow(_ vm: SettingsViewModel) -> some View {
+        HStack(spacing: 13) {
+            Icon("contrast", size: 20).foregroundStyle(WadeColors.ink2(scheme)).frame(width: 36, height: 36)
+                .background(WadeColors.ink2(scheme).opacity(0.15), in: RoundedRectangle(cornerRadius: 10))
+            Text("화면 모드").font(WadeFont.pretendard(15, weight: .semibold)).foregroundStyle(WadeColors.ink(scheme))
+            Spacer()
+            Picker("화면 모드", selection: Binding(get: { vm.appearance }, set: { vm.setAppearance($0) })) {
+                ForEach(AppAppearance.allCases) { option in
+                    Text(option.label).tag(option)
+                }
+            }
+            .pickerStyle(.segmented)
+            .frame(width: 180)
+        }
+        .padding(.horizontal, 16).padding(.vertical, 12)
     }
 
     private func aiToggleRow(_ vm: SettingsViewModel) -> some View {

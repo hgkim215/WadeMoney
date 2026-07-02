@@ -11,6 +11,8 @@ final class CategoryManageViewModel {
         let iconName: String
         let colorHex: String
         let usageText: String
+        /// 전체 기간 통틀어 거래가 하나도 없어 즉시(하드) 삭제가 가능한지.
+        let canDelete: Bool
     }
 
     private let categoryStore: CategoryStore
@@ -36,11 +38,14 @@ final class CategoryManageViewModel {
         let totals = Dictionary(grouping: txns.filter { $0.type == .expense && $0.date >= month.start && $0.date < month.end },
                                 by: { $0.categoryID })
             .mapValues { $0.reduce(Decimal(0)) { $0 + $1.amount } }
+        // 삭제 가능 여부는 이번 달이 아니라 전체 기간 기준이어야 한다(과거 거래가 있으면 삭제 불가).
+        let everUsedIDs = Set(txns.compactMap(\.categoryID))
 
         func item(_ ref: CategoryRef) -> Item {
             let used = totals[ref.id] ?? 0
             let usage = used > 0 ? "이번 달 \(Won.string(used))원" : "이번 달 사용 없음"
-            return Item(id: ref.id, name: ref.name, iconName: ref.iconName, colorHex: ref.colorHex, usageText: usage)
+            return Item(id: ref.id, name: ref.name, iconName: ref.iconName, colorHex: ref.colorHex,
+                       usageText: usage, canDelete: !everUsedIDs.contains(ref.id))
         }
         activeItems = ((try? categoryStore.active()) ?? []).map(item)
         archivedItems = ((try? categoryStore.archived()) ?? []).map(item)
@@ -54,6 +59,7 @@ final class CategoryManageViewModel {
     }
     func archive(id: UUID) { try? categoryStore.archive(id: id); load() }
     func restore(id: UUID) { try? categoryStore.restore(id: id); load() }
+    func delete(id: UUID) { try? categoryStore.delete(id: id); load() }
 
     func move(from source: IndexSet, to destination: Int) {
         var ids = activeItems.map(\.id)
