@@ -22,12 +22,38 @@ targets:
       - WadeMoney
     dependencies:
       - package: WadeMoneyCore
+      - target: WadeMoneyWidgets
+        embed: true
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.kimhyeongi.WadeMoney
         CODE_SIGN_ENTITLEMENTS: WadeMoney/WadeMoney.entitlements
         GENERATE_INFOPLIST_FILE: "NO"
         INFOPLIST_FILE: WadeMoney/Info.plist
+        TARGETED_DEVICE_FAMILY: "1"
+  WadeMoneyWidgets:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: WadeMoney/Models
+      - path: WadeMoney/Mapping
+      - path: WadeMoney/Stores
+      - path: WadeMoney/Persistence
+      - path: WadeMoney/Formatting
+      - path: WadeMoney/DesignSystem
+      - path: WadeMoney/Widgets
+      - path: WadeMoney/Constants.swift
+      - path: WadeMoney/DeepLink.swift
+      - path: WadeMoney/Resources/Fonts
+      - path: WadeMoneyWidgetsExtension
+    dependencies:
+      - package: WadeMoneyCore
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.kimhyeongi.WadeMoney.Widgets
+        CODE_SIGN_ENTITLEMENTS: WadeMoneyWidgetsExtension/WadeMoneyWidgets.entitlements
+        GENERATE_INFOPLIST_FILE: "NO"
+        INFOPLIST_FILE: WadeMoneyWidgetsExtension/Info.plist
         TARGETED_DEVICE_FAMILY: "1"
   WadeMoneyTests:
     type: bundle.unit-test
@@ -46,6 +72,7 @@ schemes:
     build:
       targets:
         WadeMoney: all
+        WadeMoneyWidgets: all
         WadeMoneyTests: [test]
     test:
       targets:
