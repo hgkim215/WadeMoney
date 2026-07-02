@@ -12,7 +12,7 @@ struct RootTabView: View {
                 switch selection {
                 case 0: DashboardScreen(refreshToken: dashboardRefreshToken)
                 case 1: HistoryScreen(refreshToken: dashboardRefreshToken)
-                case 4: PlaceholderScreen(title: "설정")
+                case 4: SettingsScreen()
                 default: DashboardScreen(refreshToken: dashboardRefreshToken)
                 }
             }

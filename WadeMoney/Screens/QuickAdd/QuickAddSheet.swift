@@ -10,8 +10,6 @@ struct QuickAddSheet: View {
     let onSaved: () -> Void
     var editing: TransactionRecord? = nil
 
-    private let keys = ["1","2","3","4","5","6","7","8","9","00","0","←"]
-
     var body: some View {
         Group {
             if let vm { content(vm) }
@@ -60,7 +58,7 @@ struct QuickAddSheet: View {
                 .padding(13)
                 .background(WadeColors.card2(scheme), in: RoundedRectangle(cornerRadius: WadeRadius.segment))
 
-            keypad(vm)
+            AmountKeypad(onKey: { vm.tapKey($0) }, onBackspace: { vm.backspace() })
 
             Button {
                 do {
@@ -115,23 +113,6 @@ struct QuickAddSheet: View {
                                 in: RoundedRectangle(cornerRadius: WadeRadius.control))
                     .overlay(RoundedRectangle(cornerRadius: WadeRadius.control)
                         .stroke(sel ? WadeColors.primary(scheme) : .clear, lineWidth: 2))
-                }.buttonStyle(.plain)
-            }
-        }
-    }
-
-    private func keypad(_ vm: QuickAddViewModel) -> some View {
-        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 9), count: 3), spacing: 9) {
-            ForEach(keys, id: \.self) { key in
-                Button {
-                    if key == "←" { vm.backspace() } else { vm.tapKey(key) }
-                } label: {
-                    Group {
-                        if key == "←" { Icon("backspace", size: 26).foregroundStyle(WadeColors.ink2(scheme)) }
-                        else { Text(key).font(WadeFont.pretendard(24, weight: .bold)).foregroundStyle(WadeColors.ink(scheme)) }
-                    }
-                    .frame(maxWidth: .infinity).frame(height: 56)
-                    .background(WadeColors.card2(scheme), in: RoundedRectangle(cornerRadius: WadeRadius.control))
                 }.buttonStyle(.plain)
             }
         }
