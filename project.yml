@@ -14,6 +14,8 @@ settings:
     SWIFT_VERSION: "6.0"
     GENERATE_INFOPLIST_FILE: "YES"
     SWIFT_EMIT_LOC_STRINGS: "YES"
+    DEVELOPMENT_TEAM: YSCZ6Z822R
+    CODE_SIGN_STYLE: Automatic
 targets:
   WadeMoney:
     type: application
