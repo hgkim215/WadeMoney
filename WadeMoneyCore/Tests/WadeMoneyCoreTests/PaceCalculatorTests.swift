@@ -44,4 +44,53 @@ struct PaceCalculatorTests {
         #expect(r.currentCumulative == 31_000)
         #expect(r.priorCumulative == 28_000)   // 2월 전체
     }
+
+    @Test func categoryPaceComparesEachCategorySamePoint() {
+        let cafe = UUID()
+        let txns = [
+            // 식비: 6월 1~15일 10만, 7월 1~15일 12만 (증가)
+            TransactionRecord(amount: 100_000, type: .expense, categoryID: food, date: TS.date(2026, 6, 5)),
+            TransactionRecord(amount: 120_000, type: .expense, categoryID: food, date: TS.date(2026, 7, 10)),
+            // 카페: 6월 1~15일 4만, 7월 1~15일 1만 (감소)
+            TransactionRecord(amount: 40_000, type: .expense, categoryID: cafe, date: TS.date(2026, 6, 6)),
+            TransactionRecord(amount: 10_000, type: .expense, categoryID: cafe, date: TS.date(2026, 7, 6)),
+        ]
+        let items = pace.categoryPace(kind: .month, containing: TS.date(2026, 7, 1), asOf: TS.date(2026, 7, 15, 12), txns: txns)
+
+        if let foodItem = items.first(where: { $0.categoryID == food }) {
+            #expect(foodItem.currentCumulative == 120_000)
+            #expect(foodItem.priorCumulative == 100_000)
+            #expect(foodItem.deltaRatio == Decimal(20_000) / Decimal(100_000))
+        } else {
+            #expect(Bool(false), "Food item not found")
+        }
+
+        if let cafeItem = items.first(where: { $0.categoryID == cafe }) {
+            #expect(cafeItem.currentCumulative == 10_000)
+            #expect(cafeItem.priorCumulative == 40_000)
+            #expect(cafeItem.deltaRatio == Decimal(-30_000) / Decimal(40_000))
+        } else {
+            #expect(Bool(false), "Cafe item not found")
+        }
+
+        // currentCumulative 내림차순
+        #expect(items.first?.categoryID == food)
+    }
+
+    @Test func categoryPaceNilRatioWhenNoPriorSpending() {
+        let txns = [
+            TransactionRecord(amount: 15_000, type: .expense, categoryID: food, date: TS.date(2026, 7, 3)),
+        ]
+        let items = pace.categoryPace(kind: .month, containing: TS.date(2026, 7, 1), asOf: TS.date(2026, 7, 15), txns: txns)
+        #expect(items.first?.deltaRatio == nil)
+    }
+
+    @Test func categoryPaceExcludesCategoriesWithNoActivity() {
+        let cafe = UUID()
+        let txns = [
+            TransactionRecord(amount: 15_000, type: .expense, categoryID: food, date: TS.date(2026, 7, 3)),
+        ]
+        let items = pace.categoryPace(kind: .month, containing: TS.date(2026, 7, 1), asOf: TS.date(2026, 7, 15), txns: txns)
+        #expect(!items.contains { $0.categoryID == cafe })
+    }
 }
