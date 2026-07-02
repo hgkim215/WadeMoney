@@ -12,6 +12,10 @@ struct SettingsScreen: View {
     private struct ShareItem: Identifiable { let id = UUID(); let url: URL }
     @State private var shareItem: ShareItem?
 
+    /// 빌드 설정(MARKETING_VERSION)에서 주입되는 실제 앱 버전 — 하드코딩 금지.
+    static let appVersion =
+        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "?"
+
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -33,7 +37,7 @@ struct SettingsScreen: View {
                                 subtitle: "iCloud에 안전하게 보관돼요", subtitleColor: WadeColors.good(scheme), trailing: nil, action: nil)
                             row(icon: "ios_share", tint: WadeColors.ink2(scheme), label: "CSV 내보내기", trailing: nil) { exportCSV() }
                         }
-                        Text("WadeMoney v1.0 · 데이터는 이 기기에 있어요")
+                        Text("WadeMoney v\(Self.appVersion) · 데이터는 이 기기에 있어요")
                             .font(WadeFont.pretendard(11.5)).foregroundStyle(WadeColors.ink3(scheme))
                             .frame(maxWidth: .infinity)
                     }
