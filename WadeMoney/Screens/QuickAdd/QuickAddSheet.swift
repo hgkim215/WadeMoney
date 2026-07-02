@@ -8,15 +8,14 @@ struct QuickAddSheet: View {
     @Environment(\.dismiss) private var dismiss
     @State private var vm: QuickAddViewModel?
     let onSaved: () -> Void
-
-    private let keys = ["1","2","3","4","5","6","7","8","9","00","0","←"]
+    var editing: TransactionRecord? = nil
 
     var body: some View {
         Group {
             if let vm { content(vm) }
         }
         .onAppear {
-            if vm == nil { vm = QuickAddViewModel(repository: LedgerRepository(context: modelContext)) }
+            if vm == nil { vm = QuickAddViewModel(repository: LedgerRepository(context: modelContext), editing: editing) }
         }
         .presentationDetents([.large])
         .background(WadeColors.sheet(scheme))
@@ -25,8 +24,20 @@ struct QuickAddSheet: View {
     @ViewBuilder private func content(_ vm: QuickAddViewModel) -> some View {
         VStack(spacing: 14) {
             HStack {
-                Text(vm.type == .income ? "새 수입" : "새 지출").font(WadeFont.pretendard(20, weight: .heavy))
+                Text(vm.isEditing
+                     ? (vm.type == .income ? "수입 수정" : "지출 수정")
+                     : (vm.type == .income ? "새 수입" : "새 지출"))
+                    .font(WadeFont.pretendard(20, weight: .heavy))
                 Spacer()
+                if vm.isEditing {
+                    Button {
+                        try? vm.delete()
+                        onSaved()
+                        dismiss()
+                    } label: {
+                        Icon("delete", size: 20).foregroundStyle(WadeColors.bad(scheme))
+                    }.buttonStyle(.plain).padding(.trailing, 10)
+                }
                 typeToggle(vm)
             }
             .padding(.top, 16)
@@ -47,7 +58,7 @@ struct QuickAddSheet: View {
                 .padding(13)
                 .background(WadeColors.card2(scheme), in: RoundedRectangle(cornerRadius: WadeRadius.segment))
 
-            keypad(vm)
+            AmountKeypad(onKey: { vm.tapKey($0) }, onBackspace: { vm.backspace() })
 
             Button {
                 do {
@@ -102,23 +113,6 @@ struct QuickAddSheet: View {
                                 in: RoundedRectangle(cornerRadius: WadeRadius.control))
                     .overlay(RoundedRectangle(cornerRadius: WadeRadius.control)
                         .stroke(sel ? WadeColors.primary(scheme) : .clear, lineWidth: 2))
-                }.buttonStyle(.plain)
-            }
-        }
-    }
-
-    private func keypad(_ vm: QuickAddViewModel) -> some View {
-        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 9), count: 3), spacing: 9) {
-            ForEach(keys, id: \.self) { key in
-                Button {
-                    if key == "←" { vm.backspace() } else { vm.tapKey(key) }
-                } label: {
-                    Group {
-                        if key == "←" { Icon("backspace", size: 26).foregroundStyle(WadeColors.ink2(scheme)) }
-                        else { Text(key).font(WadeFont.pretendard(24, weight: .bold)).foregroundStyle(WadeColors.ink(scheme)) }
-                    }
-                    .frame(maxWidth: .infinity).frame(height: 56)
-                    .background(WadeColors.card2(scheme), in: RoundedRectangle(cornerRadius: WadeRadius.control))
                 }.buttonStyle(.plain)
             }
         }
