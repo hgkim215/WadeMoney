@@ -32,7 +32,8 @@ struct CategoryManageScreen: View {
                     }
                 }
                 .listStyle(.insetGrouped)
-                .environment(\.editMode, .constant(.active))
+                .scrollContentBackground(.hidden)
+                .background(WadeColors.bg(scheme))
             } else {
                 // vm 로드 전에도 destination이 빈 뷰가 되지 않도록(비어 있으면 NavigationStack이
                 // onAppear를 발화하지 않아 영원히 로드되지 않는 문제 회피).
@@ -40,7 +41,10 @@ struct CategoryManageScreen: View {
             }
         }
         .navigationTitle("카테고리 관리")
-        .toolbar { ToolbarItem(placement: .topBarTrailing) { Button { showNew = true } label: { Icon("add", size: 22) } } }
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) { EditButton() }
+            ToolbarItem(placement: .topBarTrailing) { Button { showNew = true } label: { Icon("add", size: 22) } }
+        }
         .sheet(item: $editingItem) { item in
             CategoryEditSheet(editing: item,
                               onSave: { n, i, c in viewModel?.update(id: item.id, name: n, iconName: i, colorHex: c) },

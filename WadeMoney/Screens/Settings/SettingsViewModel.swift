@@ -10,6 +10,7 @@ final class SettingsViewModel {
     private let now: Date
     private let calendar: Calendar
 
+    private(set) var budget: Decimal = 0
     private(set) var budgetText: String = "0"
     private(set) var monthStartDayText: String = "매월 1일"
     private(set) var aiEnabled: Bool = true
@@ -32,6 +33,7 @@ final class SettingsViewModel {
         monthStartDayText = "매월 \(settings.monthStartDay)일"
         let book = try? settingsStore.budgetBook()
         let amount = book?.amount(for: currentYearMonth) ?? 0
+        budget = amount
         budgetText = Won.string(amount)
         let count = (try? categoryStore.active().count) ?? 0
         categoryCountText = "\(count)개"

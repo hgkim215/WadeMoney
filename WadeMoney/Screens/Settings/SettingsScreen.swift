@@ -8,7 +8,8 @@ struct SettingsScreen: View {
     @State private var viewModel: SettingsViewModel?
     @State private var showBudget = false
     @State private var showCategories = false
-    @State private var budgetValue: Decimal = 0
+    private struct ShareItem: Identifiable { let id = UUID(); let url: URL }
+    @State private var shareItem: ShareItem?
 
     var body: some View {
         NavigationStack {
@@ -43,24 +44,18 @@ struct SettingsScreen: View {
             .navigationDestination(isPresented: $showCategories) { CategoryManageScreen() }
         }
         .sheet(isPresented: $showBudget) {
-            BudgetSheet(current: budgetValue) { amount in viewModel?.setBudget(amount); viewModel?.load(); reloadBudgetValue() }
+            BudgetSheet(current: viewModel?.budget ?? 0) { amount in viewModel?.setBudget(amount) }
         }
+        .sheet(item: $shareItem) { item in ActivityView(url: item.url) }
         .onAppear {
             if viewModel == nil {
                 let ctx = modelContext
                 let vm = SettingsViewModel(settingsStore: SettingsStore(context: ctx),
                                            categoryStore: CategoryStore(context: ctx),
                                            now: Date(), calendar: .current)
-                vm.load(); viewModel = vm; reloadBudgetValue()
+                vm.load(); viewModel = vm
             }
         }
-    }
-
-    private func reloadBudgetValue() {
-        let ctx = modelContext
-        let cal = Calendar.current
-        let ym = YearMonth(year: cal.component(.year, from: Date()), month: cal.component(.month, from: Date()))
-        budgetValue = (try? SettingsStore(context: ctx).budgetBook().amount(for: ym)) ?? 0
     }
 
     private func exportCSV() {
@@ -69,9 +64,10 @@ struct SettingsScreen: View {
         let records = (try? repo.transactions(filter: .all)) ?? []
         let cats = (try? repo.allCategories(includeArchived: true)) ?? []
         let csv = CSVExporter.csv(records, categories: cats, calendar: .current)
-        // 데모: 파일로 쓰고 공유 시트는 후속. 여기선 콘솔·임시파일까지만.
         let url = FileManager.default.temporaryDirectory.appendingPathComponent("wademoney.csv")
-        try? csv.data(using: .utf8)?.write(to: url)
+        if (try? csv.data(using: .utf8)?.write(to: url)) != nil {
+            shareItem = ShareItem(url: url)
+        }
     }
 
     @ViewBuilder private func section(_ title: String, @ViewBuilder _ content: () -> some View) -> some View {
