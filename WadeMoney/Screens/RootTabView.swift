@@ -70,5 +70,6 @@ struct RootTabView: View {
                 .background(WadeColors.primary(scheme), in: RoundedRectangle(cornerRadius: WadeRadius.fab, style: .continuous))
                 .shadow(color: WadeColors.primaryglow(scheme), radius: 16, y: 6)
         }.buttonStyle(.plain).offset(y: -8).frame(width: 56)
+        .accessibilityIdentifier("addTransaction")
     }
 }
