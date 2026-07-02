@@ -43,3 +43,22 @@ struct WidgetDataBuilderTests {
         _ = container
     }
 }
+
+extension WidgetDataBuilderTests {
+    @Test func quickRecordChipsReturnsTopThreeActiveCategoriesBySortOrder() throws {
+        let (repo, _, container) = try makeRepo()
+        let chips = WidgetDataBuilder.quickRecordChips(repository: repo)
+        #expect(chips.count == 3)
+        #expect(chips.map(\.name) == ["식비", "카페", "교통"])   // 시드 순서(§6) 첫 3개
+        _ = container
+    }
+
+    @Test func quickRecordChipsExcludesArchivedCategories() throws {
+        let (repo, _, container) = try makeRepo()
+        let food = try catID(repo, "식비")
+        try CategoryStore(context: container.mainContext).archive(id: food)
+        let chips = WidgetDataBuilder.quickRecordChips(repository: repo)
+        #expect(!chips.contains { $0.name == "식비" })
+        _ = container
+    }
+}

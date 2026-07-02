@@ -4,6 +4,7 @@ struct RootTabView: View {
     @Environment(\.colorScheme) private var scheme
     @State private var selection = 0
     @State private var showAdd = false
+    @State private var quickAddCategoryID: UUID?
     @State private var dashboardRefreshToken = 0
 
     var body: some View {
@@ -19,8 +20,13 @@ struct RootTabView: View {
             tabBar
         }
         .ignoresSafeArea(.keyboard)
-        .sheet(isPresented: $showAdd) {
-            QuickAddSheet(onSaved: { dashboardRefreshToken += 1 })
+        .onOpenURL { url in
+            guard DeepLink.isQuickAdd(url) else { return }
+            quickAddCategoryID = DeepLink.categoryID(from: url)
+            showAdd = true
+        }
+        .sheet(isPresented: $showAdd, onDismiss: { quickAddCategoryID = nil }) {
+            QuickAddSheet(onSaved: { dashboardRefreshToken += 1 }, preselectedCategoryID: quickAddCategoryID)
         }
     }
 

@@ -9,13 +9,16 @@ struct QuickAddSheet: View {
     @State private var vm: QuickAddViewModel?
     let onSaved: () -> Void
     var editing: TransactionRecord? = nil
+    var preselectedCategoryID: UUID? = nil
 
     var body: some View {
         Group {
             if let vm { content(vm) }
         }
         .onAppear {
-            if vm == nil { vm = QuickAddViewModel(repository: LedgerRepository(context: modelContext), editing: editing) }
+            if vm == nil {
+                vm = QuickAddViewModel(repository: LedgerRepository(context: modelContext), editing: editing, preselectedCategoryID: preselectedCategoryID)
+            }
         }
         .presentationDetents([.large])
         .background(WadeColors.sheet(scheme))

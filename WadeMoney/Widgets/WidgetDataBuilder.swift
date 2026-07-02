@@ -26,3 +26,20 @@ enum WidgetDataBuilder {
         )
     }
 }
+
+extension WidgetDataBuilder {
+    struct ChipData: Identifiable {
+        let id: UUID
+        let name: String
+        let iconName: String
+        let colorHex: String
+    }
+
+    /// sortOrder 오름차순 활성 카테고리 상위 3개("직접" 칩은 위젯 뷰에서 별도 추가).
+    static func quickRecordChips(repository: LedgerRepository) -> [ChipData] {
+        let categories = (try? repository.allCategories(includeArchived: false)) ?? []
+        return categories.prefix(3).map {
+            ChipData(id: $0.id, name: $0.name, iconName: $0.iconName, colorHex: $0.colorHex)
+        }
+    }
+}

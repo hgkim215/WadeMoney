@@ -5,5 +5,6 @@ import SwiftUI
 struct WadeMoneyWidgetsBundle: WidgetBundle {
     var body: some Widget {
         SummaryWidget()
+        QuickRecordWidget()
     }
 }

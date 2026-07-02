@@ -28,6 +28,7 @@ final class QuickAddViewModel {
 
     init(
         repository: LedgerRepository, editing: TransactionRecord? = nil,
+        preselectedCategoryID: UUID? = nil,
         aiAvailability: AIAvailabilityChecking = SystemLanguageModelAvailability(),
         memoPolisher: MemoPolishing = FoundationModelsMemoPolisher()
     ) {
@@ -43,6 +44,7 @@ final class QuickAddViewModel {
             self.memo = editing.memo ?? ""
         } else {
             self.editingID = nil
+            self.selectedCategoryID = preselectedCategoryID
         }
     }
 
