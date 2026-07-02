@@ -1,10 +1,11 @@
 import SwiftUI
 import WadeMoneyCore
 
-private func card<Content: View>(_ scheme: ColorScheme, @ViewBuilder _ content: () -> Content) -> some View {
+private func card<Content: View>(_ scheme: ColorScheme, minHeight: CGFloat? = nil, @ViewBuilder _ content: () -> Content) -> some View {
     let sh = WadeShadow.card(scheme)
     return content()
         .padding(WadeSpacing.cardPadding)
+        .frame(maxWidth: .infinity, minHeight: minHeight, alignment: .center)
         .background(WadeColors.card(scheme))
         .clipShape(RoundedRectangle(cornerRadius: WadeRadius.card, style: .continuous))
         .shadow(color: sh.color, radius: sh.radius, y: sh.y)
@@ -24,14 +25,26 @@ struct PeriodSegment: View {
                         .foregroundStyle(kind == item.0 ? WadeColors.primary(scheme) : WadeColors.ink2(scheme))
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 9)
-                        .background(kind == item.0 ? WadeColors.card(scheme) : .clear,
-                                    in: RoundedRectangle(cornerRadius: WadeRadius.smallTile, style: .continuous))
+                        .background(
+                            kind == item.0 ? WadeColors.card(scheme) : .clear,
+                            in: RoundedRectangle(cornerRadius: WadeRadius.smallTile, style: .continuous)
+                        )
+                        .overlay {
+                            if kind == item.0 {
+                                RoundedRectangle(cornerRadius: WadeRadius.smallTile, style: .continuous)
+                                    .stroke(WadeColors.track(scheme), lineWidth: 1)
+                            }
+                        }
                 }
                 .buttonStyle(.plain)
             }
         }
         .padding(4)
         .background(WadeColors.card2(scheme), in: RoundedRectangle(cornerRadius: WadeRadius.segment, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: WadeRadius.segment, style: .continuous)
+                .stroke(WadeColors.track(scheme), lineWidth: 1)
+        )
     }
 }
 
@@ -40,36 +53,53 @@ struct HeroBudgetCard: View {
     let display: DashboardViewModel.DashboardDisplay
 
     var body: some View {
-        card(scheme) {
+        card(scheme, minHeight: WadeSpacing.dashboardBlockHeight) {
             VStack(alignment: .leading, spacing: 16) {
                 HStack(spacing: 18) {
-                    ZStack {
-                        Circle()
-                            .trim(from: 0, to: min(1, display.consumedFraction ?? 0))
-                            .stroke(WadeColors.primary(scheme), style: StrokeStyle(lineWidth: 12, lineCap: .round))
-                            .rotationEffect(.degrees(-90))
-                            .background(Circle().stroke(WadeColors.track(scheme), lineWidth: 12))
-                            .frame(width: 92, height: 92)
-                        VStack(spacing: 1) {
-                            Text(display.consumedPercentText ?? "—")
-                                .font(WadeFont.pretendard(23, weight: .heavy))
-                                .foregroundStyle(WadeColors.primary(scheme))
-                            Text("소진").font(WadeFont.pretendard(10.5, weight: .semibold))
-                                .foregroundStyle(WadeColors.ink3(scheme))
-                        }
+                    if let fraction = display.consumedFraction, let percentText = display.consumedPercentText {
+                        BudgetProgressRing(fraction: fraction, percentText: percentText)
+                    } else {
+                        BudgetUnsetBadge()
                     }
                     VStack(alignment: .leading, spacing: 6) {
                         Text(display.scopeText).font(WadeFont.pretendard(12.5, weight: .semibold))
                             .foregroundStyle(WadeColors.ink3(scheme))
-                        HStack(alignment: .firstTextBaseline, spacing: 2) {
-                            Text("₩").font(WadeFont.pretendard(13, weight: .bold)).foregroundStyle(WadeColors.ink2(scheme))
-                            Text(display.totalText).font(WadeFont.pretendard(30, weight: .heavy))
-                                .foregroundStyle(WadeColors.ink(scheme))
+                        if display.hasExpense {
+                            HStack(alignment: .firstTextBaseline, spacing: 2) {
+                                Text("₩").font(WadeFont.pretendard(13, weight: .bold)).foregroundStyle(WadeColors.ink2(scheme))
+                                Text(display.totalText).font(WadeFont.pretendard(30, weight: .heavy))
+                                    .foregroundStyle(WadeColors.ink(scheme))
+                            }
+                        } else {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("첫 소비를 기록해보세요")
+                                    .font(WadeFont.pretendard(19, weight: .heavy))
+                                    .foregroundStyle(WadeColors.ink(scheme))
+                                    .fixedSize(horizontal: false, vertical: true)
+                                Text("기록이 쌓이면 지출 흐름이 보여요")
+                                    .font(WadeFont.pretendard(11.5, weight: .semibold))
+                                    .foregroundStyle(WadeColors.ink3(scheme))
+                            }
                         }
                         if let pace = display.pace { PaceBadgeView(pace: pace) }
                         if let dayB = display.dayBudget {
                             Text("일예산 \(dayB.dayBudgetText)원 중 \(dayB.remainText)원 남음")
                                 .font(WadeFont.pretendard(11)).foregroundStyle(WadeColors.ink3(scheme))
+                        } else if display.budgetText == nil, display.hasExpense {
+                            Text("예산 미설정")
+                                .font(WadeFont.pretendard(11.5, weight: .bold))
+                                .foregroundStyle(WadeColors.ink3(scheme))
+                                .padding(.horizontal, 9)
+                                .padding(.vertical, 5)
+                                .background(WadeColors.card2(scheme), in: Capsule())
+                        }
+                        if display.budgetText == nil, !display.hasExpense {
+                            Text("예산 미설정")
+                                .font(WadeFont.pretendard(11.5, weight: .bold))
+                                .foregroundStyle(WadeColors.ink3(scheme))
+                                .padding(.horizontal, 9)
+                                .padding(.vertical, 5)
+                                .background(WadeColors.card2(scheme), in: Capsule())
                         }
                     }
                     Spacer(minLength: 0)
@@ -85,6 +115,51 @@ struct HeroBudgetCard: View {
                 }
             }
         }
+    }
+}
+
+private struct BudgetProgressRing: View {
+    @Environment(\.colorScheme) private var scheme
+    let fraction: Double
+    let percentText: String
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .trim(from: 0, to: min(1, fraction))
+                .stroke(WadeColors.primary(scheme), style: StrokeStyle(lineWidth: 12, lineCap: .round))
+                .rotationEffect(.degrees(-90))
+                .background(Circle().stroke(WadeColors.track(scheme), lineWidth: 12))
+                .frame(width: 104, height: 104)
+            VStack(spacing: 1) {
+                Text(percentText)
+                    .font(WadeFont.pretendard(23, weight: .heavy))
+                    .foregroundStyle(WadeColors.primary(scheme))
+                Text("소진").font(WadeFont.pretendard(10.5, weight: .semibold))
+                    .foregroundStyle(WadeColors.ink3(scheme))
+            }
+        }
+        .frame(width: 104, height: 104)
+    }
+}
+
+private struct BudgetUnsetBadge: View {
+    @Environment(\.colorScheme) private var scheme
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .fill(WadeColors.card2(scheme))
+                .overlay(Circle().stroke(WadeColors.track(scheme), lineWidth: 1))
+            VStack(spacing: 5) {
+                Icon("account_balance_wallet", size: 27)
+                    .foregroundStyle(WadeColors.primary(scheme))
+                Text("예산 없음")
+                    .font(WadeFont.pretendard(10.5, weight: .semibold))
+                    .foregroundStyle(WadeColors.ink3(scheme))
+            }
+        }
+        .frame(width: 104, height: 104)
     }
 }
 
@@ -144,18 +219,22 @@ struct InsightCard: View {
 struct DonutCard: View {
     @Environment(\.colorScheme) private var scheme
     let total: String
+    let hasExpense: Bool
     let legend: [DashboardViewModel.DonutLegendItem]
+    private let ringSize: CGFloat = 104
+    private let ringLineWidth: CGFloat = 18
+
     var body: some View {
-        card(scheme) {
+        card(scheme, minHeight: WadeSpacing.dashboardBlockHeight) {
             VStack(alignment: .leading, spacing: 16) {
                 Text("카테고리 비중").font(WadeFont.pretendard(15, weight: .heavy)).foregroundStyle(WadeColors.ink(scheme))
                 if legend.isEmpty {
                     emptyState
                 } else {
-                    HStack(spacing: 20) {
-                        DonutRing(legend: legend, centerTotal: total)
-                            .frame(width: 128, height: 128)
-                        VStack(alignment: .leading, spacing: 9) {
+                    HStack(spacing: 28) {
+                        DonutRing(legend: legend, centerTotal: total, outerSize: ringSize, lineWidth: ringLineWidth)
+                            .frame(width: ringSize, height: ringSize)
+                        VStack(alignment: .leading, spacing: 10) {
                             ForEach(legend) { item in
                                 HStack(spacing: 8) {
                                     RoundedRectangle(cornerRadius: 3).fill(Color(hex: item.colorHex)).frame(width: 10, height: 10)
@@ -173,15 +252,29 @@ struct DonutCard: View {
     }
 
     private var emptyState: some View {
-        HStack(spacing: 20) {
+        HStack(spacing: 28) {
             ZStack {
-                Circle().stroke(WadeColors.track(scheme), lineWidth: 22).frame(width: 128, height: 128)
-                VStack(spacing: 1) {
-                    Text("총지출").font(WadeFont.pretendard(10.5, weight: .semibold)).foregroundStyle(WadeColors.ink3(scheme))
-                    Text(total).font(WadeFont.pretendard(16, weight: .heavy)).foregroundStyle(WadeColors.ink(scheme))
+                Circle().fill(WadeColors.card2(scheme)).frame(width: ringSize, height: ringSize)
+                VStack(spacing: 4) {
+                    Icon("category", size: 25)
+                        .foregroundStyle(WadeColors.primary(scheme))
+                    if hasExpense {
+                        Text("총지출").font(WadeFont.pretendard(10.5, weight: .semibold)).foregroundStyle(WadeColors.ink3(scheme))
+                        Text(total).font(WadeFont.pretendard(16, weight: .heavy)).foregroundStyle(WadeColors.ink(scheme))
+                    }
                 }
             }
-            Text("아직 지출이 없어요").font(WadeFont.pretendard(13, weight: .semibold)).foregroundStyle(WadeColors.ink3(scheme))
+            VStack(alignment: .leading, spacing: 5) {
+                Text(hasExpense ? "아직 지출이 없어요" : "기록 후 비중이 보여요")
+                    .font(WadeFont.pretendard(14, weight: .heavy))
+                    .foregroundStyle(WadeColors.ink2(scheme))
+                if !hasExpense {
+                    Text("첫 소비를 남기면 카테고리별로 정리돼요")
+                        .font(WadeFont.pretendard(12, weight: .semibold))
+                        .foregroundStyle(WadeColors.ink3(scheme))
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
             Spacer(minLength: 0)
         }
     }
@@ -190,6 +283,8 @@ struct DonutCard: View {
 struct DonutRing: View {
     let legend: [DashboardViewModel.DonutLegendItem]
     let centerTotal: String
+    let outerSize: CGFloat
+    let lineWidth: CGFloat
     @Environment(\.colorScheme) private var scheme
 
     private var arcs: [(start: Double, end: Double, color: Color)] {
@@ -205,18 +300,22 @@ struct DonutRing: View {
     }
 
     var body: some View {
+        let pathSize = max(1, outerSize - lineWidth)
+
         ZStack {
             ForEach(Array(arcs.enumerated()), id: \.offset) { _, arc in
                 Circle()
                     .trim(from: arc.start, to: arc.end)
-                    .stroke(arc.color, lineWidth: 22)
+                    .stroke(arc.color, lineWidth: lineWidth)
                     .rotationEffect(.degrees(-90))
+                    .frame(width: pathSize, height: pathSize)
             }
             VStack(spacing: 1) {
                 Text("총지출").font(WadeFont.pretendard(10.5, weight: .semibold)).foregroundStyle(WadeColors.ink3(scheme))
                 Text(centerTotal).font(WadeFont.pretendard(16, weight: .heavy)).foregroundStyle(WadeColors.ink(scheme))
             }
         }
+        .frame(width: outerSize, height: outerSize)
     }
 }
 
@@ -224,23 +323,40 @@ struct TrendCard: View {
     @Environment(\.colorScheme) private var scheme
     let bars: [DashboardViewModel.TrendBar]
     var body: some View {
-        card(scheme) {
+        card(scheme, minHeight: WadeSpacing.dashboardBlockHeight) {
             VStack(alignment: .leading, spacing: 18) {
                 Text("지출 추세").font(WadeFont.pretendard(15, weight: .heavy)).foregroundStyle(WadeColors.ink(scheme))
-                HStack(alignment: .bottom, spacing: 5) {
-                    ForEach(bars) { bar in
-                        VStack(spacing: 7) {
-                            RoundedRectangle(cornerRadius: 5)
-                                .fill(bar.isCurrent ? WadeColors.primary(scheme) : WadeColors.barmuted(scheme))
-                                .frame(maxWidth: 20)
-                                .frame(height: max(6, bar.heightFraction * 100))
-                            Text(bar.label).font(WadeFont.pretendard(9.5, weight: bar.isCurrent ? .heavy : .semibold))
-                                .foregroundStyle(bar.isCurrent ? WadeColors.ink(scheme) : WadeColors.ink3(scheme))
+                if bars.contains(where: { $0.heightFraction > 0 }) {
+                    HStack(alignment: .bottom, spacing: 5) {
+                        ForEach(bars) { bar in
+                            VStack(spacing: 7) {
+                                Text(bar.isCurrent ? bar.valueText : "")
+                                    .font(WadeFont.pretendard(9.5, weight: .heavy))
+                                    .foregroundStyle(bar.isCurrent ? WadeColors.primary(scheme) : .clear)
+                                    .frame(height: 12)
+                                RoundedRectangle(cornerRadius: 5)
+                                    .fill(bar.isCurrent ? WadeColors.primary(scheme) : WadeColors.barmuted(scheme))
+                                    .frame(maxWidth: 20)
+                                    .frame(height: max(6, bar.heightFraction * 100))
+                                Text(bar.label).font(WadeFont.pretendard(9.5, weight: bar.isCurrent ? .heavy : .semibold))
+                                    .foregroundStyle(bar.isCurrent ? WadeColors.ink(scheme) : WadeColors.ink3(scheme))
+                            }
+                            .frame(maxWidth: .infinity)
                         }
-                        .frame(maxWidth: .infinity)
                     }
+                    .frame(height: 112, alignment: .bottom)
+                } else {
+                    VStack(spacing: 7) {
+                        Icon("bar_chart", size: 28)
+                            .foregroundStyle(WadeColors.primary(scheme))
+                        Text("아직 추세가 없어요")
+                            .font(WadeFont.pretendard(13, weight: .semibold))
+                            .foregroundStyle(WadeColors.ink3(scheme))
+                    }
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 112)
+                    .background(WadeColors.card2(scheme), in: RoundedRectangle(cornerRadius: WadeRadius.smallTile, style: .continuous))
                 }
-                .frame(height: 112, alignment: .bottom)
             }
         }
     }

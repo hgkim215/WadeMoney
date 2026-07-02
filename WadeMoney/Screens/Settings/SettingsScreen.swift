@@ -29,7 +29,8 @@ struct SettingsScreen: View {
                             aiToggleRow(vm)
                         }
                         section("동기화 · 데이터") {
-                            row(icon: "cloud_done", tint: WadeColors.good(scheme), label: "iCloud 동기화", trailing: nil, action: nil)
+                            row(icon: "cloud_done", tint: WadeColors.good(scheme), label: "iCloud 동기화",
+                                subtitle: "iCloud에 안전하게 보관돼요", subtitleColor: WadeColors.good(scheme), trailing: nil, action: nil)
                             row(icon: "ios_share", tint: WadeColors.ink2(scheme), label: "CSV 내보내기", trailing: nil) { exportCSV() }
                         }
                         Text("WadeMoney v1.0 · 데이터는 이 기기에 있어요")
@@ -79,21 +80,41 @@ struct SettingsScreen: View {
             Text(title).font(WadeFont.pretendard(12.5, weight: .bold)).foregroundStyle(WadeColors.ink3(scheme)).padding(.leading, 4)
             VStack(spacing: 0) { content() }
                 .background(WadeColors.card(scheme), in: RoundedRectangle(cornerRadius: WadeRadius.listCard, style: .continuous))
+                .shadow(color: WadeShadow.list(scheme).color, radius: WadeShadow.list(scheme).radius, y: WadeShadow.list(scheme).y)
         }
     }
 
-    private func row(icon: String, tint: Color, label: String, trailing: String?, action: (() -> Void)?) -> some View {
-        Button { action?() } label: {
-            HStack(spacing: 13) {
-                Icon(icon, size: 20).foregroundStyle(tint).frame(width: 36, height: 36)
-                    .background(tint.opacity(0.15), in: RoundedRectangle(cornerRadius: 10))
+    @ViewBuilder private func row(
+        icon: String,
+        tint: Color,
+        label: String,
+        subtitle: String? = nil,
+        subtitleColor: Color? = nil,
+        trailing: String?,
+        action: (() -> Void)?
+    ) -> some View {
+        let content = HStack(spacing: 13) {
+            Icon(icon, size: 20).foregroundStyle(tint).frame(width: 36, height: 36)
+                .background(tint.opacity(0.15), in: RoundedRectangle(cornerRadius: 10))
+            VStack(alignment: .leading, spacing: 2) {
                 Text(label).font(WadeFont.pretendard(15, weight: .semibold)).foregroundStyle(WadeColors.ink(scheme))
-                Spacer()
-                if let trailing { Text(trailing).font(WadeFont.pretendard(15, weight: .heavy)).foregroundStyle(WadeColors.ink(scheme)) }
-                if action != nil { Icon("chevron_right", size: 20, filled: false).foregroundStyle(WadeColors.ink3(scheme)) }
+                if let subtitle {
+                    Text(subtitle)
+                        .font(WadeFont.pretendard(11.5, weight: .semibold))
+                        .foregroundStyle(subtitleColor ?? WadeColors.ink3(scheme))
+                }
             }
-            .padding(.horizontal, 16).padding(.vertical, 15)
-        }.buttonStyle(.plain).disabled(action == nil)
+            Spacer()
+            if let trailing { Text(trailing).font(WadeFont.pretendard(15, weight: .heavy)).foregroundStyle(WadeColors.ink(scheme)) }
+            if action != nil { Icon("chevron_right", size: 20, filled: false).foregroundStyle(WadeColors.ink3(scheme)) }
+        }
+        .padding(.horizontal, 16).padding(.vertical, 15)
+
+        if let action {
+            Button(action: action) { content }.buttonStyle(.plain)
+        } else {
+            content
+        }
     }
 
     private func aiToggleRow(_ vm: SettingsViewModel) -> some View {

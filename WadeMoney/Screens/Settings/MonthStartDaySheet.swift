@@ -40,7 +40,7 @@ struct MonthStartDaySheet: View {
                     .background(WadeColors.primary(scheme), in: RoundedRectangle(cornerRadius: WadeRadius.button, style: .continuous))
             }.buttonStyle(.plain)
         }
-        .padding(.horizontal, 20).padding(.bottom, 30)
+        .padding(.horizontal, WadeSpacing.screenH).padding(.bottom, 34)
         .presentationDetents([.medium])
         .background(WadeColors.sheet(scheme))
     }

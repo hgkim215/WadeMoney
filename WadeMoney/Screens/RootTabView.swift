@@ -38,16 +38,16 @@ struct RootTabView: View {
             statsTab
             tabButton(4, "settings", "설정")
         }
-        .padding(.horizontal, 26).padding(.top, 10).padding(.bottom, 26)
+        .padding(.horizontal, WadeSpacing.screenH).padding(.top, 6).padding(.bottom, 8)
         .background(.ultraThinMaterial)
     }
 
     private func tabButton(_ idx: Int, _ icon: String, _ label: String) -> some View {
         let active = selection == idx
         return Button { selection = idx } label: {
-            VStack(spacing: 3) {
-                Icon(icon, size: 26)
-                Text(label).font(WadeFont.pretendard(10, weight: .bold))
+            VStack(spacing: 2) {
+                Icon(icon, size: 23)
+                Text(label).font(WadeFont.pretendard(9.2, weight: .bold))
             }
             .foregroundStyle(active ? WadeColors.primary(scheme) : WadeColors.ink3(scheme))
             .frame(maxWidth: .infinity)
@@ -56,8 +56,8 @@ struct RootTabView: View {
 
     private var statsTab: some View {
         Button { } label: {
-            VStack(spacing: 3) {
-                Icon("insights", size: 26); Text("통계").font(WadeFont.pretendard(10, weight: .bold))
+            VStack(spacing: 2) {
+                Icon("insights", size: 23); Text("통계").font(WadeFont.pretendard(9.2, weight: .bold))
             }
             .foregroundStyle(WadeColors.ink3(scheme)).opacity(0.5).frame(maxWidth: .infinity)
         }.buttonStyle(.plain).disabled(true)
@@ -65,10 +65,10 @@ struct RootTabView: View {
 
     private var fab: some View {
         Button { showAdd = true } label: {
-            Icon("add", size: 30).foregroundStyle(WadeColors.onPrimary(scheme))
-                .frame(width: 58, height: 58)
+            Icon("add", size: 27).foregroundStyle(WadeColors.onPrimary(scheme))
+                .frame(width: 52, height: 52)
                 .background(WadeColors.primary(scheme), in: RoundedRectangle(cornerRadius: WadeRadius.fab, style: .continuous))
-                .shadow(color: WadeColors.primaryglow(scheme), radius: 20, y: 8)
-        }.buttonStyle(.plain).offset(y: -14).frame(width: 60)
+                .shadow(color: WadeColors.primaryglow(scheme), radius: 16, y: 6)
+        }.buttonStyle(.plain).offset(y: -8).frame(width: 56)
     }
 }

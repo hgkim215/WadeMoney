@@ -36,6 +36,7 @@ final class DashboardViewModel {
         let periodLabel: String
         let scopeText: String
         let totalText: String
+        let hasExpense: Bool
         let budgetText: String?
         let remainText: String?
         let consumedPercentText: String?
@@ -179,6 +180,7 @@ final class DashboardViewModel {
             periodLabel: PeriodLabel.text(kind: kind, period: s.period, now: now, calendar: calendar),
             scopeText: scope,
             totalText: Won.string(s.totalExpense),
+            hasExpense: s.totalExpense > 0,
             budgetText: s.budget.map { Won.string($0) },
             remainText: s.remaining.map { Won.string($0) },
             consumedPercentText: s.consumedFraction.map { "\(Int(($0 * 100).rounded()))%" },

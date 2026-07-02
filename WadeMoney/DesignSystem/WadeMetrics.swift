@@ -14,10 +14,12 @@ enum WadeRadius {
 }
 
 enum WadeSpacing {
-    static let screenH: CGFloat = 18
+    static let screenH: CGFloat = 24
     static let cardGap: CGFloat = 14
     static let cardPadding: CGFloat = 20
-    static let contentTop: CGFloat = 60
+    static let dashboardBlockHeight: CGFloat = 188
+    static let dashboardContentBottom: CGFloat = 172
+    static let contentTop: CGFloat = 16
     static let contentBottom: CGFloat = 104
 }
 

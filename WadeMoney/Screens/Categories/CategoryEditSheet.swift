@@ -82,7 +82,7 @@ struct CategoryEditSheet: View {
                     }.buttonStyle(.plain)
                 }
             }
-            .padding(.horizontal, 20).padding(.bottom, 30)
+            .padding(.horizontal, WadeSpacing.screenH).padding(.bottom, 34)
         }
         .presentationDetents([.large])
         .background(WadeColors.sheet(scheme))

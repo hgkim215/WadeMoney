@@ -43,13 +43,13 @@ struct DashboardScreen: View {
                         if let insight = vm.insightText {
                             InsightCard(text: insight, isGood: vm.insightIsGood ?? true) { showReport = true }
                         }
-                        DonutCard(total: d.totalText, legend: d.donut)
+                        DonutCard(total: d.totalText, hasExpense: d.hasExpense, legend: d.donut)
                         TrendCard(bars: d.trend)
                     }
                 }
                 .padding(.horizontal, WadeSpacing.screenH)
                 .padding(.top, WadeSpacing.contentTop)
-                .padding(.bottom, WadeSpacing.contentBottom)
+                .padding(.bottom, WadeSpacing.dashboardContentBottom)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(WadeColors.bg(scheme))

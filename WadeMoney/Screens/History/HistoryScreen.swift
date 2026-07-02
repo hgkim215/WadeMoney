@@ -88,6 +88,7 @@ struct HistoryScreen: View {
                 }
             }
             .background(WadeColors.card(scheme), in: RoundedRectangle(cornerRadius: WadeRadius.listCard, style: .continuous))
+            .shadow(color: WadeShadow.list(scheme).color, radius: WadeShadow.list(scheme).radius, y: WadeShadow.list(scheme).y)
         }
         .padding(.bottom, 20)
     }

@@ -43,7 +43,7 @@ struct BudgetSheet: View {
                                 in: RoundedRectangle(cornerRadius: WadeRadius.button, style: .continuous))
             }.buttonStyle(.plain).disabled(amount <= 0)
         }
-        .padding(.horizontal, 20).padding(.bottom, 30)
+        .padding(.horizontal, WadeSpacing.screenH).padding(.bottom, 34)
         .presentationDetents([.medium, .large])
         .background(WadeColors.sheet(scheme))
     }
