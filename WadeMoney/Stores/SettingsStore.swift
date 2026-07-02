@@ -1,5 +1,6 @@
 import Foundation
 import SwiftData
+import WidgetKit
 import WadeMoneyCore
 
 @MainActor
@@ -36,6 +37,7 @@ final class SettingsStore {
             context.insert(MonthlyBudgetModel(effectiveYear: year, effectiveMonth: month, amount: amount))
         }
         try context.save()
+        WidgetCenter.shared.reloadAllTimelines()
     }
 
     func budgetBook() throws -> BudgetBook {
@@ -48,6 +50,7 @@ final class SettingsStore {
         let model = try settingsModel()
         model.monthStartDay = min(max(day, 1), 28)
         try context.save()
+        WidgetCenter.shared.reloadAllTimelines()
     }
 
     func setAIEnabled(_ enabled: Bool) throws {

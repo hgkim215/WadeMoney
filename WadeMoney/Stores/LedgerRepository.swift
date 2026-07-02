@@ -1,5 +1,6 @@
 import Foundation
 import SwiftData
+import WidgetKit
 import WadeMoneyCore
 
 enum HistoryFilter: Equatable {
@@ -64,6 +65,7 @@ final class LedgerRepository {
             createdAt: date
         ))
         try context.save()
+        WidgetCenter.shared.reloadAllTimelines()
     }
 
     func deleteTransaction(id: UUID) throws {
@@ -72,6 +74,7 @@ final class LedgerRepository {
         ).first {
             context.delete(model)
             try context.save()
+            WidgetCenter.shared.reloadAllTimelines()
         }
     }
 
@@ -127,6 +130,7 @@ final class LedgerRepository {
         model.memo = memo
         model.date = date
         try context.save()
+        WidgetCenter.shared.reloadAllTimelines()
     }
 
     func totalIncome(in period: Period) throws -> Decimal {
