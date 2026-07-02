@@ -43,4 +43,16 @@ final class SettingsStore {
             .map { $0.toSnapshot() }
         return BudgetBook(snapshots)
     }
+
+    func setMonthStartDay(_ day: Int) throws {
+        let model = try settingsModel()
+        model.monthStartDay = min(max(day, 1), 28)
+        try context.save()
+    }
+
+    func setAIEnabled(_ enabled: Bool) throws {
+        let model = try settingsModel()
+        model.aiEnabled = enabled
+        try context.save()
+    }
 }
