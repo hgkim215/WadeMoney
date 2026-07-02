@@ -16,7 +16,14 @@ struct BudgetSheet: View {
 
     var body: some View {
         VStack(spacing: 14) {
-            Text("이번 달 예산").font(WadeFont.pretendard(20, weight: .heavy)).frame(maxWidth: .infinity, alignment: .leading).padding(.top, 16)
+            HStack {
+                Text("이번 달 예산").font(WadeFont.pretendard(20, weight: .heavy))
+                Spacer()
+                Button { dismiss() } label: {
+                    Icon("close", size: 20).foregroundStyle(WadeColors.ink2(scheme))
+                }.buttonStyle(.plain)
+            }
+            .padding(.top, 16)
             HStack(alignment: .firstTextBaseline, spacing: 4) {
                 Text("₩").font(WadeFont.pretendard(26, weight: .bold))
                 Text(digits.isEmpty ? "0" : Won.string(amount)).font(WadeFont.pretendard(52, weight: .heavy))

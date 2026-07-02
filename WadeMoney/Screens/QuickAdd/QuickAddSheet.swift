@@ -27,6 +27,9 @@ struct QuickAddSheet: View {
     @ViewBuilder private func content(_ vm: QuickAddViewModel) -> some View {
         VStack(spacing: 14) {
             HStack {
+                Button { dismiss() } label: {
+                    Icon("close", size: 20).foregroundStyle(WadeColors.ink2(scheme))
+                }.buttonStyle(.plain)
                 Text(vm.isEditing
                      ? (vm.type == .income ? "수입 수정" : "지출 수정")
                      : (vm.type == .income ? "새 수입" : "새 지출"))
