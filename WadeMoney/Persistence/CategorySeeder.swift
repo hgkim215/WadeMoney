@@ -7,6 +7,7 @@ struct SeedCategory {
     let colorHex: String
 }
 
+@MainActor
 enum CategorySeeder {
     /// 디자인 시스템 §6 기본 카테고리(노출 순서와 무관한 시드 순서 = sortOrder 0..7).
     static let defaults: [SeedCategory] = [
@@ -20,26 +21,36 @@ enum CategorySeeder {
         SeedCategory(name: "기타", iconName: "category",          colorHex: "#A69B8C"),
     ]
 
-    // TODO(cloudkit): CloudKit 동기화가 켜지면 두 번째 기기(또는 최초 동기화가
-    // 끝나기 전의 같은 기기)는 로컬 스토어가 비어 있는 것으로 보고 자신만의 기본
-    // 카테고리 8종을 또 시드할 수 있다. CloudKit은 유니크 제약을 지원하지 않으므로
-    // 이후 두 기기의 변경 사항이 병합될 때 중복 카테고리가 생길 수 있다.
-    // 완화책(실기기 CloudKit 도입 시 구현): AppSettingsModel에 "seeded" 플래그를
-    // 두고 최초 동기화가 완료된 뒤에만 이를 확인해 시딩 여부를 판단하거나,
-    // 다른 중복 제거 전략을 적용한다.
     /// 카테고리가 하나도 없을 때만 기본 8종을 삽입한다(멱등).
+    /// AppSettingsModel.didSeedDefaultCategories 플래그가 CloudKit으로 동기화되므로,
+    /// 다른 기기가 이미 시드했다면(플래그가 먼저 내려온 경우) 로컬에 카테고리가 아직
+    /// 안 보여도 재시드하지 않는다 — 최초 동기화 완료 전 중복 시드 경쟁을 완화한다.
     static func seedIfNeeded(_ context: ModelContext) throws {
-        let existing = try context.fetchCount(FetchDescriptor<CategoryModel>())
-        guard existing == 0 else { return }
+        let settings = try fetchOrCreateSettings(context)
+        guard !settings.didSeedDefaultCategories else { return }
 
-        for (index, seed) in defaults.enumerated() {
-            context.insert(CategoryModel(
-                name: seed.name,
-                iconName: seed.iconName,
-                colorHex: seed.colorHex,
-                sortOrder: index
-            ))
+        let existing = try context.fetchCount(FetchDescriptor<CategoryModel>())
+        if existing == 0 {
+            for (index, seed) in defaults.enumerated() {
+                context.insert(CategoryModel(
+                    name: seed.name,
+                    iconName: seed.iconName,
+                    colorHex: seed.colorHex,
+                    sortOrder: index
+                ))
+            }
         }
+        // existing > 0인데 플래그가 없는 경우(구버전에서 이미 시드된 사용자) — 시드하지 않고 플래그만 세운다.
+        settings.didSeedDefaultCategories = true
         try context.save()
+    }
+
+    private static func fetchOrCreateSettings(_ context: ModelContext) throws -> AppSettingsModel {
+        if let existing = try context.fetch(FetchDescriptor<AppSettingsModel>()).first {
+            return existing
+        }
+        let created = AppSettingsModel()
+        context.insert(created)
+        return created
     }
 }
