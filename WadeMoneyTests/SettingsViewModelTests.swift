@@ -41,4 +41,13 @@ struct SettingsViewModelTests {
         #expect(vm.aiEnabled == !initial)
         _ = c
     }
+
+    @Test func setMonthStartDayPersistsAndReloadsText() throws {
+        let (vm, c) = try vm()
+        vm.load()
+        vm.setMonthStartDay(15)
+        #expect(vm.monthStartDay == 15)
+        #expect(vm.monthStartDayText == "매월 15일")
+        _ = c
+    }
 }

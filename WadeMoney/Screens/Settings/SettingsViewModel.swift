@@ -12,6 +12,7 @@ final class SettingsViewModel {
 
     private(set) var budget: Decimal = 0
     private(set) var budgetText: String = "0"
+    private(set) var monthStartDay: Int = 1
     private(set) var monthStartDayText: String = "매월 1일"
     private(set) var aiEnabled: Bool = true
     private(set) var categoryCountText: String = "0개"
@@ -30,6 +31,7 @@ final class SettingsViewModel {
     func load() {
         let settings = (try? settingsStore.settings()) ?? EngineSettings()
         aiEnabled = settings.aiEnabled
+        monthStartDay = settings.monthStartDay
         monthStartDayText = "매월 \(settings.monthStartDay)일"
         let book = try? settingsStore.budgetBook()
         let amount = book?.amount(for: currentYearMonth) ?? 0
@@ -41,6 +43,11 @@ final class SettingsViewModel {
 
     func setBudget(_ amount: Decimal) {
         try? settingsStore.setMonthlyBudget(amount, for: currentYearMonth)
+        load()
+    }
+
+    func setMonthStartDay(_ day: Int) {
+        try? settingsStore.setMonthStartDay(day)
         load()
     }
 

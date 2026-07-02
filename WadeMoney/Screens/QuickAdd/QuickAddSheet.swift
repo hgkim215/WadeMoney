@@ -25,89 +25,94 @@ struct QuickAddSheet: View {
     }
 
     @ViewBuilder private func content(_ vm: QuickAddViewModel) -> some View {
-        VStack(spacing: 14) {
-            HStack {
-                Text(vm.isEditing
-                     ? (vm.type == .income ? "수입 수정" : "지출 수정")
-                     : (vm.type == .income ? "새 수입" : "새 지출"))
-                    .font(WadeFont.pretendard(20, weight: .heavy))
-                Spacer()
-                if vm.isEditing {
-                    Button {
-                        try? vm.delete()
-                        onSaved()
-                        dismiss()
-                    } label: {
-                        Icon("delete", size: 20).foregroundStyle(WadeColors.bad(scheme))
-                    }.buttonStyle(.plain).padding(.trailing, 10)
-                }
-                typeToggle(vm)
-            }
-            .padding(.top, 16)
-
-            HStack(alignment: .firstTextBaseline, spacing: 4) {
-                Text("₩").font(WadeFont.pretendard(26, weight: .bold))
-                Text(vm.amountDigits.isEmpty ? "0" : Won.string(vm.amountDecimal))
-                    .font(WadeFont.pretendard(52, weight: .heavy))
-            }
-            .foregroundStyle(vm.amountDecimal > 0
-                ? (vm.type == .income ? WadeColors.good(scheme) : WadeColors.ink(scheme))
-                : WadeColors.ink3(scheme))
-
-            if vm.type == .expense { categoryGrid(vm) }
-
-            VStack(alignment: .leading, spacing: 6) {
-                HStack(spacing: 8) {
-                    TextField("메모 (선택)", text: Binding(get: { vm.memo }, set: { vm.memo = $0 }))
-                        .font(WadeFont.pretendard(14.5))
-                    if vm.showsPolishButton || vm.hasPolished {
+        ScrollView {
+            VStack(spacing: 14) {
+                HStack {
+                    Button { dismiss() } label: {
+                        Icon("close", size: 20).foregroundStyle(WadeColors.ink2(scheme))
+                    }.buttonStyle(.plain)
+                    Text(vm.isEditing
+                         ? (vm.type == .income ? "수입 수정" : "지출 수정")
+                         : (vm.type == .income ? "새 수입" : "새 지출"))
+                        .font(WadeFont.pretendard(20, weight: .heavy))
+                    Spacer()
+                    if vm.isEditing {
                         Button {
-                            Task { await vm.polishMemo() }
+                            try? vm.delete()
+                            onSaved()
+                            dismiss()
                         } label: {
-                            HStack(spacing: 4) {
-                                if vm.isPolishing {
-                                    ProgressView().controlSize(.mini)
-                                } else {
-                                    Icon("auto_awesome", size: 14)
+                            Icon("delete", size: 20).foregroundStyle(WadeColors.bad(scheme))
+                        }.buttonStyle(.plain).padding(.trailing, 10)
+                    }
+                    typeToggle(vm)
+                }
+                .padding(.top, 16)
+
+                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                    Text("₩").font(WadeFont.pretendard(26, weight: .bold))
+                    Text(vm.amountDigits.isEmpty ? "0" : Won.string(vm.amountDecimal))
+                        .font(WadeFont.pretendard(52, weight: .heavy))
+                }
+                .foregroundStyle(vm.amountDecimal > 0
+                    ? (vm.type == .income ? WadeColors.good(scheme) : WadeColors.ink(scheme))
+                    : WadeColors.ink3(scheme))
+
+                if vm.type == .expense { categoryGrid(vm) }
+
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(spacing: 8) {
+                        TextField("메모 (선택)", text: Binding(get: { vm.memo }, set: { vm.memo = $0 }))
+                            .font(WadeFont.pretendard(14.5))
+                        if vm.showsPolishButton || vm.hasPolished {
+                            Button {
+                                Task { await vm.polishMemo() }
+                            } label: {
+                                HStack(spacing: 4) {
+                                    if vm.isPolishing {
+                                        ProgressView().controlSize(.mini)
+                                    } else {
+                                        Icon("auto_awesome", size: 14)
+                                    }
+                                    Text(vm.hasPolished ? "정리됨" : "AI 다듬기").font(WadeFont.pretendard(11.5, weight: .bold))
                                 }
-                                Text(vm.hasPolished ? "정리됨" : "AI 다듬기").font(WadeFont.pretendard(11.5, weight: .bold))
+                                .foregroundStyle(WadeColors.primary(scheme))
+                                .padding(.horizontal, 10).padding(.vertical, 7)
+                                .background(WadeColors.aitint2(scheme), in: Capsule())
                             }
-                            .foregroundStyle(WadeColors.primary(scheme))
-                            .padding(.horizontal, 10).padding(.vertical, 7)
-                            .background(WadeColors.aitint2(scheme), in: Capsule())
+                            .buttonStyle(.plain)
+                            .disabled(vm.isPolishing || vm.hasPolished)
                         }
-                        .buttonStyle(.plain)
-                        .disabled(vm.isPolishing || vm.hasPolished)
+                    }
+                    .padding(13)
+                    .background(WadeColors.card2(scheme), in: RoundedRectangle(cornerRadius: WadeRadius.segment))
+
+                    if let note = vm.polishNote {
+                        Text(note).font(WadeFont.pretendard(11.5)).foregroundStyle(WadeColors.primary(scheme))
                     }
                 }
-                .padding(13)
-                .background(WadeColors.card2(scheme), in: RoundedRectangle(cornerRadius: WadeRadius.segment))
 
-                if let note = vm.polishNote {
-                    Text(note).font(WadeFont.pretendard(11.5)).foregroundStyle(WadeColors.primary(scheme))
+                AmountKeypad(onKey: { vm.tapKey($0) }, onBackspace: { vm.backspace() })
+
+                Button {
+                    do {
+                        try vm.save(date: Date())
+                        onSaved()
+                        dismiss()
+                    } catch {
+                        // 저장 실패 시 시트를 닫지 않는다(성공을 가장하지 않음). 오류 토스트는 후속.
+                    }
+                } label: {
+                    HStack(spacing: 6) { Icon("check", size: 22); Text("저장하기").font(WadeFont.pretendard(17, weight: .heavy)) }
+                        .foregroundStyle(vm.canSave ? WadeColors.onPrimary(scheme) : WadeColors.ink3(scheme))
+                        .frame(maxWidth: .infinity).padding(17)
+                        .background(vm.canSave ? WadeColors.primary(scheme) : WadeColors.track(scheme),
+                                    in: RoundedRectangle(cornerRadius: WadeRadius.button, style: .continuous))
                 }
+                .buttonStyle(.plain).disabled(!vm.canSave)
             }
-
-            AmountKeypad(onKey: { vm.tapKey($0) }, onBackspace: { vm.backspace() })
-
-            Button {
-                do {
-                    try vm.save(date: Date())
-                    onSaved()
-                    dismiss()
-                } catch {
-                    // 저장 실패 시 시트를 닫지 않는다(성공을 가장하지 않음). 오류 토스트는 후속.
-                }
-            } label: {
-                HStack(spacing: 6) { Icon("check", size: 22); Text("저장하기").font(WadeFont.pretendard(17, weight: .heavy)) }
-                    .foregroundStyle(vm.canSave ? WadeColors.onPrimary(scheme) : WadeColors.ink3(scheme))
-                    .frame(maxWidth: .infinity).padding(17)
-                    .background(vm.canSave ? WadeColors.primary(scheme) : WadeColors.track(scheme),
-                                in: RoundedRectangle(cornerRadius: WadeRadius.button, style: .continuous))
-            }
-            .buttonStyle(.plain).disabled(!vm.canSave)
+            .padding(.horizontal, 20).padding(.bottom, 30)
         }
-        .padding(.horizontal, 20).padding(.bottom, 30)
     }
 
     private func typeToggle(_ vm: QuickAddViewModel) -> some View {

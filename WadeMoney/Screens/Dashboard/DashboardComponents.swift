@@ -149,21 +149,40 @@ struct DonutCard: View {
         card(scheme) {
             VStack(alignment: .leading, spacing: 16) {
                 Text("카테고리 비중").font(WadeFont.pretendard(15, weight: .heavy)).foregroundStyle(WadeColors.ink(scheme))
-                HStack(spacing: 20) {
-                    DonutRing(legend: legend, centerTotal: total)
-                        .frame(width: 128, height: 128)
-                    VStack(alignment: .leading, spacing: 9) {
-                        ForEach(legend) { item in
-                            HStack(spacing: 8) {
-                                RoundedRectangle(cornerRadius: 3).fill(Color(hex: item.colorHex)).frame(width: 10, height: 10)
-                                Text(item.name).font(WadeFont.pretendard(13, weight: .semibold)).foregroundStyle(WadeColors.ink(scheme))
-                                Spacer()
-                                Text(item.percentText).font(WadeFont.pretendard(13, weight: .heavy)).foregroundStyle(WadeColors.ink2(scheme))
+                if legend.isEmpty {
+                    emptyState
+                } else {
+                    HStack(spacing: 20) {
+                        DonutRing(legend: legend, centerTotal: total)
+                            .frame(width: 128, height: 128)
+                        VStack(alignment: .leading, spacing: 9) {
+                            ForEach(legend) { item in
+                                HStack(spacing: 8) {
+                                    RoundedRectangle(cornerRadius: 3).fill(Color(hex: item.colorHex)).frame(width: 10, height: 10)
+                                    Text(item.name).font(WadeFont.pretendard(13, weight: .semibold)).foregroundStyle(WadeColors.ink(scheme))
+                                        .lineLimit(1)
+                                    Spacer()
+                                    Text(item.percentText).font(WadeFont.pretendard(13, weight: .heavy)).foregroundStyle(WadeColors.ink2(scheme))
+                                }
                             }
                         }
                     }
                 }
             }
+        }
+    }
+
+    private var emptyState: some View {
+        HStack(spacing: 20) {
+            ZStack {
+                Circle().stroke(WadeColors.track(scheme), lineWidth: 22).frame(width: 128, height: 128)
+                VStack(spacing: 1) {
+                    Text("총지출").font(WadeFont.pretendard(10.5, weight: .semibold)).foregroundStyle(WadeColors.ink3(scheme))
+                    Text(total).font(WadeFont.pretendard(16, weight: .heavy)).foregroundStyle(WadeColors.ink(scheme))
+                }
+            }
+            Text("아직 지출이 없어요").font(WadeFont.pretendard(13, weight: .semibold)).foregroundStyle(WadeColors.ink3(scheme))
+            Spacer(minLength: 0)
         }
     }
 }

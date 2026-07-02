@@ -32,7 +32,14 @@ struct CategoryEditSheet: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
-                Text(isEditing ? "카테고리 수정" : "새 카테고리").font(WadeFont.pretendard(20, weight: .heavy)).padding(.top, 16)
+                HStack {
+                    Text(isEditing ? "카테고리 수정" : "새 카테고리").font(WadeFont.pretendard(20, weight: .heavy))
+                    Spacer()
+                    Button { dismiss() } label: {
+                        Icon("close", size: 20).foregroundStyle(WadeColors.ink2(scheme))
+                    }.buttonStyle(.plain)
+                }
+                .padding(.top, 16)
                 // 미리보기 + 이름
                 HStack(spacing: 12) {
                     Icon(icon, size: 24).foregroundStyle(Color(hex: color)).frame(width: 46, height: 46)
@@ -40,7 +47,7 @@ struct CategoryEditSheet: View {
                     TextField("이름", text: $name).font(WadeFont.pretendard(17, weight: .semibold))
                 }
                 sectionLabel("아이콘")
-                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 6), spacing: 8) {
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 44), spacing: 8)], spacing: 8) {
                     ForEach(CategoryPalette.icons, id: \.self) { name in
                         Button { icon = name } label: {
                             Icon(name, size: 20).foregroundStyle(icon == name ? Color(hex: color) : WadeColors.ink2(scheme))
@@ -51,7 +58,7 @@ struct CategoryEditSheet: View {
                     }
                 }
                 sectionLabel("색")
-                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 6), spacing: 8) {
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 36), spacing: 8)], spacing: 8) {
                     ForEach(CategoryPalette.colors, id: \.self) { hex in
                         Button { color = hex } label: {
                             Circle().fill(Color(hex: hex)).frame(width: 36, height: 36)
