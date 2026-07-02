@@ -8,6 +8,7 @@ struct QuickAddSheet: View {
     @Environment(\.dismiss) private var dismiss
     @State private var vm: QuickAddViewModel?
     let onSaved: () -> Void
+    var editing: TransactionRecord? = nil
 
     private let keys = ["1","2","3","4","5","6","7","8","9","00","0","←"]
 
@@ -16,7 +17,7 @@ struct QuickAddSheet: View {
             if let vm { content(vm) }
         }
         .onAppear {
-            if vm == nil { vm = QuickAddViewModel(repository: LedgerRepository(context: modelContext)) }
+            if vm == nil { vm = QuickAddViewModel(repository: LedgerRepository(context: modelContext), editing: editing) }
         }
         .presentationDetents([.large])
         .background(WadeColors.sheet(scheme))
@@ -25,8 +26,20 @@ struct QuickAddSheet: View {
     @ViewBuilder private func content(_ vm: QuickAddViewModel) -> some View {
         VStack(spacing: 14) {
             HStack {
-                Text(vm.type == .income ? "새 수입" : "새 지출").font(WadeFont.pretendard(20, weight: .heavy))
+                Text(vm.isEditing
+                     ? (vm.type == .income ? "수입 수정" : "지출 수정")
+                     : (vm.type == .income ? "새 수입" : "새 지출"))
+                    .font(WadeFont.pretendard(20, weight: .heavy))
                 Spacer()
+                if vm.isEditing {
+                    Button {
+                        try? vm.delete()
+                        onSaved()
+                        dismiss()
+                    } label: {
+                        Icon("delete", size: 20).foregroundStyle(WadeColors.bad(scheme))
+                    }.buttonStyle(.plain).padding(.trailing, 10)
+                }
                 typeToggle(vm)
             }
             .padding(.top, 16)
