@@ -137,6 +137,40 @@ struct DashboardInsightTests {
         #expect(vm.insightText == "최신 결과")
         _ = container
     }
+
+    @Test func guardFailureAfterCancellingInFlightRefreshResetsLoadingFlag() async throws {
+        let (repo, settings, container) = try makeRepo()
+        try settings.setAIEnabled(true)
+        try seedComparablePace(repo)
+
+        let gate = SteppableInsightGate()
+        let generator = SteppableInsightGenerator(gate: gate, firstResult: "오래된 결과", secondResult: "최신 결과")
+
+        let vm = DashboardViewModel(repository: repo, now: date(2026, 7, 15), calendar: utc,
+                                     aiAvailability: FakeAIAvailability(isAvailable: true),
+                                     insightGenerator: generator)
+        vm.kind = .month
+        vm.load()
+
+        // First refresh passes the guard and suspends in-flight (isLoadingInsight becomes true).
+        let staleTask = Task { await vm.refreshInsight() }
+        while await gate.firstCallStarted == false { await Task.yield() }
+
+        // Switch to a period with no comparable pace so the *second* refresh's own
+        // guard fails — this is the branch that must also reset isLoadingInsight.
+        vm.kind = .day
+        vm.load()
+        await vm.refreshInsight()
+
+        #expect(vm.insightText == nil)
+        #expect(vm.isLoadingInsight == false)
+
+        await gate.release()
+        await staleTask.value
+
+        #expect(vm.isLoadingInsight == false)
+        _ = container
+    }
 }
 
 private actor SteppableInsightGate {

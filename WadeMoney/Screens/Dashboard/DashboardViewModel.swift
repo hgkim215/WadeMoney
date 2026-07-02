@@ -92,6 +92,7 @@ final class DashboardViewModel {
         else {
             insightTask = nil
             insightText = nil
+            isLoadingInsight = false
             return
         }
         let top = d.donut.first { !$0.isOther }
