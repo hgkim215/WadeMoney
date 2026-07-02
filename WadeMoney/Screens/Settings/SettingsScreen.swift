@@ -7,6 +7,7 @@ struct SettingsScreen: View {
     @Environment(\.modelContext) private var modelContext
     @State private var viewModel: SettingsViewModel?
     @State private var showBudget = false
+    @State private var showMonthStartDay = false
     @State private var showCategories = false
     private struct ShareItem: Identifiable { let id = UUID(); let url: URL }
     @State private var shareItem: ShareItem?
@@ -20,7 +21,7 @@ struct SettingsScreen: View {
                         section("예산") {
                             row(icon: "account_balance_wallet", tint: WadeColors.primary(scheme), label: "이번 달 예산",
                                 trailing: "₩\(vm.budgetText)") { showBudget = true }
-                            row(icon: "event", tint: WadeColors.ink2(scheme), label: "월 시작일", trailing: vm.monthStartDayText, action: nil)
+                            row(icon: "event", tint: WadeColors.ink2(scheme), label: "월 시작일", trailing: vm.monthStartDayText) { showMonthStartDay = true }
                         }
                         section("카테고리 · AI") {
                             row(icon: "category", tint: WadeColors.ink2(scheme), label: "카테고리 관리",
@@ -45,6 +46,9 @@ struct SettingsScreen: View {
         }
         .sheet(isPresented: $showBudget) {
             BudgetSheet(current: viewModel?.budget ?? 0) { amount in viewModel?.setBudget(amount) }
+        }
+        .sheet(isPresented: $showMonthStartDay) {
+            MonthStartDaySheet(current: viewModel?.monthStartDay ?? 1) { day in viewModel?.setMonthStartDay(day) }
         }
         .sheet(item: $shareItem) { item in ActivityView(url: item.url) }
         .onAppear {
