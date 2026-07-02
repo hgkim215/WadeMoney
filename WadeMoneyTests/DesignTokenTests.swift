@@ -22,4 +22,10 @@ struct DesignTokenTests {
         // FILL 축이 실제로 적용되면 두 폰트 디스크립터가 달라진다
         #expect(filled.fontDescriptor != outline.fontDescriptor)
     }
+
+    @Test func newRadiusAndOnPrimaryTokensExist() {
+        #expect(WadeRadius.button == 18)
+        #expect(WadeRadius.smallTile == 11)
+        #expect(WadeColors.onPrimary(.light) == WadeColors.onPrimary(.dark))
+    }
 }

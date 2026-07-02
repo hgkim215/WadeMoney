@@ -58,4 +58,17 @@ struct HistoryViewModelTests {
         #expect(vm.isEmpty)
         _ = c
     }
+
+    @Test func mixedExpenseAndIncomeDayShowsExpenseSumOnly() throws {
+        let (r, c) = try repo()
+        let food = try catID(r, "식비")
+        try r.addTransaction(amount: 9000, type: .expense, categoryID: food, memo: nil, date: date(2026, 7, 15, 12))
+        try r.addTransaction(amount: 45000, type: .income, categoryID: nil, memo: "환급", date: date(2026, 7, 15, 14))
+        let vm = HistoryViewModel(repository: r, now: date(2026, 7, 15, 20), calendar: utc)
+        vm.load()
+        // 지출+수입이 섞인 날은 지출 합계만 표시(수입은 개별 행에서만 확인). 의도된 동작.
+        #expect(vm.groups[0].sumText == "−9,000")
+        #expect(vm.groups[0].sumIsIncome == false)
+        _ = c
+    }
 }

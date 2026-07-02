@@ -30,10 +30,10 @@ struct BudgetSheet: View {
                 onSave(amount); dismiss()
             } label: {
                 Text("예산 저장").font(WadeFont.pretendard(17, weight: .heavy))
-                    .foregroundStyle(amount > 0 ? .white : WadeColors.ink3(scheme))
+                    .foregroundStyle(amount > 0 ? WadeColors.onPrimary(scheme) : WadeColors.ink3(scheme))
                     .frame(maxWidth: .infinity).padding(17)
                     .background(amount > 0 ? WadeColors.primary(scheme) : WadeColors.track(scheme),
-                                in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                                in: RoundedRectangle(cornerRadius: WadeRadius.button, style: .continuous))
             }.buttonStyle(.plain).disabled(amount <= 0)
         }
         .padding(.horizontal, 20).padding(.bottom, 30)

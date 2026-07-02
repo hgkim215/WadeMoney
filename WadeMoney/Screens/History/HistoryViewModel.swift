@@ -74,6 +74,7 @@ final class HistoryViewModel {
             let items = (grouped[day] ?? []).sorted { $0.date > $1.date }
             var expense = Decimal(0), income = Decimal(0)
             for it in items { if it.type == .income { income += it.amount } else { expense += it.amount } }
+            // 지출+수입이 섞인 날은 지출 합계만 표시한다(순수 수입만 있는 날에만 +표시). 의도된 동작.
             let sumIsIncome = expense == 0 && income > 0
             let sumText = sumIsIncome ? "+\(Won.string(income))" : "−\(Won.string(expense))"
             return DayGroup(

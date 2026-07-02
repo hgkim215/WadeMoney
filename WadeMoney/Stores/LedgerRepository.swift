@@ -89,6 +89,12 @@ final class LedgerRepository {
         }
     }
 
+    func transactions(from start: Date, to end: Date) throws -> [TransactionRecord] {
+        try context.fetch(
+            FetchDescriptor<TransactionModel>(predicate: #Predicate { $0.date >= start && $0.date < end })
+        ).map { $0.toRecord() }
+    }
+
     func transactionRecord(id: UUID) throws -> TransactionRecord? {
         try context.fetch(FetchDescriptor<TransactionModel>(predicate: #Predicate { $0.id == id }))
             .first?.toRecord()
@@ -143,14 +149,22 @@ final class LedgerRepository {
         now: Date,
         calendar: Calendar
     ) throws -> DashboardSummary {
-        let settings = try SettingsStore(context: context).settings()
+        let settingsStore = SettingsStore(context: context)
+        let settings = try settingsStore.settings()
         let calc = PeriodCalculator(calendar: calendar, monthStartDay: settings.monthStartDay)
         let period = calc.period(kind, offset: offset, from: now)
 
-        let txns = try allTransactions()
+        let fetchStart: Date
+        switch kind {
+        case .day:
+            fetchStart = period.start
+        case .month, .year:
+            fetchStart = calc.previous(period).start
+        }
+        let txns = try transactions(from: fetchStart, to: period.end)
         let total = Aggregator.totalExpense(txns, in: period)
 
-        let book = try SettingsStore(context: context).budgetBook()
+        let book = try settingsStore.budgetBook()
         let budget: Decimal?
         switch kind {
         case .day:   budget = book.dailyAmount(on: period.start, calc: calc)

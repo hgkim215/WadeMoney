@@ -25,7 +25,7 @@ struct PeriodSegment: View {
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 9)
                         .background(kind == item.0 ? WadeColors.card(scheme) : .clear,
-                                    in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+                                    in: RoundedRectangle(cornerRadius: WadeRadius.smallTile, style: .continuous))
                 }
                 .buttonStyle(.plain)
             }

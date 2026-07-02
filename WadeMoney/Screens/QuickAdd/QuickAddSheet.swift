@@ -70,10 +70,10 @@ struct QuickAddSheet: View {
                 }
             } label: {
                 HStack(spacing: 6) { Icon("check", size: 22); Text("저장하기").font(WadeFont.pretendard(17, weight: .heavy)) }
-                    .foregroundStyle(vm.canSave ? .white : WadeColors.ink3(scheme))
+                    .foregroundStyle(vm.canSave ? WadeColors.onPrimary(scheme) : WadeColors.ink3(scheme))
                     .frame(maxWidth: .infinity).padding(17)
                     .background(vm.canSave ? WadeColors.primary(scheme) : WadeColors.track(scheme),
-                                in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                                in: RoundedRectangle(cornerRadius: WadeRadius.button, style: .continuous))
             }
             .buttonStyle(.plain).disabled(!vm.canSave)
         }
@@ -86,7 +86,7 @@ struct QuickAddSheet: View {
                 Button { vm.type = t } label: {
                     Text(t == .expense ? "지출" : "수입")
                         .font(WadeFont.pretendard(12.5, weight: .bold))
-                        .foregroundStyle(vm.type == t ? .white : WadeColors.ink2(scheme))
+                        .foregroundStyle(vm.type == t ? WadeColors.onPrimary(scheme) : WadeColors.ink2(scheme))
                         .padding(.horizontal, 15).padding(.vertical, 7)
                         .background(vm.type == t ? (t == .income ? WadeColors.good(scheme) : WadeColors.primary(scheme)) : .clear,
                                     in: Capsule())

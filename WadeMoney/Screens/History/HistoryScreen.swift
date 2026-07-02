@@ -6,6 +6,7 @@ struct HistoryScreen: View {
     @Environment(\.colorScheme) private var scheme
     @Environment(\.modelContext) private var modelContext
     @State private var viewModel: HistoryViewModel?
+    @State private var repository: LedgerRepository?
     @State private var editingRecord: TransactionRecord?
     let refreshToken: Int
 
@@ -24,7 +25,7 @@ struct HistoryScreen: View {
                                     vm.filter = chip.filter; vm.load()
                                 } label: {
                                     Text(chip.label).font(WadeFont.pretendard(13, weight: .bold))
-                                        .foregroundStyle(chip.isSelected ? .white : WadeColors.ink2(scheme))
+                                        .foregroundStyle(chip.isSelected ? WadeColors.onPrimary(scheme) : WadeColors.ink2(scheme))
                                         .padding(.horizontal, 14).padding(.vertical, 8)
                                         .background(chip.isSelected ? WadeColors.primary(scheme) : WadeColors.card(scheme), in: Capsule())
                                 }.buttonStyle(.plain)
@@ -54,7 +55,9 @@ struct HistoryScreen: View {
         .onChange(of: refreshToken) { viewModel?.load() }
         .onAppear {
             if viewModel == nil {
-                let vm = HistoryViewModel(repository: LedgerRepository(context: modelContext), now: Date(), calendar: .current)
+                let repo = LedgerRepository(context: modelContext)
+                repository = repo
+                let vm = HistoryViewModel(repository: repo, now: Date(), calendar: .current)
                 vm.load(); viewModel = vm
             }
         }
@@ -117,6 +120,6 @@ struct HistoryScreen: View {
     }
 
     private func recordFor(_ id: UUID) throws -> TransactionRecord? {
-        try LedgerRepository(context: modelContext).transactionRecord(id: id)
+        try repository?.transactionRecord(id: id)
     }
 }
