@@ -31,8 +31,12 @@ public enum Aggregator {
 
     /// 지출만 카테고리별 합계. 합계 내림차순.
     public static func totalsByCategory(_ txns: [TransactionRecord], in period: Period) -> [CategoryTotal] {
+        totalsByCategory(txns, from: period.start, to: period.end)
+    }
+
+    public static func totalsByCategory(_ txns: [TransactionRecord], from start: Date, to end: Date) -> [CategoryTotal] {
         var buckets: [UUID?: Decimal] = [:]
-        for t in txns where t.type == .expense && t.date >= period.start && t.date < period.end {
+        for t in txns where t.type == .expense && t.date >= start && t.date < end {
             buckets[t.categoryID, default: 0] += t.amount
         }
         return buckets

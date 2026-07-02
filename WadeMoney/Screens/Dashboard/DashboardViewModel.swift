@@ -49,15 +49,31 @@ final class DashboardViewModel {
     private let repository: LedgerRepository
     private let now: Date
     private let calendar: Calendar
+    private let aiAvailability: AIAvailabilityChecking
+    private let insightGenerator: InsightGenerating
 
     var kind: PeriodKind = .month
     var offset: Int = 0
     private(set) var display: DashboardDisplay?
+    private(set) var insightText: String?
+    private(set) var insightIsGood: Bool?
+    private(set) var isLoadingInsight = false
+    private var insightTask: Task<Void, Never>?
 
-    init(repository: LedgerRepository, now: Date, calendar: Calendar) {
+    init(
+        repository: LedgerRepository, now: Date, calendar: Calendar,
+        aiAvailability: AIAvailabilityChecking = SystemLanguageModelAvailability(),
+        insightGenerator: InsightGenerating = FoundationModelsInsightGenerator()
+    ) {
         self.repository = repository
         self.now = now
         self.calendar = calendar
+        self.aiAvailability = aiAvailability
+        self.insightGenerator = insightGenerator
+    }
+
+    var showsAIReportEntry: Bool {
+        aiAvailability.isAvailable && (try? repository.aiEnabled()) == true
     }
 
     func load() {
@@ -68,6 +84,54 @@ final class DashboardViewModel {
         } catch {
             display = nil
         }
+    }
+
+    func refreshInsight() async {
+        insightTask?.cancel()
+
+        guard
+            let d = display, let pace = d.pace,
+            aiAvailability.isAvailable,
+            (try? repository.aiEnabled()) == true
+        else {
+            insightTask = nil
+            insightText = nil
+            isLoadingInsight = false
+            return
+        }
+        let top = d.donut.first { !$0.isOther }
+        let input = InsightInput(
+            periodLabel: d.periodLabel,
+            totalExpenseText: d.totalText,
+            paceDeltaPercentText: pace.deltaText,
+            paceIncreased: pace.direction == .up,
+            topCategoryName: top?.name,
+            topCategoryPercentText: top?.percentText
+        )
+        isLoadingInsight = true
+        let task = Task { [insightGenerator] in
+            let result: Result<String, Error>
+            do {
+                result = .success(try await insightGenerator.generate(input))
+            } catch {
+                result = .failure(error)
+            }
+            // A newer refreshInsight() call may have superseded this one while we
+            // were suspended above — discard the result instead of overwriting
+            // state for a period that's no longer displayed.
+            guard !Task.isCancelled else { return }
+            switch result {
+            case .success(let sentence):
+                self.insightText = sentence
+                self.insightIsGood = pace.direction == .down
+            case .failure:
+                self.insightText = nil
+                self.insightIsGood = nil
+            }
+            self.isLoadingInsight = false
+        }
+        insightTask = task
+        await task.value
     }
 
     private func build(_ s: LedgerRepository.DashboardSummary, categories: [CategoryRef]) -> DashboardDisplay {

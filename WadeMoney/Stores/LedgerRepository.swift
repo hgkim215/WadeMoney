@@ -36,6 +36,10 @@ final class LedgerRepository {
         try SettingsStore(context: context).settings().monthStartDay
     }
 
+    func aiEnabled() throws -> Bool {
+        try SettingsStore(context: context).settings().aiEnabled
+    }
+
     // MARK: - Writes
 
     func addTransaction(

@@ -108,6 +108,39 @@ struct PaceBadgeView: View {
     }
 }
 
+struct InsightCard: View {
+    @Environment(\.colorScheme) private var scheme
+    let text: String
+    let isGood: Bool
+    let onDetail: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                HStack(spacing: 6) {
+                    Icon("auto_awesome", size: 17).foregroundStyle(WadeColors.primary(scheme))
+                    Text("AI 인사이트").font(WadeFont.pretendard(13, weight: .bold)).foregroundStyle(WadeColors.ink(scheme))
+                }
+                Spacer()
+                Text(isGood ? "양호" : "주의")
+                    .font(WadeFont.pretendard(11, weight: .bold))
+                    .foregroundStyle(isGood ? WadeColors.good(scheme) : WadeColors.bad(scheme))
+                    .padding(.horizontal, 9).padding(.vertical, 4)
+                    .background(isGood ? WadeColors.goodsoft(scheme) : WadeColors.badsoft(scheme), in: Capsule())
+            }
+            Text(text).font(WadeFont.pretendard(13.5)).foregroundStyle(WadeColors.ink2(scheme))
+            Button(action: onDetail) {
+                Text("자세히 보기 ›").font(WadeFont.pretendard(12.5, weight: .bold)).foregroundStyle(WadeColors.primary(scheme))
+            }.buttonStyle(.plain)
+        }
+        .padding(WadeSpacing.cardPadding)
+        .background(
+            LinearGradient(colors: [WadeColors.aitint1(scheme), WadeColors.aitint2(scheme)], startPoint: .topLeading, endPoint: .bottomTrailing),
+            in: RoundedRectangle(cornerRadius: WadeRadius.card, style: .continuous)
+        )
+    }
+}
+
 struct DonutCard: View {
     @Environment(\.colorScheme) private var scheme
     let total: String

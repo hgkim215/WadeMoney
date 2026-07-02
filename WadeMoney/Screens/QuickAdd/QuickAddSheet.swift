@@ -53,10 +53,37 @@ struct QuickAddSheet: View {
 
             if vm.type == .expense { categoryGrid(vm) }
 
-            TextField("메모 (선택)", text: Binding(get: { vm.memo }, set: { vm.memo = $0 }))
-                .font(WadeFont.pretendard(14.5))
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(spacing: 8) {
+                    TextField("메모 (선택)", text: Binding(get: { vm.memo }, set: { vm.memo = $0 }))
+                        .font(WadeFont.pretendard(14.5))
+                    if vm.showsPolishButton || vm.hasPolished {
+                        Button {
+                            Task { await vm.polishMemo() }
+                        } label: {
+                            HStack(spacing: 4) {
+                                if vm.isPolishing {
+                                    ProgressView().controlSize(.mini)
+                                } else {
+                                    Icon("auto_awesome", size: 14)
+                                }
+                                Text(vm.hasPolished ? "정리됨" : "AI 다듬기").font(WadeFont.pretendard(11.5, weight: .bold))
+                            }
+                            .foregroundStyle(WadeColors.primary(scheme))
+                            .padding(.horizontal, 10).padding(.vertical, 7)
+                            .background(WadeColors.aitint2(scheme), in: Capsule())
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(vm.isPolishing || vm.hasPolished)
+                    }
+                }
                 .padding(13)
                 .background(WadeColors.card2(scheme), in: RoundedRectangle(cornerRadius: WadeRadius.segment))
+
+                if let note = vm.polishNote {
+                    Text(note).font(WadeFont.pretendard(11.5)).foregroundStyle(WadeColors.primary(scheme))
+                }
+            }
 
             AmountKeypad(onKey: { vm.tapKey($0) }, onBackspace: { vm.backspace() })
 
