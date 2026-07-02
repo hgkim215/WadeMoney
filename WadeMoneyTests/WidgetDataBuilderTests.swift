@@ -45,6 +45,28 @@ struct WidgetDataBuilderTests {
 }
 
 extension WidgetDataBuilderTests {
+    @Test func lockScreenBudgetReflectsMonthRemaining() throws {
+        let (repo, settings, container) = try makeRepo()
+        try settings.setMonthlyBudget(100_000, for: YearMonth(year: 2026, month: 7))
+        let food = try catID(repo, "식비")
+        try repo.addTransaction(amount: 40_000, type: .expense, categoryID: food, memo: nil, date: date(2026, 7, 5))
+
+        let data = WidgetDataBuilder.lockScreenBudget(repository: repo, now: date(2026, 7, 15), calendar: utc)
+        #expect(data.remainingText == "60,000원")
+        #expect(data.consumedFraction != nil)
+        _ = container
+    }
+
+    @Test func lockScreenBudgetNilWhenNoBudgetSet() throws {
+        let (repo, _, container) = try makeRepo()
+        let data = WidgetDataBuilder.lockScreenBudget(repository: repo, now: date(2026, 7, 15), calendar: utc)
+        #expect(data.remainingText == nil)
+        #expect(data.consumedFraction == nil)
+        _ = container
+    }
+}
+
+extension WidgetDataBuilderTests {
     @Test func quickRecordChipsReturnsTopThreeActiveCategoriesBySortOrder() throws {
         let (repo, _, container) = try makeRepo()
         let chips = WidgetDataBuilder.quickRecordChips(repository: repo)

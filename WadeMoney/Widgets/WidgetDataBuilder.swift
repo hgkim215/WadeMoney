@@ -43,3 +43,20 @@ extension WidgetDataBuilder {
         }
     }
 }
+
+extension WidgetDataBuilder {
+    struct LockScreenData {
+        let consumedFraction: Double?
+        let remainingText: String?
+    }
+
+    static func lockScreenBudget(repository: LedgerRepository, now: Date, calendar: Calendar) -> LockScreenData {
+        guard let month = try? repository.dashboardSummary(kind: .month, offset: 0, now: now, calendar: calendar) else {
+            return LockScreenData(consumedFraction: nil, remainingText: nil)
+        }
+        return LockScreenData(
+            consumedFraction: month.consumedFraction,
+            remainingText: month.remaining.map { "\(Won.string($0))원" }
+        )
+    }
+}
