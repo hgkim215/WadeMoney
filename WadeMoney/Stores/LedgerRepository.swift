@@ -2,6 +2,12 @@ import Foundation
 import SwiftData
 import WadeMoneyCore
 
+enum HistoryFilter: Equatable {
+    case all
+    case category(UUID)
+    case income
+}
+
 @MainActor
 final class LedgerRepository {
     private let context: ModelContext
@@ -65,11 +71,64 @@ final class LedgerRepository {
         }
     }
 
+    func transactions(filter: HistoryFilter) throws -> [TransactionRecord] {
+        let records = try context.fetch(FetchDescriptor<TransactionModel>())
+            .map { $0.toRecord() }
+        let filtered: [TransactionRecord]
+        switch filter {
+        case .all:
+            filtered = records
+        case .income:
+            filtered = records.filter { $0.type == .income }
+        case .category(let id):
+            filtered = records.filter { $0.type == .expense && $0.categoryID == id }
+        }
+        return filtered.sorted {
+            if $0.date != $1.date { return $0.date > $1.date }
+            return $0.createdAt > $1.createdAt
+        }
+    }
+
+    func transactionRecord(id: UUID) throws -> TransactionRecord? {
+        try context.fetch(FetchDescriptor<TransactionModel>(predicate: #Predicate { $0.id == id }))
+            .first?.toRecord()
+    }
+
+    func updateTransaction(
+        id: UUID,
+        amount: Decimal,
+        type: TransactionKind,
+        categoryID: UUID?,
+        memo: String?,
+        date: Date
+    ) throws {
+        guard let model = try context.fetch(
+            FetchDescriptor<TransactionModel>(predicate: #Predicate { $0.id == id })
+        ).first else { return }
+        var category: CategoryModel?
+        if let categoryID {
+            category = try context.fetch(
+                FetchDescriptor<CategoryModel>(predicate: #Predicate { $0.id == categoryID })
+            ).first
+        }
+        model.amount = amount
+        model.type = type
+        model.category = type == .income ? nil : category
+        model.memo = memo
+        model.date = date
+        try context.save()
+    }
+
+    func totalIncome(in period: Period) throws -> Decimal {
+        Aggregator.totalIncome(try allTransactions(), in: period)
+    }
+
     // MARK: - Dashboard
 
     struct DashboardSummary {
         let period: Period
         let totalExpense: Decimal
+        let totalIncome: Decimal
         let budget: Decimal?
         let remaining: Decimal?
         let consumedFraction: Double?
@@ -119,6 +178,7 @@ final class LedgerRepository {
         return DashboardSummary(
             period: period,
             totalExpense: total,
+            totalIncome: Aggregator.totalIncome(txns, in: period),
             budget: budget,
             remaining: remaining,
             consumedFraction: consumed,
