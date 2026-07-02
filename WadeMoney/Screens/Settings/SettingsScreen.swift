@@ -37,7 +37,7 @@ struct SettingsScreen: View {
                                 subtitle: "iCloud에 안전하게 보관돼요", subtitleColor: WadeColors.good(scheme), trailing: nil, action: nil)
                             row(icon: "ios_share", tint: WadeColors.ink2(scheme), label: "CSV 내보내기", trailing: nil) { exportCSV() }
                         }
-                        Text("WadeMoney v\(Self.appVersion) · 데이터는 이 기기에 있어요")
+                        Text("WadeMoney v\(Self.appVersion) · 데이터는 내 기기와 iCloud에만 보관돼요")
                             .font(WadeFont.pretendard(11.5)).foregroundStyle(WadeColors.ink3(scheme))
                             .frame(maxWidth: .infinity)
                     }
