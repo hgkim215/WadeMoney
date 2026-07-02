@@ -46,11 +46,32 @@ enum CategorySeeder {
     }
 
     private static func fetchOrCreateSettings(_ context: ModelContext) throws -> AppSettingsModel {
-        if let existing = try context.fetch(FetchDescriptor<AppSettingsModel>()).first {
-            return existing
+        // SettingsStore와 같은 결정적 선택 규칙(중복 행 치유 포함)을 쓴다.
+        try SettingsStore(context: context).settingsModel()
+    }
+
+    /// 두 기기가 오프라인에서 각자 시드한 뒤 CloudKit이 병합되면 기본 카테고리가 이름별로 2개씩 생긴다.
+    /// 이름이 같은 기본 카테고리를 id 최솟값 행으로 결정적으로 합치고(거래 재연결), 나머지를 지운다.
+    /// 모든 기기가 같은 승자를 고르므로 동기화 후 상태가 수렴한다. 멱등 — 매 실행 시 호출해도 안전.
+    static func reconcileDuplicateDefaults(_ context: ModelContext) throws {
+        let defaultNames = Set(defaults.map(\.name))
+        let all = try context.fetch(FetchDescriptor<CategoryModel>())
+        let grouped = Dictionary(grouping: all.filter { defaultNames.contains($0.name) }, by: \.name)
+
+        var changed = false
+        for (_, rows) in grouped where rows.count > 1 {
+            let sorted = rows.sorted { $0.id < $1.id }
+            let winner = sorted[0]
+            for loser in sorted.dropFirst() {
+                let loserID = loser.id
+                let orphans = try context.fetch(
+                    FetchDescriptor<TransactionModel>(predicate: #Predicate { $0.category?.id == loserID })
+                )
+                for txn in orphans { txn.category = winner }
+                context.delete(loser)
+                changed = true
+            }
         }
-        let created = AppSettingsModel()
-        context.insert(created)
-        return created
+        if changed { try context.save() }
     }
 }

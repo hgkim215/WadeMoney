@@ -22,8 +22,13 @@ enum CSVExporter {
     }
 
     /// 콤마·따옴표·개행이 있으면 CSV 규칙대로 큰따옴표로 감싼다.
+    /// `=` `+` `-` `@` 등으로 시작하는 필드는 스프레드시트가 수식으로 실행하지 않도록 `'`를 앞에 붙인다(수식 인젝션 방어).
     private static func escape(_ field: String) -> String {
-        guard field.contains(",") || field.contains("\"") || field.contains("\n") else { return field }
-        return "\"" + field.replacingOccurrences(of: "\"", with: "\"\"") + "\""
+        var safe = field
+        if let first = safe.first, "=+-@\t\r".contains(first) {
+            safe = "'" + safe
+        }
+        guard safe.contains(",") || safe.contains("\"") || safe.contains("\n") else { return safe }
+        return "\"" + safe.replacingOccurrences(of: "\"", with: "\"\"") + "\""
     }
 }

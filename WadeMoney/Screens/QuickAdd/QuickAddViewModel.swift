@@ -12,9 +12,16 @@ final class QuickAddViewModel {
     var amountDigits: String = ""
     var type: TransactionKind = .expense { didSet { if type == .income { selectedCategoryID = nil } } }
     var selectedCategoryID: UUID?
-    var memo: String = ""
+    var memo: String = "" {
+        didSet {
+            // 다듬은 뒤 사용자가 메모를 고치면 다시 다듬을 수 있게 되돌린다.
+            if hasPolished && memo != polishedMemoSnapshot { hasPolished = false }
+        }
+    }
+    private var polishedMemoSnapshot: String?
     private(set) var categories: [CategoryRef] = []
     private let editingID: UUID?
+    private let editingDate: Date?
     var isEditing: Bool { editingID != nil }
     private(set) var isPolishing = false
     private(set) var hasPolished = false
@@ -38,13 +45,16 @@ final class QuickAddViewModel {
         self.categories = (try? repository.allCategories(includeArchived: false)) ?? []
         if let editing {
             self.editingID = editing.id
+            self.editingDate = editing.date
             self.amountDigits = "\(NSDecimalNumber(decimal: editing.amount).intValue)"
             self.type = editing.type == .income ? .income : .expense
             self.selectedCategoryID = editing.categoryID
             self.memo = editing.memo ?? ""
         } else {
             self.editingID = nil
-            self.selectedCategoryID = preselectedCategoryID
+            self.editingDate = nil
+            // 딥링크로 받은 카테고리가 보관(아카이브)됐다면 무시한다 — 화면에 없는 카테고리가 몰래 저장되는 것 방지.
+            self.selectedCategoryID = categories.contains { $0.id == preselectedCategoryID } ? preselectedCategoryID : nil
         }
     }
 
@@ -54,8 +64,15 @@ final class QuickAddViewModel {
         defer { isPolishing = false }
         do {
             let names = categories.map(\.name)
-            let result = try await memoPolisher.polish(memo: memo, categoryNames: names)
-            memo = result.polishedMemo
+            let original = memo
+            let result = try await memoPolisher.polish(memo: original, categoryNames: names)
+            // 생성 중 사용자가 메모를 수정했다면 결과로 덮어쓰지 않는다.
+            guard memo == original else { return }
+            // 모델이 빈 문자열을 돌려주면 원본을 지키고 재시도 가능 상태로 남긴다.
+            let polished = result.polishedMemo.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !polished.isEmpty else { return }
+            polishedMemoSnapshot = polished
+            memo = polished
             hasPolished = true
             if type == .expense, selectedCategoryID == nil,
                let name = result.suggestedCategoryName,
@@ -91,8 +108,9 @@ final class QuickAddViewModel {
         guard canSave else { return }
         let catID = type == .income ? nil : selectedCategoryID
         if let editingID {
+            // 수정 시에는 거래의 원래 날짜를 보존한다 — 저장 시점 날짜로 바뀌면 일별 합계·예산 구간이 옮겨간다.
             try repository.updateTransaction(id: editingID, amount: amountDecimal, type: type,
-                                             categoryID: catID, memo: memo.isEmpty ? nil : memo, date: date)
+                                             categoryID: catID, memo: memo.isEmpty ? nil : memo, date: editingDate ?? date)
         } else {
             try repository.addTransaction(amount: amountDecimal, type: type,
                                           categoryID: catID, memo: memo.isEmpty ? nil : memo, date: date)

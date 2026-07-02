@@ -40,9 +40,13 @@ struct QuickAddSheet: View {
                     Spacer()
                     if vm.isEditing {
                         Button {
-                            try? vm.delete()
-                            onSaved()
-                            dismiss()
+                            do {
+                                try vm.delete()
+                                onSaved()
+                                dismiss()
+                            } catch {
+                                // 삭제 실패 시 시트를 닫지 않는다(성공을 가장하지 않음) — 저장 경로와 동일한 규칙.
+                            }
                         } label: {
                             Icon("delete", size: 20).foregroundStyle(WadeColors.bad(scheme))
                         }.buttonStyle(.plain).padding(.trailing, 10)

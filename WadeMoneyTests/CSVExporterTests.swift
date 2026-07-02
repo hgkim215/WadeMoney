@@ -22,4 +22,20 @@ struct CSVExporterTests {
         #expect(lines.contains { $0.contains("2026-07-15") && $0.contains("지출") && $0.contains("식비") && $0.contains("9000") && $0.contains("점심") })
         #expect(lines.contains { $0.contains("2026-07-10") && $0.contains("수입") && $0.contains("45000") })
     }
+
+    @Test func neutralizesSpreadsheetFormulaInjectionInMemo() {
+        let food = CategoryRef(id: UUID(), name: "식비", iconName: "restaurant", colorHex: "#E28A4E", sortOrder: 0)
+        let recs = [
+            TransactionRecord(amount: 1000, type: .expense, categoryID: food.id,
+                              memo: "=HYPERLINK(\"http://evil\",\"x\")", date: date(2026, 7, 15)),
+            TransactionRecord(amount: 2000, type: .expense, categoryID: food.id, memo: "@SUM(A1)", date: date(2026, 7, 15)),
+            TransactionRecord(amount: 3000, type: .expense, categoryID: food.id, memo: "+1+1", date: date(2026, 7, 15)),
+        ]
+        let csv = CSVExporter.csv(recs, categories: [food], calendar: utc)
+        // 수식 선행 문자로 시작하는 셀은 '가 앞에 붙어 스프레드시트가 수식으로 실행하지 않는다.
+        #expect(csv.contains("'=HYPERLINK"))
+        #expect(csv.contains("'@SUM(A1)"))
+        #expect(csv.contains("'+1+1"))
+        #expect(!csv.contains(",=HYPERLINK"))
+    }
 }

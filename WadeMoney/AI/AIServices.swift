@@ -41,4 +41,10 @@ struct ReportNarration: Equatable, Sendable {
 
 protocol ReportNarrating: Sendable {
     func narrate(_ input: ReportInput) async throws -> ReportNarration
+    /// 모델 리소스를 미리 로드해 첫 응답 지연을 줄인다. 기본 구현은 no-op.
+    func prewarm()
+}
+
+extension ReportNarrating {
+    func prewarm() {}
 }

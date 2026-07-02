@@ -17,6 +17,7 @@ public struct DonutSlice: Equatable, Sendable {
 public enum Donut {
     /// 상위 (maxSlices-1)개 + 나머지 병합. 0 이하 카테고리 제외.
     public static func slices(_ totals: [CategoryTotal], maxSlices: Int = 6) -> [DonutSlice] {
+        guard maxSlices > 0 else { return [] }
         let positive = totals.filter { $0.total > 0 }.sorted { $0.total > $1.total }
         let grand = positive.reduce(Decimal(0)) { $0 + $1.total }
         guard grand > 0 else { return [] }

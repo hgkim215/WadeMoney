@@ -13,8 +13,8 @@ struct AIReportScreen: View {
             VStack(alignment: .leading, spacing: WadeSpacing.cardGap) {
                 backRow
                 header
-                if let d = viewModel?.display {
-                    summaryCard(d)
+                if let vm = viewModel, let d = vm.display {
+                    summaryCard(d, isNarrating: vm.isNarrating)
                     projectionCard(d)
                     if !d.changes.isEmpty { changesCard(d) }
                     if let tip = d.tipSentence { tipCard(tip) }
@@ -68,10 +68,13 @@ struct AIReportScreen: View {
             .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private func summaryCard(_ d: AIReportViewModel.Display) -> some View {
+    private func summaryCard(_ d: AIReportViewModel.Display, isNarrating: Bool) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Text("이번 달 요약").font(WadeFont.pretendard(13, weight: .bold)).foregroundStyle(WadeColors.ink(scheme))
+                if isNarrating {
+                    ProgressView().controlSize(.mini)
+                }
                 Spacer()
                 Text(d.tag)
                     .font(WadeFont.pretendard(11, weight: .bold))

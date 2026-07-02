@@ -73,8 +73,19 @@ struct FoundationModelsReportNarrator: ReportNarrating {
         가장 많이 줄어든 카테고리: \(input.topDecrease.map { "\($0.name) \($0.percentText)" } ?? "없음")
         위 정보로 요약 문장 1~2개와 절약 팁 1문장을 작성해줘.
         """
-        let response = try await session.respond(to: prompt, generating: ReportNarrationOutput.self)
+        // 출력은 짧은 문장 2~3개뿐 — 토큰 상한으로 생성 꼬리 지연을 차단한다.
+        let response = try await session.respond(
+            to: prompt,
+            generating: ReportNarrationOutput.self,
+            options: GenerationOptions(maximumResponseTokens: 256)
+        )
         return ReportNarration(summarySentence: response.content.summarySentence, tipSentence: response.content.tipSentence)
+    }
+
+    /// 리포트 화면 진입 시점에 모델 로드를 미리 시작해 첫 응답까지의 지연을 데이터 준비와 겹친다.
+    func prewarm() {
+        guard SystemLanguageModel.default.isAvailable else { return }
+        LanguageModelSession(instructions: aiInstructions).prewarm()
     }
 }
 

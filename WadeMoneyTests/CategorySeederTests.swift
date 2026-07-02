@@ -56,6 +56,38 @@ extension CategorySeederTests {
         #expect(count == 0)   // 다른 기기가 이미 시드했고 플래그가 먼저 동기화됐다고 가정 — 로컬에서 또 시드하지 않음
     }
 
+    @Test func reconcileMergesDuplicateDefaultsAndRepointsTransactions() throws {
+        // 두 기기가 각자 시드한 뒤 CloudKit 병합 → 식비가 2개. 승자(id 최솟값)로 합치고 거래를 재연결.
+        let c = try ctx()
+        let a = CategoryModel(name: "식비", iconName: "restaurant", colorHex: "#E28A4E", sortOrder: 0)
+        let b = CategoryModel(name: "식비", iconName: "restaurant", colorHex: "#E28A4E", sortOrder: 0)
+        c.insert(a); c.insert(b)
+        c.insert(TransactionModel(amount: 5000, type: .expense, category: b, memo: nil,
+                                  date: Date(timeIntervalSince1970: 1_000_000), createdAt: Date(timeIntervalSince1970: 1_000_000)))
+        try c.save()
+
+        try CategorySeeder.reconcileDuplicateDefaults(c)
+
+        let remaining = try c.fetch(FetchDescriptor<CategoryModel>()).filter { $0.name == "식비" }
+        #expect(remaining.count == 1)
+        #expect(remaining.first?.id == min(a.id, b.id))
+        let txn = try c.fetch(FetchDescriptor<TransactionModel>()).first
+        #expect(txn?.category?.id == min(a.id, b.id))   // 거래가 승자 카테고리로 이동
+        _ = try #require(txn)
+    }
+
+    @Test func reconcileLeavesUniqueAndCustomCategoriesAlone() throws {
+        let c = try ctx()
+        try CategorySeeder.seedIfNeeded(c)   // 기본 8종(중복 없음)
+        c.insert(CategoryModel(name: "구독", iconName: "category", colorHex: "#000000", sortOrder: 8))
+        c.insert(CategoryModel(name: "구독", iconName: "category", colorHex: "#000000", sortOrder: 9))   // 커스텀 중복은 대상 아님
+        try c.save()
+
+        try CategorySeeder.reconcileDuplicateDefaults(c)
+
+        #expect(try c.fetchCount(FetchDescriptor<CategoryModel>()) == 10)   // 변화 없음(멱등·범위 제한)
+    }
+
     @Test func backfillsFlagWhenCategoriesAlreadyExistWithoutFlag() throws {
         let c = try ctx()
         c.insert(CategoryModel(name: "커스텀", iconName: "category", colorHex: "#000000", sortOrder: 0))

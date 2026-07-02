@@ -93,4 +93,26 @@ struct PaceCalculatorTests {
         let items = pace.categoryPace(kind: .month, containing: TS.date(2026, 7, 1), asOf: TS.date(2026, 7, 15), txns: txns)
         #expect(!items.contains { $0.categoryID == cafe })
     }
+
+    @Test func completedShorterPeriodComparesAgainstFullPriorPeriod() {
+        // 완료된 2월(28일) vs 1월(31일). 이전엔 min(28,31)로 1월 29~31일 지출이 빠졌다 —
+        // 끝난 기간은 이전 기간 전체와 비교해야 한다.
+        let txns = [
+            TransactionRecord(amount: 100_000, type: .expense, categoryID: food, date: TS.date(2026, 1, 30)),
+            TransactionRecord(amount: 50_000, type: .expense, categoryID: food, date: TS.date(2026, 2, 10)),
+        ]
+        let r = pace.pace(kind: .month, containing: TS.date(2026, 2, 1), asOf: TS.date(2026, 3, 5), txns: txns)
+        #expect(r.currentCumulative == 50_000)
+        #expect(r.priorCumulative == 100_000)   // 1월 30일 지출 포함(전체 비교)
+        #expect(r.deltaRatio == Decimal(-50_000) / Decimal(100_000))
+    }
+
+    @Test func categoryPaceCompletedPeriodUsesFullPrior() {
+        let txns = [
+            TransactionRecord(amount: 100_000, type: .expense, categoryID: food, date: TS.date(2026, 1, 31)),
+            TransactionRecord(amount: 50_000, type: .expense, categoryID: food, date: TS.date(2026, 2, 10)),
+        ]
+        let items = pace.categoryPace(kind: .month, containing: TS.date(2026, 2, 1), asOf: TS.date(2026, 3, 5), txns: txns)
+        #expect(items.first { $0.categoryID == food }?.priorCumulative == 100_000)
+    }
 }

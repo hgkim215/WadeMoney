@@ -27,4 +27,9 @@ struct DonutTests {
         #expect(Donut.slices(totals([0, 0]), maxSlices: 6).isEmpty)
         #expect(Donut.slices([], maxSlices: 6).isEmpty)
     }
+
+    @Test func nonPositiveMaxSlicesReturnsEmptyInsteadOfTrapping() {
+        #expect(Donut.slices(totals([100]), maxSlices: 0).isEmpty)
+        #expect(Donut.slices(totals([100, 50]), maxSlices: -1).isEmpty)
+    }
 }

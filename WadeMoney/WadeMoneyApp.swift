@@ -26,6 +26,8 @@ struct WadeMoneyApp: App {
         }
         container = resolved
         try? CategorySeeder.seedIfNeeded(resolved.mainContext)
+        // CloudKit 병합으로 생긴 중복 기본 카테고리를 매 실행 시 결정적으로 합친다(멱등).
+        try? CategorySeeder.reconcileDuplicateDefaults(resolved.mainContext)
         try? _ = SettingsStore(context: resolved.mainContext).settingsModel()
     }
 

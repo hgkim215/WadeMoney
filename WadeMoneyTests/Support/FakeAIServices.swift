@@ -25,10 +25,48 @@ struct FakeReportNarrator: ReportNarrating {
 
 final class SpyReportNarrator: ReportNarrating, @unchecked Sendable {
     private(set) var lastInput: ReportInput?
+    private(set) var callCount = 0
+    private(set) var prewarmCount = 0
     var result: Result<ReportNarration, Error>
     init(result: Result<ReportNarration, Error>) { self.result = result }
     func narrate(_ input: ReportInput) async throws -> ReportNarration {
         lastInput = input
+        callCount += 1
         return try result.get()
+    }
+    func prewarm() { prewarmCount += 1 }
+}
+
+/// open()이 불릴 때까지 polish가 완료되지 않는 폴리셔 — 생성 중 사용자 편집 보호 검증용.
+final class GatedMemoPolisher: MemoPolishing, @unchecked Sendable {
+    private var continuation: CheckedContinuation<Void, Never>?
+    private(set) var started = false
+    let result: MemoPolishResult
+    init(result: MemoPolishResult) { self.result = result }
+    func polish(memo: String, categoryNames: [String]) async throws -> MemoPolishResult {
+        started = true
+        await withCheckedContinuation { continuation = $0 }
+        return result
+    }
+    func open() {
+        continuation?.resume()
+        continuation = nil
+    }
+}
+
+/// open()이 불릴 때까지 narrate가 완료되지 않는 내레이터 — 2단계 표시(숫자 먼저) 검증용.
+final class GatedReportNarrator: ReportNarrating, @unchecked Sendable {
+    private var continuation: CheckedContinuation<Void, Never>?
+    private(set) var started = false
+    let result: ReportNarration
+    init(result: ReportNarration) { self.result = result }
+    func narrate(_ input: ReportInput) async throws -> ReportNarration {
+        started = true
+        await withCheckedContinuation { continuation = $0 }
+        return result
+    }
+    func open() {
+        continuation?.resume()
+        continuation = nil
     }
 }

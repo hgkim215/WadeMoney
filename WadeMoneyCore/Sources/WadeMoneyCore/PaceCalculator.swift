@@ -49,7 +49,9 @@ public struct PaceCalculator: Sendable {
 
         let prior = calc.previous(current)
         let priorLength = calc.dayCount(of: prior)
-        let priorD = min(d, priorLength)
+        // 진행 중이면 같은 경과일까지만 비교, 이미 끝난 기간이면 이전 기간 전체와 비교한다
+        // (예: 완료된 2월(28일)을 1월 1~28일로 자르면 1월 말 지출이 빠져 증가율이 과장된다).
+        let priorD = now >= current.end ? priorLength : min(d, priorLength)
         let priorEnd = calc.calendar.date(byAdding: .day, value: priorD, to: prior.start)!
         let priorSum = Aggregator.totalExpense(txns, from: prior.start, to: priorEnd)
 
@@ -73,7 +75,8 @@ extension PaceCalculator {
 
         let prior = calc.previous(current)
         let priorLength = calc.dayCount(of: prior)
-        let priorD = min(d, priorLength)
+        // pace()와 동일한 규칙: 끝난 기간은 이전 기간 전체와 비교.
+        let priorD = now >= current.end ? priorLength : min(d, priorLength)
         let priorEnd = calc.calendar.date(byAdding: .day, value: priorD, to: prior.start)!
         let priorTotals = Aggregator.totalsByCategory(txns, from: prior.start, to: priorEnd)
 

@@ -39,6 +39,24 @@ struct QuickAddEditTests {
         _ = c
     }
 
+    @Test func editingPreservesOriginalTransactionDate() throws {
+        let (r, c) = try repo()
+        let food = try catID(r, "식비")
+        let originalDate = date()
+        try r.addTransaction(amount: 5000, type: .expense, categoryID: food, memo: nil, date: originalDate)
+        let rec = try r.transactions(filter: .all)[0]
+
+        let vm = QuickAddViewModel(repository: r, editing: rec)
+        vm.amountDigits = "6000"
+        // 다음 날 수정해도 거래 날짜는 원래 날짜를 유지해야 한다(일별 합계·예산 구간 이동 방지).
+        try vm.save(date: originalDate.addingTimeInterval(86_400))
+
+        let updated = try #require(try r.transactionRecord(id: rec.id))
+        #expect(updated.amount == 6000)
+        #expect(updated.date == originalDate)
+        _ = c
+    }
+
     @Test func deleteRemovesTransaction() throws {
         let (r, c) = try repo()
         let food = try catID(r, "식비")

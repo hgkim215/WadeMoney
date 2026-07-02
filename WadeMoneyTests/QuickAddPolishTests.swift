@@ -59,6 +59,52 @@ struct QuickAddPolishTests {
         _ = container
     }
 
+    @Test func emptyPolishResultKeepsOriginalMemoAndAllowsRetry() async throws {
+        let (repo, container) = try repoWithSettings(aiEnabled: true)
+        let vm = QuickAddViewModel(repository: repo,
+                                    aiAvailability: FakeAIAvailability(isAvailable: true),
+                                    memoPolisher: FakeMemoPolisher(result: .success(MemoPolishResult(polishedMemo: "  ", suggestedCategoryName: nil))))
+        vm.memo = "스타벅스 아메리카노"
+        await vm.polishMemo()
+
+        #expect(vm.memo == "스타벅스 아메리카노")   // 빈 결과가 원본을 지우지 않음
+        #expect(!vm.hasPolished)                    // 재시도 가능
+        _ = container
+    }
+
+    @Test func editingMemoAfterPolishReenablesPolish() async throws {
+        let (repo, container) = try repoWithSettings(aiEnabled: true)
+        let vm = QuickAddViewModel(repository: repo,
+                                    aiAvailability: FakeAIAvailability(isAvailable: true),
+                                    memoPolisher: FakeMemoPolisher(result: .success(MemoPolishResult(polishedMemo: "아메리카노", suggestedCategoryName: nil))))
+        vm.memo = "아아"
+        await vm.polishMemo()
+        #expect(vm.hasPolished)
+
+        vm.memo = "아메리카노 법인카드"   // 다듬은 뒤 사용자가 수정
+        #expect(!vm.hasPolished)          // 다시 다듬을 수 있어야 한다
+        _ = container
+    }
+
+    @Test func concurrentUserEditIsNotOverwrittenByPolishResult() async throws {
+        let (repo, container) = try repoWithSettings(aiEnabled: true)
+        let gated = GatedMemoPolisher(result: MemoPolishResult(polishedMemo: "다듬어진 메모", suggestedCategoryName: nil))
+        let vm = QuickAddViewModel(repository: repo,
+                                    aiAvailability: FakeAIAvailability(isAvailable: true),
+                                    memoPolisher: gated)
+        vm.memo = "원본"
+        let polishing = Task { await vm.polishMemo() }
+        for _ in 0..<10_000 where !gated.started { await Task.yield() }
+
+        vm.memo = "원본 수정함"   // 생성 중 사용자가 편집
+        gated.open()
+        await polishing.value
+
+        #expect(vm.memo == "원본 수정함")   // AI 결과가 사용자의 최신 입력을 덮지 않음
+        #expect(!vm.hasPolished)
+        _ = container
+    }
+
     @Test func hidesPolishButtonWhenAIDisabled() throws {
         let (repo, container) = try repoWithSettings(aiEnabled: false)
         let vm = QuickAddViewModel(repository: repo,

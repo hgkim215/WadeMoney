@@ -51,7 +51,8 @@ final class LedgerRepository {
         date: Date
     ) throws {
         var category: CategoryModel?
-        if let categoryID {
+        // 수입은 카테고리를 갖지 않는다 — updateTransaction과 동일한 규칙.
+        if let categoryID, type == .expense {
             category = try context.fetch(
                 FetchDescriptor<CategoryModel>(predicate: #Predicate { $0.id == categoryID })
             ).first
