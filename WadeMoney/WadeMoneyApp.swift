@@ -26,6 +26,7 @@ struct WadeMoneyApp: App {
         }
         container = resolved
         try? CategorySeeder.seedIfNeeded(resolved.mainContext)
+        try? _ = SettingsStore(context: resolved.mainContext).settingsModel()
     }
 
     var body: some Scene {
