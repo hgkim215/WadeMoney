@@ -47,7 +47,7 @@ struct CategoryEditSheet: View {
                     TextField("이름", text: $name).font(WadeFont.pretendard(17, weight: .semibold))
                 }
                 sectionLabel("아이콘")
-                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 6), spacing: 8) {
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 44), spacing: 8)], spacing: 8) {
                     ForEach(CategoryPalette.icons, id: \.self) { name in
                         Button { icon = name } label: {
                             Icon(name, size: 20).foregroundStyle(icon == name ? Color(hex: color) : WadeColors.ink2(scheme))
@@ -58,7 +58,7 @@ struct CategoryEditSheet: View {
                     }
                 }
                 sectionLabel("색")
-                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 6), spacing: 8) {
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 36), spacing: 8)], spacing: 8) {
                     ForEach(CategoryPalette.colors, id: \.self) { hex in
                         Button { color = hex } label: {
                             Circle().fill(Color(hex: hex)).frame(width: 36, height: 36)
