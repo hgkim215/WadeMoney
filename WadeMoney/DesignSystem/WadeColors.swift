@@ -36,4 +36,6 @@ enum WadeColors {
             ? Color.black.opacity(0.40)
             : Color(red: 120/255, green: 90/255, blue: 60/255).opacity(0.10)
     }
+    /// primary/good 등 채워진 배경 위에 올라가는 텍스트·아이콘 색(라이트/다크 공통 흰색).
+    static func onPrimary(_ s: ColorScheme) -> Color { .white }
 }

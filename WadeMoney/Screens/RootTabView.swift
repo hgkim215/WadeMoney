@@ -59,20 +59,10 @@ struct RootTabView: View {
 
     private var fab: some View {
         Button { showAdd = true } label: {
-            Icon("add", size: 30).foregroundStyle(.white)
+            Icon("add", size: 30).foregroundStyle(WadeColors.onPrimary(scheme))
                 .frame(width: 58, height: 58)
                 .background(WadeColors.primary(scheme), in: RoundedRectangle(cornerRadius: WadeRadius.fab, style: .continuous))
                 .shadow(color: WadeColors.primaryglow(scheme), radius: 20, y: 8)
         }.buttonStyle(.plain).offset(y: -14).frame(width: 60)
-    }
-}
-
-struct PlaceholderScreen: View {
-    @Environment(\.colorScheme) private var scheme
-    let title: String
-    var body: some View {
-        VStack { Text(title).font(WadeFont.pretendard(30, weight: .heavy)) }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(WadeColors.bg(scheme))
     }
 }

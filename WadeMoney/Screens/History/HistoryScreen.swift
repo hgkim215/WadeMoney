@@ -24,7 +24,7 @@ struct HistoryScreen: View {
                                     vm.filter = chip.filter; vm.load()
                                 } label: {
                                     Text(chip.label).font(WadeFont.pretendard(13, weight: .bold))
-                                        .foregroundStyle(chip.isSelected ? .white : WadeColors.ink2(scheme))
+                                        .foregroundStyle(chip.isSelected ? WadeColors.onPrimary(scheme) : WadeColors.ink2(scheme))
                                         .padding(.horizontal, 14).padding(.vertical, 8)
                                         .background(chip.isSelected ? WadeColors.primary(scheme) : WadeColors.card(scheme), in: Capsule())
                                 }.buttonStyle(.plain)

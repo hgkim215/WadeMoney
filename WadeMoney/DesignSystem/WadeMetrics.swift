@@ -9,6 +9,8 @@ enum WadeRadius {
     static let pill: CGFloat = 999
     static let sheet: CGFloat = 30
     static let fab: CGFloat = 20
+    static let button: CGFloat = 18
+    static let smallTile: CGFloat = 11
 }
 
 enum WadeSpacing {

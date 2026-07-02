@@ -69,7 +69,7 @@ struct CategoryManageScreen: View {
     private func rowContent(_ item: CategoryManageViewModel.Item) -> some View {
         HStack(spacing: 13) {
             Icon(item.iconName, size: 20).foregroundStyle(Color(hex: item.colorHex)).frame(width: 36, height: 36)
-                .background(Color(hex: item.colorHex).opacity(0.15), in: RoundedRectangle(cornerRadius: 11))
+                .background(Color(hex: item.colorHex).opacity(0.15), in: RoundedRectangle(cornerRadius: WadeRadius.smallTile))
             VStack(alignment: .leading, spacing: 2) {
                 Text(item.name).font(WadeFont.pretendard(15, weight: .semibold)).foregroundStyle(WadeColors.ink(scheme))
                 Text(item.usageText).font(WadeFont.pretendard(11.5)).foregroundStyle(WadeColors.ink3(scheme))

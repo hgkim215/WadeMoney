@@ -63,7 +63,7 @@ struct CategoryEditSheet: View {
                     onSave(name.trimmingCharacters(in: .whitespaces), icon, color); dismiss()
                 } label: {
                     Text("저장").font(WadeFont.pretendard(17, weight: .heavy))
-                        .foregroundStyle(canSave ? .white : WadeColors.ink3(scheme))
+                        .foregroundStyle(canSave ? WadeColors.onPrimary(scheme) : WadeColors.ink3(scheme))
                         .frame(maxWidth: .infinity).padding(16)
                         .background(canSave ? WadeColors.primary(scheme) : WadeColors.track(scheme),
                                     in: RoundedRectangle(cornerRadius: 16, style: .continuous))
