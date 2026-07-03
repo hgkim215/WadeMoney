@@ -35,10 +35,12 @@ final class HistoryViewModel {
     private let calendar: Calendar
 
     var filter: HistoryFilter = .all
+    var searchQuery: String = ""
     private(set) var chips: [FilterChip] = []
     private(set) var groups: [DayGroup] = []
 
     var isEmpty: Bool { groups.isEmpty }
+    var hasSearchQuery: Bool { !searchQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
 
     init(repository: LedgerRepository, now: Date, calendar: Calendar) {
         self.repository = repository
@@ -51,7 +53,8 @@ final class HistoryViewModel {
         let byID = Dictionary(uniqueKeysWithValues: categories.map { ($0.id, $0) })
         chips = buildChips(categories: categories)
 
-        let records = (try? repository.transactions(filter: filter)) ?? []
+        let records = ((try? repository.transactions(filter: filter)) ?? [])
+            .filter { matchesSearch($0, byID: byID) }
         groups = groupByDay(records, byID: byID)
     }
 
@@ -102,6 +105,27 @@ final class HistoryViewModel {
             amountText: "\(sign)\(Won.string(r.amount))",
             isIncome: isIncome
         )
+    }
+
+    private func matchesSearch(_ r: TransactionRecord, byID: [UUID: CategoryRef]) -> Bool {
+        let rawQuery = searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !rawQuery.isEmpty else { return true }
+
+        let query = rawQuery.lowercased()
+        let digits = rawQuery.filter(\.isNumber)
+        let category = r.categoryID.flatMap { byID[$0]?.name } ?? (r.type == .income ? "수입" : "기타")
+        let memo = r.memo ?? ""
+        let type = r.type == .income ? "수입" : "지출"
+        let searchableText = [memo, category, type, Won.string(r.amount)]
+            .joined(separator: " ")
+            .lowercased()
+
+        if searchableText.contains(query) { return true }
+        if !digits.isEmpty {
+            let amountDigits = Won.string(r.amount).filter(\.isNumber)
+            return amountDigits.contains(digits)
+        }
+        return false
     }
 
     private func dayLabel(_ day: Date) -> String {

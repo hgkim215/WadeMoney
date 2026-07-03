@@ -59,6 +59,28 @@ struct HistoryViewModelTests {
         _ = c
     }
 
+    @Test func searchFiltersByMemoCategoryAndAmount() throws {
+        let (r, c) = try repo()
+        let food = try catID(r, "식비")
+        let cafe = try catID(r, "카페")
+        try r.addTransaction(amount: 9000, type: .expense, categoryID: food, memo: "점심 김밥", date: date(2026, 7, 15, 12))
+        try r.addTransaction(amount: 4800, type: .expense, categoryID: cafe, memo: "아메리카노", date: date(2026, 7, 15, 13))
+
+        let vm = HistoryViewModel(repository: r, now: date(2026, 7, 15, 20), calendar: utc)
+        vm.searchQuery = "김밥"
+        vm.load()
+        #expect(vm.groups.flatMap(\.rows).map(\.name) == ["점심 김밥"])
+
+        vm.searchQuery = "카페"
+        vm.load()
+        #expect(vm.groups.flatMap(\.rows).map(\.name) == ["아메리카노"])
+
+        vm.searchQuery = "4,800"
+        vm.load()
+        #expect(vm.groups.flatMap(\.rows).map(\.amountText) == ["−4,800"])
+        _ = c
+    }
+
     @Test func mixedExpenseAndIncomeDayShowsExpenseSumOnly() throws {
         let (r, c) = try repo()
         let food = try catID(r, "식비")
