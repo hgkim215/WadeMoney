@@ -39,3 +39,35 @@ enum SentenceHighlighter {
         return .neutral
     }
 }
+
+extension SentenceHighlighter {
+    /// text를 강조 구간 기준으로 나눠 Text로 조합한다. 강조 구간은 굵게+kind별 색상,
+    /// 나머지는 기본 잉크색을 적용해 기존 평문 Text와 같은 기본 톤을 유지한다.
+    static func styledText(_ text: String, font: Font, scheme: ColorScheme) -> Text {
+        let baseColor = WadeColors.ink(scheme)
+        var result = Text("")
+        var cursor = text.startIndex
+        for span in spans(in: text) {
+            if cursor < span.range.lowerBound {
+                result = result + Text(text[cursor..<span.range.lowerBound]).font(font).foregroundStyle(baseColor)
+            }
+            result = result + Text(text[span.range])
+                .font(font)
+                .fontWeight(.bold)
+                .foregroundStyle(highlightColor(for: span.kind, scheme: scheme))
+            cursor = span.range.upperBound
+        }
+        if cursor < text.endIndex {
+            result = result + Text(text[cursor...]).font(font).foregroundStyle(baseColor)
+        }
+        return result
+    }
+
+    private static func highlightColor(for kind: HighlightKind, scheme: ColorScheme) -> Color {
+        switch kind {
+        case .increase: return WadeColors.bad(scheme)
+        case .decrease: return WadeColors.good(scheme)
+        case .neutral: return WadeColors.ink(scheme)
+        }
+    }
+}

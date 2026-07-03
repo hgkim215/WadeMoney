@@ -17,13 +17,18 @@ struct AIReportScreen: View {
                     summaryCard(d, isNarrating: vm.isNarrating)
                     projectionCard(d)
                     if !d.changes.isEmpty { changesCard(d) }
-                    if let tip = d.tipSentence { tipCard(tip) }
+                    if let tip = d.tipSentence {
+                        tipCard(tip)
+                    } else if vm.isNarrating {
+                        tipCard("절약 팁을 준비하고 있어요…", isPlaceholder: true)
+                    }
                     footerNote
                 }
             }
             .padding(.horizontal, WadeSpacing.screenH)
             .padding(.top, WadeSpacing.contentTop)
             .padding(.bottom, WadeSpacing.contentBottom)
+            .animation(.easeInOut(duration: 0.25), value: viewModel?.display?.tipSentence)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(WadeColors.bg(scheme))
@@ -82,8 +87,11 @@ struct AIReportScreen: View {
                     .padding(.horizontal, 9).padding(.vertical, 4)
                     .background(d.isGood ? WadeColors.goodsoft(scheme) : WadeColors.badsoft(scheme), in: Capsule())
             }
-            Text(d.summarySentence ?? "이번 달 총지출은 \(d.totalText)원이에요.")
-                .font(WadeFont.pretendard(14.5)).foregroundStyle(WadeColors.ink(scheme))
+            SentenceHighlighter.styledText(
+                d.summarySentence ?? "이번 달 총지출은 \(d.totalText)원이에요.",
+                font: WadeFont.pretendard(14.5),
+                scheme: scheme
+            )
         }
         .padding(WadeSpacing.cardPadding)
         .background(
@@ -134,14 +142,15 @@ struct AIReportScreen: View {
         }
     }
 
-    private func tipCard(_ tip: String) -> some View {
+    private func tipCard(_ tip: String, isPlaceholder: Bool = false) -> some View {
         HStack(alignment: .top, spacing: 10) {
             Icon("lightbulb", size: 19).foregroundStyle(WadeColors.primary(scheme))
-            Text(tip).font(WadeFont.pretendard(13.5)).foregroundStyle(WadeColors.ink(scheme))
+            SentenceHighlighter.styledText(tip, font: WadeFont.pretendard(13.5), scheme: scheme)
         }
         .padding(WadeSpacing.cardPadding)
         .background(WadeColors.primarysoft(scheme), in: RoundedRectangle(cornerRadius: WadeRadius.card, style: .continuous))
         .frame(maxWidth: .infinity, alignment: .leading)
+        .redacted(reason: isPlaceholder ? .placeholder : [])
     }
 
     private var footerNote: some View {
