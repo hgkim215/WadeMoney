@@ -14,11 +14,11 @@ struct MascotAnimationState: Equatable {
     /// 0=입 다뭄, 1=씹느라 살짝 벌어짐.
     var mouthOpenProgress: CGFloat = 0
     /// 부스러기 3개 각각의 등장 진행도(0=안 보임, 1=완전히 팝).
-    var crumbProgress: [CGFloat] = [0, 0, 0]
+    var crumbProgress: [CGFloat] = [1, 1, 1]
 
     /// 스플래시 시작 시점: 도넛이 화면 위쪽 밖에 있고, 아직 베어물지 않은 완전한 원.
     static let initial = MascotAnimationState(
-        faceScale: 0.85,
+        faceScale: 1.0,
         donutOffset: CGSize(width: 0, height: -90),
         donutRotationDegrees: -34,
         biteMaskProgress: 0,
@@ -42,6 +42,7 @@ struct MascotView: View {
             crumbs
         }
         .frame(width: 200, height: 200)
+        .accessibilityHidden(true)
     }
 
     private var pig: some View {

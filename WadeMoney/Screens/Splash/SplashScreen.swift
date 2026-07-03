@@ -10,7 +10,8 @@ struct SplashScreen: View {
     @Environment(\.colorScheme) private var scheme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var mascotState: MascotAnimationState = .initial
-    @State private var opacity: Double = 1
+    @State private var screenOpacity: Double = 1
+    @State private var mascotOpacity: Double = 0
     let onFinished: () -> Void
 
     var body: some View {
@@ -18,8 +19,9 @@ struct SplashScreen: View {
             .ignoresSafeArea()
             .overlay {
                 MascotView(state: mascotState)
+                    .opacity(mascotOpacity)
             }
-            .opacity(opacity)
+            .opacity(screenOpacity)
             .task { await runTimeline() }
     }
 
@@ -27,7 +29,7 @@ struct SplashScreen: View {
         let timeline = SplashTimeline.active(reduceMotion: reduceMotion)
 
         withAnimation(.easeOut(duration: max(timeline.entrance, 0.001))) {
-            mascotState.faceScale = 1.0
+            mascotOpacity = 1
         }
         try? await Task.sleep(for: .seconds(timeline.entrance))
 
@@ -56,12 +58,11 @@ struct SplashScreen: View {
         withAnimation(.easeInOut(duration: max(timeline.biteImpact * 0.75, 0.001))) {
             mascotState.faceScale = 1.0
             mascotState.mouthOpenProgress = 0
-            mascotState.crumbProgress = [0, 0, 0]
         }
         try? await Task.sleep(for: .seconds(timeline.hold))
 
         withAnimation(.easeInOut(duration: max(timeline.exit, 0.001))) {
-            opacity = 0
+            screenOpacity = 0
         }
         try? await Task.sleep(for: .seconds(timeline.exit))
 
