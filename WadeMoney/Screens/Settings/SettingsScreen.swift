@@ -5,13 +5,23 @@ import WadeMoneyCore
 struct SettingsScreen: View {
     @Environment(\.colorScheme) private var scheme
     @Environment(\.modelContext) private var modelContext
-    @Environment(\.openURL) private var openURL
     @State private var viewModel: SettingsViewModel?
-    @State private var showBudget = false
-    @State private var showMonthStartDay = false
     @State private var showCategories = false
-    private struct ShareItem: Identifiable { let id = UUID(); let url: URL }
-    @State private var shareItem: ShareItem?
+    @State private var presentedSheet: SettingsSheet?
+
+    private enum SettingsSheet: Identifiable {
+        case budget
+        case monthStartDay
+        case share(URL)
+
+        var id: String {
+            switch self {
+            case .budget: return "budget"
+            case .monthStartDay: return "monthStartDay"
+            case .share(let url): return "share-\(url.absoluteString)"
+            }
+        }
+    }
 
     /// 빌드 설정(MARKETING_VERSION)에서 주입되는 실제 앱 버전 — 하드코딩 금지.
     static let appVersion =
@@ -25,8 +35,10 @@ struct SettingsScreen: View {
                     if let vm = viewModel {
                         section("예산") {
                             row(icon: "account_balance_wallet", tint: WadeColors.primary(scheme), label: "이번 달 예산",
-                                trailing: vm.budgetRowText) { showBudget = true }
-                            row(icon: "event", tint: WadeColors.ink2(scheme), label: "월 시작일", trailing: vm.monthStartDayText) { showMonthStartDay = true }
+                                trailing: vm.budgetRowText) { presentedSheet = .budget }
+                            row(icon: "event", tint: WadeColors.ink2(scheme), label: "월 시작일", trailing: vm.monthStartDayText) {
+                                presentedSheet = .monthStartDay
+                            }
                         }
                         section("카테고리 · AI") {
                             row(icon: "category", tint: WadeColors.ink2(scheme), label: "카테고리 관리",
@@ -42,12 +54,8 @@ struct SettingsScreen: View {
                             row(icon: "ios_share", tint: WadeColors.ink2(scheme), label: "CSV 내보내기", trailing: nil) { exportCSV() }
                         }
                         section("정보") {
-                            row(icon: "description", tint: WadeColors.ink2(scheme), label: "이용약관", trailing: nil) {
-                                openURL(WadeMoneyLegal.termsOfService)
-                            }
-                            row(icon: "privacy_tip", tint: WadeColors.ink2(scheme), label: "개인정보처리방침", trailing: nil) {
-                                openURL(WadeMoneyLegal.privacyPolicy)
-                            }
+                            legalRow(icon: "description", label: "이용약관", url: WadeMoneyLegal.termsOfService)
+                            legalRow(icon: "privacy_tip", label: "개인정보처리방침", url: WadeMoneyLegal.privacyPolicy)
                         }
                         Text("WadeMoney v\(Self.appVersion) · 데이터는 내 기기와 iCloud에만 보관돼요")
                             .font(WadeFont.pretendard(11.5)).foregroundStyle(WadeColors.ink3(scheme))
@@ -61,13 +69,9 @@ struct SettingsScreen: View {
             .background(WadeColors.bg(scheme))
             .navigationDestination(isPresented: $showCategories) { CategoryManageScreen() }
         }
-        .sheet(isPresented: $showBudget) {
-            BudgetSheet(current: viewModel?.budget ?? 0) { amount in viewModel?.setBudget(amount) }
+        .sheet(item: $presentedSheet) { sheet in
+            sheetContent(sheet)
         }
-        .sheet(isPresented: $showMonthStartDay) {
-            MonthStartDaySheet(current: viewModel?.monthStartDay ?? 1) { day in viewModel?.setMonthStartDay(day) }
-        }
-        .sheet(item: $shareItem) { item in ActivityView(url: item.url) }
         .onAppear {
             if viewModel == nil {
                 let ctx = modelContext
@@ -87,7 +91,18 @@ struct SettingsScreen: View {
         let csv = CSVExporter.csv(records, categories: cats, calendar: .current)
         let url = FileManager.default.temporaryDirectory.appendingPathComponent("wademoney.csv")
         if (try? csv.data(using: .utf8)?.write(to: url)) != nil {
-            shareItem = ShareItem(url: url)
+            presentedSheet = .share(url)
+        }
+    }
+
+    @ViewBuilder private func sheetContent(_ sheet: SettingsSheet) -> some View {
+        switch sheet {
+        case .budget:
+            BudgetSheet(current: viewModel?.budget ?? 0) { amount in viewModel?.setBudget(amount) }
+        case .monthStartDay:
+            MonthStartDaySheet(current: viewModel?.monthStartDay ?? 1) { day in viewModel?.setMonthStartDay(day) }
+        case .share(let url):
+            ActivityView(url: url)
         }
     }
 
@@ -125,6 +140,8 @@ struct SettingsScreen: View {
             if action != nil { Icon("chevron_right", size: 20, filled: false).foregroundStyle(WadeColors.ink3(scheme)) }
         }
         .padding(.horizontal, 16).padding(.vertical, 15)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
 
         if let action {
             Button(action: action) { content }.buttonStyle(.plain)
@@ -133,11 +150,31 @@ struct SettingsScreen: View {
         }
     }
 
+    private func legalRow(icon: String, label: String, url: URL) -> some View {
+        NavigationLink {
+            LegalDocumentView(title: label, url: url)
+        } label: {
+            HStack(spacing: 13) {
+                Icon(icon, size: 20).foregroundStyle(WadeColors.ink2(scheme)).frame(width: 36, height: 36)
+                    .background(WadeColors.ink2(scheme).opacity(0.15), in: RoundedRectangle(cornerRadius: 10))
+                Text(label).font(WadeFont.pretendard(15, weight: .semibold)).foregroundStyle(WadeColors.ink(scheme))
+                Spacer()
+                Icon("chevron_right", size: 20, filled: false).foregroundStyle(WadeColors.ink3(scheme))
+            }
+            .padding(.horizontal, 16).padding(.vertical, 15)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
     private func appearanceRow(_ vm: SettingsViewModel) -> some View {
         HStack(spacing: 13) {
             Icon("contrast", size: 20).foregroundStyle(WadeColors.ink2(scheme)).frame(width: 36, height: 36)
                 .background(WadeColors.ink2(scheme).opacity(0.15), in: RoundedRectangle(cornerRadius: 10))
             Text("화면 모드").font(WadeFont.pretendard(15, weight: .semibold)).foregroundStyle(WadeColors.ink(scheme))
+                .lineLimit(1)
+                .fixedSize(horizontal: true, vertical: false)
             Spacer()
             Picker("화면 모드", selection: Binding(get: { vm.appearance }, set: { vm.setAppearance($0) })) {
                 ForEach(AppAppearance.allCases) { option in
@@ -145,7 +182,7 @@ struct SettingsScreen: View {
                 }
             }
             .pickerStyle(.segmented)
-            .frame(width: 180)
+            .frame(width: 156)
         }
         .padding(.horizontal, 16).padding(.vertical, 12)
     }
