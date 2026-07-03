@@ -19,8 +19,10 @@ enum WadeSpacing {
     static let cardPadding: CGFloat = 20
     static let dashboardBlockHeight: CGFloat = 188
     static let dashboardContentBottom: CGFloat = 172
-    static let contentTop: CGFloat = 16
+    static let contentTop: CGFloat = 24
     static let contentBottom: CGFloat = 104
+    static let sheetTop: CGFloat = 24
+    static let sheetBottom: CGFloat = 34
 }
 
 struct WadeShadow {

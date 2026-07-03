@@ -26,7 +26,6 @@ struct BudgetSheet: View {
                         Icon("close", size: 20).foregroundStyle(WadeColors.ink2(scheme))
                     }.buttonStyle(.plain)
                 }
-                .padding(.top, 16)
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
                     Text("₩").font(WadeFont.pretendard(26, weight: .bold))
                     Text(digits.isEmpty ? "0" : Won.string(amount)).font(WadeFont.pretendard(52, weight: .heavy))
@@ -52,9 +51,11 @@ struct BudgetSheet: View {
                         .foregroundStyle(WadeColors.ink3(scheme))
                 }.buttonStyle(.plain).padding(.top, 2)
             }
-            .padding(.horizontal, WadeSpacing.screenH).padding(.bottom, 34)
+            .padding(.horizontal, WadeSpacing.screenH)
+            .padding(.top, WadeSpacing.sheetTop)
+            .padding(.bottom, WadeSpacing.sheetBottom)
         }
-        .presentationDetents([.medium, .large])
+        .presentationDetents([.height(520), .large])
         .background(WadeColors.sheet(scheme))
     }
 }

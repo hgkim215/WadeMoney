@@ -20,7 +20,6 @@ struct MonthStartDaySheet: View {
                     Icon("close", size: 20).foregroundStyle(WadeColors.ink2(scheme))
                 }.buttonStyle(.plain)
             }
-            .padding(.top, 16)
 
             Text("지출 집계가 시작되는 매달의 기준일이에요").font(WadeFont.pretendard(12.5)).foregroundStyle(WadeColors.ink3(scheme))
 
@@ -40,7 +39,9 @@ struct MonthStartDaySheet: View {
                     .background(WadeColors.primary(scheme), in: RoundedRectangle(cornerRadius: WadeRadius.button, style: .continuous))
             }.buttonStyle(.plain)
         }
-        .padding(.horizontal, WadeSpacing.screenH).padding(.bottom, 34)
+        .padding(.horizontal, WadeSpacing.screenH)
+        .padding(.top, WadeSpacing.sheetTop)
+        .padding(.bottom, WadeSpacing.sheetBottom)
         .presentationDetents([.medium])
         .background(WadeColors.sheet(scheme))
     }

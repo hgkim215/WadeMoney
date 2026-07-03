@@ -40,7 +40,6 @@ struct QuickAddSheet: View {
                     Spacer()
                     typeToggle(vm)
                 }
-                .padding(.top, 16)
 
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
                     Text("₩").font(WadeFont.pretendard(26, weight: .bold))
@@ -108,7 +107,9 @@ struct QuickAddSheet: View {
                 }
                 .buttonStyle(.plain).disabled(!vm.canSave)
             }
-            .padding(.horizontal, 24).padding(.bottom, 34)
+            .padding(.horizontal, WadeSpacing.screenH)
+            .padding(.top, WadeSpacing.sheetTop)
+            .padding(.bottom, WadeSpacing.sheetBottom)
         }
     }
 
