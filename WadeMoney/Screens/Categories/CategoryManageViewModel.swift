@@ -62,8 +62,7 @@ final class CategoryManageViewModel {
     func delete(id: UUID) { try? categoryStore.delete(id: id); load() }
 
     func move(from source: IndexSet, to destination: Int) {
-        var ids = activeItems.map(\.id)
-        ids.move(fromOffsets: source, toOffset: destination)
-        try? categoryStore.reorder(ids); load()
+        activeItems.move(fromOffsets: source, toOffset: destination)
+        try? categoryStore.reorder(activeItems.map(\.id))
     }
 }

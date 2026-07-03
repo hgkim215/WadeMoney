@@ -14,17 +14,20 @@ struct CategoryEditSheet: View {
     @State private var name: String
     @State private var icon: String
     @State private var color: String
+    @State private var showDeleteConfirmation = false
     let isEditing: Bool
+    let canDelete: Bool
     let onSave: (String, String, String) -> Void
-    let onArchive: (() -> Void)?
+    let onRemove: (() -> Void)?
 
-    init(editing item: CategoryManageViewModel.Item?, onSave: @escaping (String, String, String) -> Void, onArchive: (() -> Void)?) {
+    init(editing item: CategoryManageViewModel.Item?, onSave: @escaping (String, String, String) -> Void, onRemove: (() -> Void)?) {
         _name = State(initialValue: item?.name ?? "")
         _icon = State(initialValue: item?.iconName ?? CategoryPalette.icons[0])
         _color = State(initialValue: item?.colorHex ?? CategoryPalette.colors[0])
         isEditing = item != nil
+        canDelete = item?.canDelete ?? false
         self.onSave = onSave
-        self.onArchive = onArchive
+        self.onRemove = onRemove
     }
 
     private var canSave: Bool { !name.trimmingCharacters(in: .whitespaces).isEmpty }
@@ -39,7 +42,6 @@ struct CategoryEditSheet: View {
                         Icon("close", size: 20).foregroundStyle(WadeColors.ink2(scheme))
                     }.buttonStyle(.plain)
                 }
-                .padding(.top, 16)
                 // 미리보기 + 이름
                 HStack(spacing: 12) {
                     Icon(icon, size: 24).foregroundStyle(Color(hex: color)).frame(width: 46, height: 46)
@@ -75,17 +77,37 @@ struct CategoryEditSheet: View {
                         .background(canSave ? WadeColors.primary(scheme) : WadeColors.track(scheme),
                                     in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                 }.buttonStyle(.plain).disabled(!canSave)
-                if let onArchive {
-                    Button { onArchive(); dismiss() } label: {
-                        Text("보관하기").font(WadeFont.pretendard(15, weight: .bold)).foregroundStyle(WadeColors.bad(scheme))
+                if let onRemove {
+                    Button {
+                        if canDelete {
+                            showDeleteConfirmation = true
+                        } else {
+                            onRemove()
+                            dismiss()
+                        }
+                    } label: {
+                        Text(canDelete ? "삭제하기" : "보관하기")
+                            .font(WadeFont.pretendard(15, weight: .bold))
+                            .foregroundStyle(WadeColors.bad(scheme))
                             .frame(maxWidth: .infinity).padding(12)
                     }.buttonStyle(.plain)
                 }
             }
-            .padding(.horizontal, WadeSpacing.screenH).padding(.bottom, 34)
+            .padding(.horizontal, WadeSpacing.screenH)
+            .padding(.top, WadeSpacing.sheetTop)
+            .padding(.bottom, WadeSpacing.sheetBottom)
         }
         .presentationDetents([.large])
         .background(WadeColors.sheet(scheme))
+        .alert("카테고리를 삭제할까요?", isPresented: $showDeleteConfirmation) {
+            Button("삭제", role: .destructive) {
+                onRemove?()
+                dismiss()
+            }
+            Button("취소", role: .cancel) {}
+        } message: {
+            Text("삭제하면 이 카테고리는 복원할 수 없어요.")
+        }
     }
 
     private func sectionLabel(_ t: String) -> some View {

@@ -3,50 +3,49 @@ import SwiftData
 
 struct CategoryManageScreen: View {
     @Environment(\.colorScheme) private var scheme
+    @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.editMode) private var editMode
     @State private var viewModel: CategoryManageViewModel?
     @State private var editingItem: CategoryManageViewModel.Item?
+    @State private var pendingDeleteItem: CategoryManageViewModel.Item?
     @State private var showNew = false
+
+    private var isEditingList: Bool {
+        editMode?.wrappedValue.isEditing == true
+    }
 
     var body: some View {
         Group {
             if let vm = viewModel {
-                List {
-                    Section("사용 중") {
-                        ForEach(vm.activeItems) { item in
-                            Button { editingItem = item } label: { rowContent(item) }.buttonStyle(.plain)
-                                .swipeActions(edge: .trailing) {
-                                    // 실수로 만들어 거래가 하나도 없는 카테고리만 즉시 삭제를 노출한다.
-                                    // 거래 기록이 있으면(canDelete == false) 기존처럼 편집 시트의 "보관"만 가능.
-                                    if item.canDelete {
-                                        Button(role: .destructive) { vm.delete(id: item.id) } label: {
-                                            Label("삭제", systemImage: "trash")
-                                        }
-                                    }
+                VStack(spacing: 0) {
+                    topBar
+
+                    List {
+                        Section("사용 중") {
+                            ForEach(vm.activeItems) { item in
+                                activeRow(item, vm: vm)
+                            }
+                            .onMove { source, destination in
+                                withAnimation(.snappy(duration: 0.2)) {
+                                    vm.move(from: source, to: destination)
                                 }
+                            }
+                            .moveDisabled(!isEditingList)
                         }
-                        .onMove { vm.move(from: $0, to: $1) }
-                    }
-                    if !vm.archivedItems.isEmpty {
-                        Section("보관됨") {
-                            ForEach(vm.archivedItems) { item in
-                                HStack {
-                                    rowContent(item).opacity(0.6)
-                                    Spacer()
-                                    Button("복원") { vm.restore(id: item.id) }
-                                        .font(WadeFont.pretendard(12, weight: .bold)).foregroundStyle(WadeColors.ink2(scheme))
+                        if !vm.archivedItems.isEmpty {
+                            Section("보관됨") {
+                                ForEach(vm.archivedItems) { item in
+                                    archivedRow(item, vm: vm)
                                 }
                             }
                         }
                     }
+                    .listStyle(.insetGrouped)
+                    .scrollContentBackground(.hidden)
+                    .safeAreaInset(edge: .bottom) { Color.clear.frame(height: WadeSpacing.contentBottom) }
                 }
-                .listStyle(.insetGrouped)
-                .scrollContentBackground(.hidden)
                 .background(WadeColors.bg(scheme))
-                // 커스텀 하단 탭바가 이 화면 위에 별도 레이어로 떠 있어(RootTabView의 ZStack),
-                // List 콘텐츠가 자체적으로는 탭바 높이를 모른다 — 마지막 섹션이 가려 스크롤이 안 되는
-                // 것처럼 보였다. 탭바 높이만큼 스크롤 여백을 직접 확보한다.
-                .safeAreaInset(edge: .bottom) { Color.clear.frame(height: WadeSpacing.contentBottom) }
             } else {
                 // vm 로드 전에도 destination이 빈 뷰가 되지 않도록(비어 있으면 NavigationStack이
                 // onAppear를 발화하지 않아 영원히 로드되지 않는 문제 회피).
@@ -54,19 +53,29 @@ struct CategoryManageScreen: View {
             }
         }
         .navigationTitle("카테고리 관리")
-        .toolbar {
-            ToolbarItem(placement: .topBarLeading) { EditButton() }
-            ToolbarItem(placement: .topBarTrailing) { Button { showNew = true } label: { Icon("add", size: 22) } }
-        }
         .sheet(item: $editingItem) { item in
             CategoryEditSheet(editing: item,
                               onSave: { n, i, c in viewModel?.update(id: item.id, name: n, iconName: i, colorHex: c) },
-                              onArchive: { viewModel?.archive(id: item.id) })
+                              onRemove: { remove(item, vm: viewModel) })
         }
         .sheet(isPresented: $showNew) {
             CategoryEditSheet(editing: nil,
                               onSave: { n, i, c in viewModel?.add(name: n, iconName: i, colorHex: c) },
-                              onArchive: nil)
+                              onRemove: nil)
+        }
+        .alert("카테고리를 삭제할까요?", isPresented: Binding(
+            get: { pendingDeleteItem != nil },
+            set: { if !$0 { pendingDeleteItem = nil } }
+        )) {
+            Button("삭제", role: .destructive) {
+                if let item = pendingDeleteItem {
+                    viewModel?.delete(id: item.id)
+                }
+                pendingDeleteItem = nil
+            }
+            Button("취소", role: .cancel) { pendingDeleteItem = nil }
+        } message: {
+            Text("\(pendingDeleteItem?.name ?? "이 카테고리")는 복원할 수 없어요.")
         }
         .onAppear {
             if viewModel == nil {
@@ -76,6 +85,123 @@ struct CategoryManageScreen: View {
                                                  now: Date(), calendar: .current)
                 vm.load(); viewModel = vm
             }
+        }
+        .navigationBarBackButtonHidden(true)
+        .toolbar(.hidden, for: .navigationBar)
+    }
+
+    private var topBar: some View {
+        ZStack {
+            Text("카테고리 관리")
+                .font(WadeFont.pretendard(17, weight: .heavy))
+                .foregroundStyle(WadeColors.ink(scheme))
+
+            HStack {
+                Button { dismiss() } label: {
+                    Icon("chevron_left", size: 24, filled: false)
+                        .foregroundStyle(WadeColors.ink(scheme))
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("뒤로")
+
+                Spacer()
+
+                HStack(spacing: 14) {
+                    topBarIconButton(isEditingList ? "check" : "edit",
+                                     label: isEditingList ? "편집 완료" : "편집",
+                                     isActive: isEditingList) {
+                        withAnimation(.snappy(duration: 0.18)) {
+                            editMode?.wrappedValue = isEditingList ? .inactive : .active
+                        }
+                    }
+                    topBarIconButton("add", label: "카테고리 추가") {
+                        showNew = true
+                    }
+                }
+            }
+        }
+        .padding(.horizontal, WadeSpacing.screenH)
+        .padding(.top, 8)
+        .padding(.bottom, 8)
+    }
+
+    private func topBarIconButton(_ icon: String, label: String, isActive: Bool = false, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Icon(icon, size: 20, filled: icon != "edit")
+                .foregroundStyle(isActive ? WadeColors.primary(scheme) : WadeColors.ink2(scheme))
+                .frame(width: 34, height: 34)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(label)
+    }
+
+    private func activeRow(_ item: CategoryManageViewModel.Item, vm: CategoryManageViewModel) -> some View {
+        HStack(spacing: 12) {
+            if isEditingList {
+                rowContent(item)
+            } else {
+                Button { editingItem = item } label: {
+                    rowContent(item)
+                }
+                .buttonStyle(.plain)
+            }
+
+            Spacer(minLength: 12)
+
+            if isEditingList {
+                destructiveActionButton(item.canDelete ? "삭제" : "보관",
+                                        icon: item.canDelete ? "delete" : "archive") {
+                    requestRemove(item, vm: vm)
+                }
+                .transition(.move(edge: .trailing).combined(with: .opacity))
+            }
+        }
+        .contentShape(Rectangle())
+        .animation(.snappy(duration: 0.18), value: isEditingList)
+    }
+
+    private func archivedRow(_ item: CategoryManageViewModel.Item, vm: CategoryManageViewModel) -> some View {
+        HStack(spacing: 12) {
+            rowContent(item)
+                .opacity(0.6)
+
+            Spacer(minLength: 12)
+
+            if isEditingList {
+                HStack(spacing: 8) {
+                    if item.canDelete {
+                        destructiveActionButton("삭제", icon: "delete") {
+                            pendingDeleteItem = item
+                        }
+                    }
+                    actionButton("복원", icon: "unarchive") {
+                        vm.restore(id: item.id)
+                    }
+                }
+                .transition(.move(edge: .trailing).combined(with: .opacity))
+            }
+        }
+        .contentShape(Rectangle())
+        .animation(.snappy(duration: 0.18), value: isEditingList)
+    }
+
+    private func requestRemove(_ item: CategoryManageViewModel.Item, vm: CategoryManageViewModel) {
+        if item.canDelete {
+            pendingDeleteItem = item
+        } else {
+            vm.archive(id: item.id)
+        }
+    }
+
+    private func remove(_ item: CategoryManageViewModel.Item, vm: CategoryManageViewModel?) {
+        guard let vm else { return }
+        if item.canDelete {
+            vm.delete(id: item.id)
+        } else {
+            vm.archive(id: item.id)
         }
     }
 
@@ -88,5 +214,33 @@ struct CategoryManageScreen: View {
                 Text(item.usageText).font(WadeFont.pretendard(11.5)).foregroundStyle(WadeColors.ink3(scheme))
             }
         }
+    }
+
+    private func destructiveActionButton(_ title: String, icon: String, action: @escaping () -> Void) -> some View {
+        Button(role: .destructive, action: action) {
+            HStack(spacing: 5) {
+                Icon(icon, size: 14, filled: false)
+                Text(title)
+                    .font(WadeFont.pretendard(12.5, weight: .bold))
+            }
+            .foregroundStyle(WadeColors.bad(scheme))
+            .frame(minWidth: 54, minHeight: 32)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func actionButton(_ title: String, icon: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 5) {
+                Icon(icon, size: 14, filled: false)
+                Text(title)
+                    .font(WadeFont.pretendard(12.5, weight: .bold))
+            }
+            .foregroundStyle(WadeColors.primary(scheme))
+            .frame(minWidth: 54, minHeight: 32)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 }
