@@ -32,7 +32,7 @@ struct DashboardScreen: View {
                     .frame(maxWidth: .infinity)
 
                     if let vm = viewModel, let d = vm.display {
-                        PeriodSegment(kind: Binding(get: { vm.kind }, set: { vm.kind = $0; reload(vm) }))
+                        PeriodSegment(kind: Binding(get: { vm.kind }, set: { selectPeriod($0, vm) }))
                         HStack(spacing: 14) {
                             Button { vm.offset -= 1; reload(vm) } label: { Icon("chevron_left", size: 19) }
                             Text(d.periodLabel).font(WadeFont.pretendard(15, weight: .bold))
@@ -70,5 +70,13 @@ struct DashboardScreen: View {
     private func reload(_ vm: DashboardViewModel) {
         vm.load()
         Task { await vm.refreshInsight() }
+    }
+
+    private func selectPeriod(_ kind: PeriodKind, _ vm: DashboardViewModel) {
+        guard vm.kind != kind else { return }
+        vm.kind = kind
+        Task { @MainActor in
+            reload(vm)
+        }
     }
 }

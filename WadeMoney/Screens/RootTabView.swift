@@ -6,6 +6,8 @@ struct RootTabView: View {
     @State private var showAdd = false
     @State private var quickAddCategoryID: UUID?
     @State private var dashboardRefreshToken = 0
+    @State private var showStatsToast = false
+    @State private var statsToastTask: Task<Void, Never>?
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -17,6 +19,16 @@ struct RootTabView: View {
                 default: DashboardScreen(refreshToken: dashboardRefreshToken)
                 }
             }
+            if showStatsToast {
+                toast("통계는 나중에 업데이트될 예정이에요")
+                    .padding(.horizontal, WadeSpacing.screenH)
+                    .padding(.bottom, 76)
+                    .transition(.asymmetric(
+                        insertion: .opacity.combined(with: .offset(y: 10)),
+                        removal: .opacity.combined(with: .offset(y: 6))
+                    ))
+                    .allowsHitTesting(false)
+            }
             tabBar
         }
         .ignoresSafeArea(.keyboard)
@@ -27,6 +39,9 @@ struct RootTabView: View {
         }
         .sheet(isPresented: $showAdd, onDismiss: { quickAddCategoryID = nil }) {
             QuickAddSheet(onSaved: { dashboardRefreshToken += 1 }, preselectedCategoryID: quickAddCategoryID)
+        }
+        .onDisappear {
+            statsToastTask?.cancel()
         }
     }
 
@@ -55,12 +70,39 @@ struct RootTabView: View {
     }
 
     private var statsTab: some View {
-        Button { } label: {
+        Button { showStatsUnavailableToast() } label: {
             VStack(spacing: 2) {
                 Icon("insights", size: 23); Text("통계").font(WadeFont.pretendard(9.2, weight: .bold))
             }
             .foregroundStyle(WadeColors.ink3(scheme)).opacity(0.5).frame(maxWidth: .infinity)
-        }.buttonStyle(.plain).disabled(true)
+        }.buttonStyle(.plain)
+    }
+
+    private func showStatsUnavailableToast() {
+        statsToastTask?.cancel()
+        withAnimation(.spring(response: 0.28, dampingFraction: 0.88)) {
+            showStatsToast = true
+        }
+        statsToastTask = Task {
+            try? await Task.sleep(for: .seconds(1.8))
+            guard !Task.isCancelled else { return }
+            await MainActor.run {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    showStatsToast = false
+                }
+            }
+        }
+    }
+
+    private func toast(_ message: String) -> some View {
+        Text(message)
+            .font(WadeFont.pretendard(13.5, weight: .bold))
+            .foregroundStyle(WadeColors.toastfg(scheme))
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .frame(maxWidth: .infinity)
+            .background(WadeColors.toastbg(scheme), in: Capsule())
+            .shadow(color: .black.opacity(0.14), radius: 12, y: 6)
     }
 
     private var fab: some View {

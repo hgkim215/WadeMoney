@@ -15,35 +15,46 @@ struct PeriodSegment: View {
     @Environment(\.colorScheme) private var scheme
     @Binding var kind: PeriodKind
     private let items: [(PeriodKind, String)] = [(.day, "일"), (.month, "월"), (.year, "연")]
+    private var segmentStroke: Color { WadeColors.ink3(scheme).opacity(scheme == .dark ? 0.34 : 0.18) }
+    private var selectedStroke: Color { WadeColors.line(scheme).opacity(scheme == .dark ? 0.80 : 1) }
+    private var selectedShadow: Color {
+        scheme == .dark ? Color.black.opacity(0.18) : Color(red: 120/255, green: 90/255, blue: 60/255).opacity(0.08)
+    }
 
     var body: some View {
         HStack(spacing: 0) {
             ForEach(items, id: \.0) { item in
-                Button { kind = item.0 } label: {
+                Button {
+                    withAnimation(.spring(response: 0.22, dampingFraction: 0.9)) {
+                        kind = item.0
+                    }
+                } label: {
                     Text(item.1)
                         .font(WadeFont.pretendard(14, weight: .bold))
                         .foregroundStyle(kind == item.0 ? WadeColors.primary(scheme) : WadeColors.ink2(scheme))
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 9)
-                        .background(
-                            kind == item.0 ? WadeColors.card(scheme) : .clear,
-                            in: RoundedRectangle(cornerRadius: WadeRadius.smallTile, style: .continuous)
-                        )
+                        .frame(maxWidth: .infinity, minHeight: 38)
+                        .contentShape(RoundedRectangle(cornerRadius: WadeRadius.smallTile, style: .continuous))
+                        .background {
+                            RoundedRectangle(cornerRadius: WadeRadius.smallTile, style: .continuous)
+                                .fill(kind == item.0 ? WadeColors.card(scheme) : .clear)
+                                .shadow(color: kind == item.0 ? selectedShadow : .clear, radius: 7, y: 2)
+                        }
                         .overlay {
                             if kind == item.0 {
                                 RoundedRectangle(cornerRadius: WadeRadius.smallTile, style: .continuous)
-                                    .stroke(WadeColors.track(scheme), lineWidth: 1)
+                                    .stroke(selectedStroke, lineWidth: 1)
                             }
                         }
                 }
                 .buttonStyle(.plain)
+                .contentShape(RoundedRectangle(cornerRadius: WadeRadius.smallTile, style: .continuous))
             }
         }
         .padding(4)
         .background(WadeColors.card2(scheme), in: RoundedRectangle(cornerRadius: WadeRadius.segment, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: WadeRadius.segment, style: .continuous)
-                .stroke(WadeColors.track(scheme), lineWidth: 1)
+                .stroke(segmentStroke, lineWidth: 1)
         )
     }
 }
@@ -105,8 +116,6 @@ struct HeroBudgetCard: View {
                     Spacer(minLength: 0)
                 }
                 if let remain = display.remainText, let budget = display.budgetText {
-                    ProgressView(value: min(1, display.consumedFraction ?? 0))
-                        .tint(WadeColors.budgetPace(scheme, fraction: display.consumedFraction ?? 0))
                     HStack {
                         Text("예산 \(budget)원").font(WadeFont.pretendard(12)).foregroundStyle(WadeColors.ink3(scheme))
                         Spacer()
