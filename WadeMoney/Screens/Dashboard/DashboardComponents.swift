@@ -351,26 +351,39 @@ struct DonutRing: View {
 struct TrendCard: View {
     @Environment(\.colorScheme) private var scheme
     let bars: [DashboardViewModel.TrendBar]
+    @State private var selectedID: Int?
+
+    private var selectedBar: DashboardViewModel.TrendBar? {
+        TrendCard.selectedBar(in: bars, id: selectedID)
+    }
+
     var body: some View {
         card(scheme, minHeight: WadeSpacing.dashboardBlockHeight) {
             VStack(alignment: .leading, spacing: 18) {
-                Text("지출 추세").font(WadeFont.pretendard(15, weight: .heavy)).foregroundStyle(WadeColors.ink(scheme))
+                HStack {
+                    Text("지출 추세").font(WadeFont.pretendard(15, weight: .heavy)).foregroundStyle(WadeColors.ink(scheme))
+                    Spacer()
+                    if let selectedBar {
+                        Text("\(selectedBar.label) · \(selectedBar.valueText)")
+                            .font(WadeFont.pretendard(13, weight: .heavy))
+                            .foregroundStyle(WadeColors.primary(scheme))
+                    }
+                }
                 if bars.contains(where: { $0.heightFraction > 0 }) {
                     HStack(alignment: .bottom, spacing: 5) {
                         ForEach(bars) { bar in
+                            let isSelected = bar.id == selectedBar?.id
                             VStack(spacing: 7) {
-                                Text(bar.isCurrent ? bar.valueText : "")
-                                    .font(WadeFont.pretendard(9.5, weight: .heavy))
-                                    .foregroundStyle(bar.isCurrent ? WadeColors.primary(scheme) : .clear)
-                                    .frame(height: 12)
                                 RoundedRectangle(cornerRadius: 5)
-                                    .fill(bar.isCurrent ? WadeColors.primary(scheme) : WadeColors.barmuted(scheme))
+                                    .fill(isSelected ? WadeColors.primary(scheme) : WadeColors.barmuted(scheme))
                                     .frame(maxWidth: 20)
                                     .frame(height: max(6, bar.heightFraction * 100))
-                                Text(bar.label).font(WadeFont.pretendard(9.5, weight: bar.isCurrent ? .heavy : .semibold))
-                                    .foregroundStyle(bar.isCurrent ? WadeColors.ink(scheme) : WadeColors.ink3(scheme))
+                                Text(bar.label).font(WadeFont.pretendard(9.5, weight: isSelected ? .heavy : .semibold))
+                                    .foregroundStyle(isSelected ? WadeColors.ink(scheme) : WadeColors.ink3(scheme))
                             }
                             .frame(maxWidth: .infinity)
+                            .contentShape(Rectangle())
+                            .onTapGesture { selectedID = bar.id }
                         }
                     }
                     .frame(height: 112, alignment: .bottom)
@@ -388,5 +401,11 @@ struct TrendCard: View {
                 }
             }
         }
+        .onChange(of: bars) { selectedID = nil }
+    }
+
+    static func selectedBar(in bars: [DashboardViewModel.TrendBar], id: Int?) -> DashboardViewModel.TrendBar? {
+        if let id, let match = bars.first(where: { $0.id == id }) { return match }
+        return bars.first { $0.isCurrent }
     }
 }
