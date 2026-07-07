@@ -66,6 +66,7 @@ struct CategoryDetailScreen: View {
             .background(WadeColors.card(scheme))
             .clipShape(RoundedRectangle(cornerRadius: WadeRadius.card, style: .continuous))
             .shadow(color: sh.color, radius: sh.radius, y: sh.y)
+            .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func summaryCard(_ vm: CategoryDetailViewModel) -> some View {

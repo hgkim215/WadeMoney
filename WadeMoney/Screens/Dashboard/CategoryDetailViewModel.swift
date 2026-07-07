@@ -56,7 +56,7 @@ final class CategoryDetailViewModel {
                     id: t.id,
                     dateText: dateLabel(t.date),
                     memo: t.memo?.isEmpty == false ? t.memo! : categoryName,
-                    amountText: "\u{2212}\(Won.string(t.amount))",
+                    amountText: "\u{2212}₩\(Won.string(t.amount))",
                     showsBudgetExcludedLabel: t.isExcludedFromBudget
                 )
             }

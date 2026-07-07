@@ -49,7 +49,7 @@ struct CategoryDetailViewModelTests {
         #expect(vm.rows.count == 2)
         #expect(vm.rows[0].memo == "점심 식사")
         #expect(vm.rows[0].dateText == "7/6")
-        #expect(vm.rows[0].amountText == "\u{2212}12,000")
+        #expect(vm.rows[0].amountText == "\u{2212}₩12,000")
         #expect(vm.rows[1].memo == "장보기")
         _ = container
     }
