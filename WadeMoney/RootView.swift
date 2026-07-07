@@ -57,6 +57,12 @@ struct RootView: View {
             guard newPhase == .active, !showSplash else { return }
             Task { await checkForUpdateAfterSplash() }
         }
+        #if DEBUG
+        .onReceive(NotificationCenter.default.publisher(for: .debugShowUpdatePrompt)) { _ in
+            showSplash = false
+            pendingUpdate = DebugUpdatePrompt.updateInfo
+        }
+        #endif
         .animation(.spring(response: 0.3, dampingFraction: 0.9), value: pendingUpdate)
     }
 

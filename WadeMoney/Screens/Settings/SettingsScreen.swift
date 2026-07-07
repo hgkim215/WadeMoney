@@ -70,6 +70,17 @@ struct SettingsScreen: View {
                                 ) {
                                     startFeedbackMail()
                                 }
+                                #if DEBUG
+                                row(
+                                    icon: "new_releases",
+                                    tint: WadeColors.bad(scheme),
+                                    label: "업데이트 알림 미리보기",
+                                    subtitle: "DEBUG 빌드에서만 표시돼요",
+                                    trailing: nil
+                                ) {
+                                    DebugUpdatePrompt.requestPreview()
+                                }
+                                #endif
                             }
                             section("정보") {
                                 legalRow(icon: "description", label: "이용약관", url: WadeMoneyLegal.termsOfService)
