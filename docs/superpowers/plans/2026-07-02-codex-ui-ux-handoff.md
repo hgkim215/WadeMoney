@@ -1,8 +1,10 @@
 # WadeMoney Codex UI/UX Handoff
 
-Date last updated: 2026-07-03
-Authoring agent: Codex
-Intended next agent: Claude or another iOS/SwiftUI agent
+Date last updated: 2026-07-07
+Authoring agent: Claude and Codex have both appended sections concurrently this session; see each dated heading for who authored it. Latest entries: Claude's QuickAdd UX pass, then Codex's App Update Prompt + Feedback Mail work and DEBUG update-prompt preview.
+Intended next agent: Codex or another iOS/SwiftUI agent
+
+Note: this file was edited by both agents across several turns without being committed alongside the code commits that referenced it — commits `abc5e8a` through `4b5edca` all list this file under "Files touched" but none of them actually included it (verified via `git show --stat <sha> -- docs/superpowers/plans/2026-07-02-codex-ui-ux-handoff.md`, which returned empty for each). Claude committed the accumulated content on 2026-07-07 so it stops floating uncommitted. If you're a fresh agent, trust `git log -- docs/superpowers/plans/2026-07-02-codex-ui-ux-handoff.md` over any individual commit's own claim about touching this file.
 
 ## Standing Rule
 
@@ -593,3 +595,308 @@ Known limitations / follow-up:
   - `SentenceHighlighter.swift` uses deprecated `Text + Text` composition on iOS 26.
   - `DesignTokenTests.swift` calls main actor-isolated `symbolFont(size:filled:)` from a synchronous nonisolated context.
 - The original working tree still has unstaged/untracked `docs/design/app-design-specification-analysis` bundle changes that were intentionally not included.
+
+## 2026-07-07 Claude Implementation: AI Report Visual Polish (SentenceHighlighter)
+
+User request:
+
+- Make the AI Report screen (`AIReportScreen`) visually match a provided mockup with number-highlighted sentences and a polished 4-card layout.
+- Ran full Superpowers flow: brainstorming -> writing-plans -> subagent-driven-development.
+
+User correction during brainstorming:
+
+- Verified (no code change needed): when Foundation Models AI is unavailable on-device, the AI Report entry point is already fully hidden, not degraded. This was already correct in `AIAvailabilityChecking` usage across `AIReportViewModel` and `DashboardViewModel`.
+
+What changed:
+
+- New `SentenceHighlighter.swift`: pure-Swift regex-based number highlighting (percentages, won amounts) for AI-generated sentences, clause-boundary classification (increase/decrease/neutral) based on nearby Korean keywords, `styledText(_:font:scheme:)` SwiftUI `Text` renderer.
+- `AIReportScreen.summaryCard` and `tipCard` now render through `SentenceHighlighter.styledText` instead of plain `Text`.
+- `tipCard` gained a `.redacted(reason: .placeholder)` loading skeleton shown while the AI tip sentence is still narrating.
+
+Files touched:
+
+- `WadeMoney/DesignSystem/SentenceHighlighter.swift` (new)
+- `WadeMoney/Screens/Report/AIReportScreen.swift`
+- `WadeMoneyTests/SentenceHighlighterTests.swift` (new, 8 tests)
+- `docs/superpowers/specs/2026-07-03-ai-report-visual-polish-design.md`
+- `docs/superpowers/plans/2026-07-03-ai-report-visual-polish.md`
+
+Incident during execution (transparently surfaced to the user, not silently fixed):
+
+- A concurrent Codex CLI session checked out `codex/special-expense-budget-exclusion` in the same shared working directory while Claude's Task 2 implementer subagent was running, causing its commit to land on the wrong branch instead of `main`. Diagnosed via `git reflog`. Fixed by verifying the commit's diff touched only its 2 intended files, then using an isolated `git worktree add ... main` to cherry-pick the commit onto `main` cleanly (new SHA), running a full clean build+test there, and removing the worktree — without touching the shared working directory's checkout or Codex's uncommitted files. Both Codex and Claude have now independently used this "isolated worktree cherry-pick" technique to land work on `main` from a shared/dirty working tree.
+
+Verification performed:
+
+- Task-level and whole-branch code review all "Approved" / "Ready to merge: Yes".
+- Clean build+test in isolated worktree: 132/132 passed (124 pre-existing + 8 new `SentenceHighlighterTests`).
+- Simulator screenshots in light and dark mode confirmed number highlighting and tip-card skeleton render correctly.
+
+Known limitations / follow-up:
+
+- `SentenceHighlighter.swift` uses deprecated `Text + Text` composition on iOS 26 (build warning, not error) — worth fixing next time this file is touched.
+
+## 2026-07-07 Claude: App Store Connect Metadata + Support Page Contact
+
+User request:
+
+- Draft App Store Connect fields (설명/키워드/지원 URL/마케팅 URL/버전/저작권, later 이름/부제) based on actual project research, not placeholders.
+
+What changed:
+
+- Drafted description, keywords, version confirmation, and copyright based on README/project.yml/existing gh-pages legal docs.
+- Support/marketing URL was `https://hgkim215.github.io/WadeMoney/` but had no contact mechanism. With explicit user permission (publishing to a public page), added a `mailto:hgkim215@gmail.com` "문의하기" link to that page's `index.html` on the orphan `gh-pages` branch.
+- Combined two subtitle drafts per user request into one: `3초 기록 · 온디바이스 AI 가계부 리포트` (24 chars).
+
+Files touched:
+
+- `gh-pages` branch `index.html` only (isolated worktree `/tmp/wade-ghpages`, committed and pushed to `origin/gh-pages`). No `main`-branch app code changed.
+
+Known limitations / follow-up:
+
+- Whether the App Store Connect app record itself now exists (unblocking the earlier TestFlight `IDEDistributionAppRecordProviderError`) was not independently re-verified after the user started filling in these fields — check before assuming the original TestFlight blocker is resolved.
+
+## 2026-07-07 Claude: QuickAdd Sheet UX Pass (commit `6fedc7b`)
+
+User request:
+
+- The budget-input area in QuickAdd was taking so much vertical space that the "저장하기" save button was pushed below the fold, requiring a scroll. Fix that, and report any other UX issues found in the sheet.
+- Follow-up: user approved all 5 reported issues and asked to proceed. Then two more rounds of visual feedback on the resulting layout.
+
+What changed (in order of iteration):
+
+1. Merged the `예산에서 제외` budget-exclusion row (previously a full-width card with icon + 2 lines of text + switch) into the date row as a compact toggle, so the save button is visible without scrolling on first view.
+2. Removed the `stepChips` "금액 → 카테고리 → 저장" progress indicator entirely — low information value, always took ~40pt of height. (This was a plan-mandated feature from the original 2026-07-01 design spec; user explicitly approved removing it, so the spec doc `2026-07-01-wademoney-design-system.md` §5.6 was updated to match.)
+3. Category chip row now widens chips slightly (divisor 3.6 instead of 4) when there are more than 4 categories, so the 5th chip peeks partially cut off at the trailing edge — signals horizontal scrollability that was previously invisible.
+4. Reduced the memo card's vertical padding for de-emphasis (13→10), since it was visually as heavy as required fields despite being optional at the time.
+5. Then reversed part of #4 per user feedback: memo is actually important ("어떤 내역인지 작성해야 하는 부분"), so it was made **required** for new entries (`QuickAddViewModel.canSave` now also requires non-empty memo, but only when `!isEditing` — editing existing memo-less records still saves normally, so the 3 existing edit tests with `memo: nil` did not need to change). Memo field padding was restored/increased (13 vertical) and a leading `edit_note` icon was added; placeholder changed from "메모 (선택)" to "메모 (어떤 내역인가요?)".
+6. Budget-exclusion toggle was originally a lone icon (hard for first-time users to parse) — added a "제외" text label next to the icon inside a capsule (bordered when off, filled `primarysoft` when on).
+7. Date row grouping fix per user feedback (screenshot of "날짜 ... 2026.7.7. ... 제외" reading as three disconnected items): removed the `Spacer()` between the "날짜" label and the `DatePicker`, so they sit adjacent as one visual group; `Spacer()` now sits between the date group and the budget-exclusion toggle, with a `Divider()` still separating them. Reads as two clear clusters: `[날짜 + date value]  ⋯spacer⋯  [divider][제외 토글]`.
+
+Files touched:
+
+- `WadeMoney/Screens/QuickAdd/QuickAddSheet.swift`
+- `WadeMoney/Screens/QuickAdd/QuickAddViewModel.swift`
+- `WadeMoneyTests/QuickAddViewModelTests.swift` (added `expenseRequiresMemo`; updated 3 existing tests to set `vm.memo` before asserting `canSave`)
+- `WadeMoneyUITests/CoreFlowUITests.swift` (added a memo-entry step to `testQuickAddExpenseFlowUpdatesHistory` since save now requires memo)
+- `docs/superpowers/specs/2026-07-01-wademoney-design-system.md` (§5.6: removed stepChips bullet, documented category-chip scroll-peek and the memo-required validity rule; §5.7: added a new cross-cutting principle — "핵심 CTA(예: 저장하기)는 스크롤 없이 최초 뷰포트 안에 보여야 한다")
+
+Verification performed:
+
+- Unit tests: 142/142 passed (`xcodebuild test -scheme WadeMoney`) on iPhone 17e simulator, up from 141 (one new memo-required test).
+- E2E: both `CoreFlowUITests` (`testQuickAddExpenseFlowUpdatesHistory`, `testTabNavigationAndSettings`) passed.
+- Visual verification via temporary XCUITest screenshot captures (added, screenshotted, then fully reverted each time — `git diff` on `CoreFlowUITests.swift` confirmed clean before each commit) at each iteration: save button visible without scrolling, 5th category chip visibly cut off at trailing edge, save button disabled until memo entered, "제외" toggle label renders without overflow even with the Korean-locale `DatePicker` compact string, and the final date-row grouping change.
+- Committed as `6fedc7b` on `main` and pushed to `origin/main`. `docs/design/app-design-specification-analysis/` changes were deliberately left unstaged (user's own external design-tool artifacts, not app code) — same convention both agents have followed all along.
+
+Known limitations / follow-up:
+
+- None new. The pre-existing `SentenceHighlighter.swift` `Text + Text` deprecation warning is still outstanding (see AI Report section above).
+
+## 2026-07-07 Codex Brainstorm: App Update Prompt + Feedback Mail
+
+User request:
+
+- Add WadeNote-style app update notification when the App Store has a newer version.
+- Add a Settings entry for sending app improvement feedback by email.
+- Use Superpowers brainstorming before implementation.
+
+Context checked:
+
+- Current WadeMoney `RootView` owns `SplashScreen` and `RootTabView`, making it the right integration point for update prompts after splash completion.
+- Current `SettingsScreen` already has list-card rows and app version text, making it the right location for a quiet feedback mail row.
+- WadeNote has existing reference implementations:
+  - `AppVersion`
+  - `UpdateChecker`
+  - `UpdateAvailablePopup`
+  - `BugReportDraft`
+  - `MailComposeView`
+- Lazyweb mobile settings feedback references supported adding feedback as a simple Settings support/help row, not as a prominent CTA.
+
+User decisions:
+
+- Proceed with option A: WadeNote-style implementation adapted to WadeMoney.
+- Feedback recipient should use the recommended WadeNote address: `hgkim215@gmail.com`.
+- Update prompt should be gentle, not forced.
+- Prompt should appear after the splash screen, not during it.
+
+Design spec written and committed:
+
+- Commit: `abc5e8a docs(spec): design update prompt and feedback mail`
+- Spec: `docs/superpowers/specs/2026-07-07-app-update-feedback-design.md`
+
+Spec summary:
+
+- Add pure `AppVersion` comparison.
+- Add async `UpdateChecker` using iTunes Lookup with `bundleId` and `country=kr`, gated to once per 24 hours via `UserDefaults`.
+- Add `UpdateAvailablePopup` with WadeMoney styling and `업데이트` / `나중에` actions.
+- Integrate update checking in `RootView` after splash ends and on foreground return.
+- Add `FeedbackMailDraft` and `MailComposeView`.
+- Add Settings row `앱 개선 의견 보내기` under a quiet `도움말` section.
+- If Mail is unavailable, copy `hgkim215@gmail.com` and show `메일 앱이 없어 주소를 복사했어요`.
+
+Verification performed this turn:
+
+- Design-only change; no app code changed.
+- `rg` placeholder scan on the spec: passed.
+- `git diff --check -- docs/superpowers/specs/2026-07-07-app-update-feedback-design.md`: passed.
+- Spec committed successfully.
+
+Known limitations / follow-up:
+
+- Implementation has not started yet. Per Superpowers brainstorming, next step after user review is invoking `superpowers:writing-plans`.
+- CodeGraph remains unavailable in this repo: `CodeGraph not initialized in /Users/mac/Documents/Projects/WadeMoney`.
+- Original working tree still contains pre-existing uncommitted `docs/design/app-design-specification-analysis` changes and pre-existing handoff edits from Claude; do not treat those as part of this Codex spec commit.
+
+## 2026-07-07 Codex Plan: App Update Prompt + Feedback Mail
+
+User approval:
+
+- User reviewed the design spec and replied `승인`.
+- Per Superpowers brainstorming, Codex transitioned to `superpowers:writing-plans`.
+
+What changed:
+
+- Added implementation plan for the approved update prompt + feedback mail work.
+- The plan decomposes the work into:
+  - `AppVersion` pure version comparison.
+  - `UpdateChecker` iTunes Lookup + 24-hour gate.
+  - `UpdateAvailablePopup` + `RootView` integration after splash.
+  - `FeedbackMailDraft`, `MailComposeView`, reusable `WadeToast`, and Settings feedback row.
+  - Final verification and handoff update.
+
+Files touched:
+
+- `docs/superpowers/plans/2026-07-07-app-update-feedback.md`
+- `docs/superpowers/plans/2026-07-02-codex-ui-ux-handoff.md`
+
+Commits:
+
+- `a7af482 docs(plan): app update prompt and feedback mail`
+
+Verification performed this turn:
+
+- Plan placeholder scan: passed. Only intended checkbox syntax and code examples were matched by the broad scan.
+- `git diff --check -- docs/superpowers/plans/2026-07-07-app-update-feedback.md`: passed.
+- No app code changed in this turn.
+
+Known limitations / follow-up:
+
+- Implementation has not started yet.
+- Next required skill depends on user choice:
+  - Recommended: `superpowers:subagent-driven-development`.
+  - Alternative: `superpowers:executing-plans`.
+- Original working tree still contains pre-existing uncommitted `docs/design/app-design-specification-analysis` changes and pre-existing handoff edits; continue avoiding unrelated staging.
+
+## 2026-07-07 Codex Implementation: App Update Prompt + Feedback Mail
+
+User context:
+
+- User approved option A and then selected `Subagent-Driven`.
+- The spawned subagent/worktree did not produce usable changes and status/close attempts stalled, so Codex switched to inline implementation in an isolated worktree and then cherry-picked the verified commits back to original `main`.
+
+What changed:
+
+- Added pure app-version comparison via `AppVersion`.
+- Added `UpdateChecker` using iTunes Lookup (`bundleId`, `country=kr`) with a 24-hour `UserDefaults` gate, malformed JSON handling, invalid App Store URL rejection, and version comparison.
+- Added `UpdateAvailablePopup`, styled with WadeMoney tokens, and wired it from `RootView` after splash completion and on app foreground return.
+- Added Settings feedback mail flow:
+  - `FeedbackMailDraft` with recipient `hgkim215@gmail.com`, subject `[WadeMoney] 앱 개선 의견`, and app/device/iOS context in the body.
+  - `MailComposeView` wrapper around `MFMailComposeViewController`.
+  - New Settings `도움말` section row: `앱 개선 의견 보내기`.
+  - If Mail is unavailable, copy `hgkim215@gmail.com` to clipboard and show `메일 앱이 없어 주소를 복사했어요`.
+- Extracted reusable `WadeToast` and reused it for the existing stats-tab unavailable toast and the new Settings fallback toast.
+- `.gitignore` already includes `.worktrees/` from commit `09f9dc4`, because local Superpowers worktrees are operational artifacts.
+
+Files touched:
+
+- `.gitignore`
+- `WadeMoney/RootView.swift`
+- `WadeMoney/DesignSystem/WadeToast.swift`
+- `WadeMoney/Screens/RootTabView.swift`
+- `WadeMoney/Screens/Settings/SettingsScreen.swift`
+- `WadeMoney/Screens/Settings/MailComposeView.swift`
+- `WadeMoney/Support/FeedbackMailDraft.swift`
+- `WadeMoney/Update/AppVersion.swift`
+- `WadeMoney/Update/UpdateAvailablePopup.swift`
+- `WadeMoney/Update/UpdateChecker.swift`
+- `WadeMoneyTests/AppVersionTests.swift`
+- `WadeMoneyTests/FeedbackMailDraftTests.swift`
+- `WadeMoneyTests/UpdateCheckerTests.swift`
+- `docs/superpowers/plans/2026-07-02-codex-ui-ux-handoff.md`
+
+Commits on `main`:
+
+- `09f9dc4 chore: ignore local worktrees`
+- `9b0b1a0 feat(update): add app version comparison`
+- `5ffb189 feat(update): add App Store lookup checker`
+- `293ba72 feat(update): show App Store update prompt`
+- `d0f932c feat(settings): add feedback mail action`
+
+Verification performed:
+
+- TDD red/green:
+  - `AppVersionTests` initially failed with `Cannot find 'AppVersion' in scope`, then passed after implementation.
+  - `UpdateCheckerTests` initially failed with `Cannot find 'UpdateChecker'` / `Cannot find 'UpdateInfo'`, then passed after implementation.
+  - `FeedbackMailDraftTests` initially failed with `Cannot find 'FeedbackMailDraft' in scope`, then passed after implementation.
+- Isolated worktree verification before cherry-pick:
+  - `swift test --package-path WadeMoneyCore`: passed, 37 tests.
+  - `xcodebuild test -scheme WadeMoney -destination 'platform=iOS Simulator,name=iPhone 17e'`: passed, 156 tests.
+  - `xcodebuild build -scheme WadeMoney -destination 'platform=iOS Simulator,name=iPhone 17e'`: passed.
+  - `git diff --check`: passed.
+- Original `main` verification after cherry-pick:
+  - `xcodegen generate`: succeeded.
+  - `swift test --package-path WadeMoneyCore`: passed, 37 tests.
+  - `xcodebuild test -scheme WadeMoney -destination 'platform=iOS Simulator,name=iPhone 17e'`: passed, 156 tests.
+  - `xcodebuild build -scheme WadeMoney -destination 'platform=iOS Simulator,name=iPhone 17e'`: passed.
+  - `git diff --check`: passed.
+
+Known limitations / follow-up:
+
+- The update prompt can only fully appear in production when App Store Lookup returns a version newer than the installed `CFBundleShortVersionString`; this was covered by unit tests rather than a live App Store visual trigger.
+- Mail compose presentation depends on a configured Mail account on device. Simulator/no-Mail fallback is implemented by clipboard copy + toast; the draft body generation is unit-tested.
+- UI was compile/test verified on the smallest available simulator target (`iPhone 17e`), but no manual screenshot pass was done in this turn.
+- Original working tree still has pre-existing uncommitted `docs/design/app-design-specification-analysis/` changes and pre-existing handoff-file edits. Do not stage them accidentally.
+
+## 2026-07-07 Codex Implementation: DEBUG Update Prompt Preview
+
+User request:
+
+- Add a Settings button in debug mode so the app update alert can be force-checked/previewed without waiting for a real App Store newer version response.
+
+What changed:
+
+- Added `DebugUpdatePrompt`, compiled only under `#if DEBUG`.
+- Added a DEBUG-only Settings row in `도움말`: `업데이트 알림 미리보기`.
+- Tapping the row posts an internal notification and makes `RootView` present the existing `UpdateAvailablePopup` immediately.
+- The preview uses visible fake version `999.0` and an App Store WadeMoney search URL so developers can also tap through the existing update action without requiring a real App Store listing ID.
+- Release builds were verified separately so the debug-only symbols do not leak into the production path.
+
+Files touched:
+
+- `WadeMoney/Update/DebugUpdatePrompt.swift`
+- `WadeMoney/RootView.swift`
+- `WadeMoney/Screens/Settings/SettingsScreen.swift`
+- `WadeMoneyTests/DebugUpdatePromptTests.swift`
+- `docs/superpowers/plans/2026-07-02-codex-ui-ux-handoff.md`
+
+Commit on `main`:
+
+- `4b5edca feat(debug): add update prompt preview action`
+
+Verification performed:
+
+- TDD red/green:
+  - `xcodebuild test -scheme WadeMoney -destination 'platform=iOS Simulator,name=iPhone 17e' -only-testing:WadeMoneyTests/DebugUpdatePromptTests` initially failed with `Cannot find 'DebugUpdatePrompt' in scope`.
+  - Same focused test passed after implementation, 1 test.
+- `xcodegen generate`: succeeded.
+- `swift test --package-path WadeMoneyCore`: passed, 37 tests.
+- `xcodebuild test -scheme WadeMoney -destination 'platform=iOS Simulator,name=iPhone 17e'`: passed, 157 tests.
+- `xcodebuild build -scheme WadeMoney -destination 'platform=iOS Simulator,name=iPhone 17e'`: passed.
+- `xcodebuild build -scheme WadeMoney -configuration Release -destination 'platform=iOS Simulator,name=iPhone 17e'`: passed.
+- `git diff --check`: passed.
+
+Known limitations / follow-up:
+
+- This is a debug preview path only; the production update check is still driven by `UpdateChecker` and the App Store Lookup response.
+- The preview App Store URL is a WadeMoney search URL because the repo does not currently encode a confirmed App Store app ID.
+- No manual simulator screenshot pass was done; verification was build/test focused.
+- The handoff file and `docs/design/app-design-specification-analysis/` still contain pre-existing uncommitted changes from prior work; avoid staging unrelated docs/design files accidentally.
