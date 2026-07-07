@@ -20,7 +20,7 @@ struct RootTabView: View {
                 }
             }
             if showStatsToast {
-                toast("통계는 나중에 업데이트될 예정이에요")
+                WadeToast(message: "통계는 나중에 업데이트될 예정이에요")
                     .padding(.horizontal, WadeSpacing.screenH)
                     .padding(.bottom, 76)
                     .transition(.asymmetric(
@@ -92,17 +92,6 @@ struct RootTabView: View {
                 }
             }
         }
-    }
-
-    private func toast(_ message: String) -> some View {
-        Text(message)
-            .font(WadeFont.pretendard(13.5, weight: .bold))
-            .foregroundStyle(WadeColors.toastfg(scheme))
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-            .frame(maxWidth: .infinity)
-            .background(WadeColors.toastbg(scheme), in: Capsule())
-            .shadow(color: .black.opacity(0.14), radius: 12, y: 6)
     }
 
     private var fab: some View {

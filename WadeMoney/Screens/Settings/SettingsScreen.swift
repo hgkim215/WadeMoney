@@ -1,5 +1,7 @@
+import MessageUI
 import SwiftUI
 import SwiftData
+import UIKit
 import WadeMoneyCore
 
 struct SettingsScreen: View {
@@ -8,17 +10,21 @@ struct SettingsScreen: View {
     @State private var viewModel: SettingsViewModel?
     @State private var showCategories = false
     @State private var presentedSheet: SettingsSheet?
+    @State private var settingsToast: String?
+    @State private var settingsToastTask: Task<Void, Never>?
 
     private enum SettingsSheet: Identifiable {
         case budget
         case monthStartDay
         case share(URL)
+        case feedbackMail
 
         var id: String {
             switch self {
             case .budget: return "budget"
             case .monthStartDay: return "monthStartDay"
             case .share(let url): return "share-\(url.absoluteString)"
+            case .feedbackMail: return "feedbackMail"
             }
         }
     }
@@ -29,43 +35,67 @@ struct SettingsScreen: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 22) {
-                    Text("설정").font(WadeFont.pretendard(30, weight: .heavy)).foregroundStyle(WadeColors.ink(scheme))
-                    if let vm = viewModel {
-                        section("예산") {
-                            row(icon: "account_balance_wallet", tint: WadeColors.primary(scheme), label: "이번 달 예산",
-                                trailing: vm.budgetRowText) { presentedSheet = .budget }
-                            row(icon: "event", tint: WadeColors.ink2(scheme), label: "월 시작일", trailing: vm.monthStartDayText) {
-                                presentedSheet = .monthStartDay
+            ZStack(alignment: .bottom) {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 22) {
+                        Text("설정").font(WadeFont.pretendard(30, weight: .heavy)).foregroundStyle(WadeColors.ink(scheme))
+                        if let vm = viewModel {
+                            section("예산") {
+                                row(icon: "account_balance_wallet", tint: WadeColors.primary(scheme), label: "이번 달 예산",
+                                    trailing: vm.budgetRowText) { presentedSheet = .budget }
+                                row(icon: "event", tint: WadeColors.ink2(scheme), label: "월 시작일", trailing: vm.monthStartDayText) {
+                                    presentedSheet = .monthStartDay
+                                }
                             }
+                            section("카테고리 · AI") {
+                                row(icon: "category", tint: WadeColors.ink2(scheme), label: "카테고리 관리",
+                                    trailing: vm.categoryCountText) { showCategories = true }
+                                aiToggleRow(vm)
+                            }
+                            section("화면") {
+                                appearanceRow(vm)
+                            }
+                            section("동기화 · 데이터") {
+                                row(icon: "cloud_done", tint: WadeColors.good(scheme), label: "iCloud 동기화",
+                                    subtitle: "iCloud에 안전하게 보관돼요", subtitleColor: WadeColors.good(scheme), trailing: nil, action: nil)
+                                row(icon: "ios_share", tint: WadeColors.ink2(scheme), label: "CSV 내보내기", trailing: nil) { exportCSV() }
+                            }
+                            section("도움말") {
+                                row(
+                                    icon: "mail",
+                                    tint: WadeColors.primary(scheme),
+                                    label: "앱 개선 의견 보내기",
+                                    subtitle: "메일로 의견을 보낼 수 있어요",
+                                    trailing: nil
+                                ) {
+                                    startFeedbackMail()
+                                }
+                            }
+                            section("정보") {
+                                legalRow(icon: "description", label: "이용약관", url: WadeMoneyLegal.termsOfService)
+                                legalRow(icon: "privacy_tip", label: "개인정보처리방침", url: WadeMoneyLegal.privacyPolicy)
+                            }
+                            Text("WadeMoney v\(Self.appVersion) · 데이터는 내 기기와 iCloud에만 보관돼요")
+                                .font(WadeFont.pretendard(11.5)).foregroundStyle(WadeColors.ink3(scheme))
+                                .frame(maxWidth: .infinity)
                         }
-                        section("카테고리 · AI") {
-                            row(icon: "category", tint: WadeColors.ink2(scheme), label: "카테고리 관리",
-                                trailing: vm.categoryCountText) { showCategories = true }
-                            aiToggleRow(vm)
-                        }
-                        section("화면") {
-                            appearanceRow(vm)
-                        }
-                        section("동기화 · 데이터") {
-                            row(icon: "cloud_done", tint: WadeColors.good(scheme), label: "iCloud 동기화",
-                                subtitle: "iCloud에 안전하게 보관돼요", subtitleColor: WadeColors.good(scheme), trailing: nil, action: nil)
-                            row(icon: "ios_share", tint: WadeColors.ink2(scheme), label: "CSV 내보내기", trailing: nil) { exportCSV() }
-                        }
-                        section("정보") {
-                            legalRow(icon: "description", label: "이용약관", url: WadeMoneyLegal.termsOfService)
-                            legalRow(icon: "privacy_tip", label: "개인정보처리방침", url: WadeMoneyLegal.privacyPolicy)
-                        }
-                        Text("WadeMoney v\(Self.appVersion) · 데이터는 내 기기와 iCloud에만 보관돼요")
-                            .font(WadeFont.pretendard(11.5)).foregroundStyle(WadeColors.ink3(scheme))
-                            .frame(maxWidth: .infinity)
                     }
+                    .padding(.horizontal, WadeSpacing.screenH)
+                    .padding(.top, WadeSpacing.contentTop).padding(.bottom, WadeSpacing.contentBottom)
                 }
-                .padding(.horizontal, WadeSpacing.screenH)
-                .padding(.top, WadeSpacing.contentTop).padding(.bottom, WadeSpacing.contentBottom)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+                if let settingsToast {
+                    WadeToast(message: settingsToast)
+                        .padding(.horizontal, WadeSpacing.screenH)
+                        .padding(.bottom, 76)
+                        .transition(.asymmetric(
+                            insertion: .opacity.combined(with: .offset(y: 10)),
+                            removal: .opacity.combined(with: .offset(y: 6))
+                        ))
+                        .allowsHitTesting(false)
+                }
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(WadeColors.bg(scheme))
             .navigationDestination(isPresented: $showCategories) { CategoryManageScreen() }
         }
@@ -80,6 +110,9 @@ struct SettingsScreen: View {
                                            now: Date(), calendar: .current)
                 vm.load(); viewModel = vm
             }
+        }
+        .onDisappear {
+            settingsToastTask?.cancel()
         }
     }
 
@@ -103,6 +136,58 @@ struct SettingsScreen: View {
             MonthStartDaySheet(current: viewModel?.monthStartDay ?? 1) { day in viewModel?.setMonthStartDay(day) }
         case .share(let url):
             ActivityView(url: url)
+        case .feedbackMail:
+            MailComposeView(draft: makeFeedbackDraft()) {
+                presentedSheet = nil
+            }
+            .ignoresSafeArea()
+        }
+    }
+
+    private func startFeedbackMail() {
+        guard MFMailComposeViewController.canSendMail() else {
+            UIPasteboard.general.string = FeedbackMailDraft.supportEmail
+            showSettingsToast("메일 앱이 없어 주소를 복사했어요")
+            return
+        }
+        presentedSheet = .feedbackMail
+    }
+
+    private func makeFeedbackDraft() -> FeedbackMailDraft {
+        FeedbackMailDraft.make(
+            appVersion: Self.appVersion,
+            buildNumber: Self.buildNumber,
+            deviceModel: Self.deviceModel,
+            systemVersion: UIDevice.current.systemVersion
+        )
+    }
+
+    private func showSettingsToast(_ message: String) {
+        settingsToastTask?.cancel()
+        withAnimation(.spring(response: 0.28, dampingFraction: 0.88)) {
+            settingsToast = message
+        }
+        settingsToastTask = Task {
+            try? await Task.sleep(for: .seconds(1.8))
+            guard !Task.isCancelled else { return }
+            await MainActor.run {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    settingsToast = nil
+                }
+            }
+        }
+    }
+
+    private static let buildNumber =
+        Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "?"
+
+    private static var deviceModel: String {
+        var systemInfo = utsname()
+        uname(&systemInfo)
+        let mirror = Mirror(reflecting: systemInfo.machine)
+        return mirror.children.reduce(into: "") { result, element in
+            guard let value = element.value as? Int8, value != 0 else { return }
+            result.append(String(UnicodeScalar(UInt8(value))))
         }
     }
 
