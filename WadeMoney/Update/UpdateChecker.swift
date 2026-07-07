@@ -5,7 +5,7 @@ struct UpdateInfo: Equatable, Sendable {
     let storeURL: URL
 }
 
-struct UpdateChecker {
+struct UpdateChecker: @unchecked Sendable {
     typealias Fetch = (URL) async throws -> Data
 
     private let bundleID: String?
