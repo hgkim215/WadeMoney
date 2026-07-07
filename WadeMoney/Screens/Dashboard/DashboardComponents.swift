@@ -242,7 +242,17 @@ struct DonutCard: View {
     var body: some View {
         card(scheme, minHeight: WadeSpacing.dashboardBlockHeight) {
             VStack(alignment: .leading, spacing: 16) {
-                Text("카테고리 비중").font(WadeFont.pretendard(15, weight: .heavy)).foregroundStyle(WadeColors.ink(scheme))
+                HStack {
+                    Text("카테고리 비중").font(WadeFont.pretendard(15, weight: .heavy)).foregroundStyle(WadeColors.ink(scheme))
+                    Spacer()
+                    if !legend.isEmpty {
+                        HStack(spacing: 2) {
+                            Text("자세히").font(WadeFont.pretendard(12, weight: .bold))
+                            Icon("chevron_right", size: 14, filled: false)
+                        }
+                        .foregroundStyle(WadeColors.ink3(scheme))
+                    }
+                }
                 if legend.isEmpty {
                     emptyState
                 } else {
@@ -364,7 +374,7 @@ struct TrendCard: View {
                     Text("지출 추세").font(WadeFont.pretendard(15, weight: .heavy)).foregroundStyle(WadeColors.ink(scheme))
                     Spacer()
                     if let selectedBar {
-                        Text("\(selectedBar.label) · \(selectedBar.valueText)")
+                        Text("\(selectedBar.label) · ₩\(selectedBar.valueText)")
                             .font(WadeFont.pretendard(13, weight: .heavy))
                             .foregroundStyle(WadeColors.primary(scheme))
                     }
