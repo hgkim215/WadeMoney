@@ -948,3 +948,59 @@ Known limitations / follow-up:
 
 - Real-device App Store handoff still needs a final manual tap check on a device with App Store available, but the URL is now the actual WadeMoney app detail URL instead of search.
 - The handoff file and `docs/design/app-design-specification-analysis/` still contain pre-existing uncommitted changes from prior work; avoid staging unrelated docs/design files accidentally.
+
+## 2026-07-07 Claude Implementation: Dashboard Trend Tap-to-Inspect + Category Detail Screens
+
+User request:
+
+- Dashboard's "지출 추세" (spending trend) card truncated the current period's total amount (e.g. "1,393,2…") because it was squeezed above a narrow per-bar column.
+- User also wanted tapping "카테고리 비중" (category breakdown) to drill into more detail per category.
+- Ran full Superpowers flow: brainstorming → writing-plans → subagent-driven-development (6 tasks, one implementer + one reviewer per task, then a final whole-branch review on `opus`).
+
+Design decisions from brainstorming (user picked via `AskUserQuestion`, not defaults):
+
+- Trend card: tapping any bar shows *that* bar's period+amount in a header (not just the current one); defaults to the current period when nothing is tapped.
+- Category detail is two screens, not one: tapping the whole "카테고리 비중" card (donut+legend, not a specific legend row) opens a full ranked list of every category (no "기타" bucketing, unlike the dashboard donut which caps at 6+other); tapping a row in that list opens a single-category summary (total + percent) + transaction list, scoped to whatever period/offset the dashboard was showing at tap time (no in-screen period picker in either new screen).
+
+What changed:
+
+- `TrendCard` (`WadeMoney/Screens/Dashboard/DashboardComponents.swift`): removed the per-bar amount label (the truncation source); added a static, pure `TrendCard.selectedBar(in:id:)` helper and local `@State selectedID`; header now shows the selected bar's label+amount; tapping a bar highlights it and updates the header; `.onChange(of: bars)` resets selection back to the current period when the dashboard's period/kind changes.
+- `DashboardViewModel.DashboardDisplay` gained a `period: Period` field (the same `Period` instance already resolved for the dashboard, not recomputed) so the new screens can reuse the exact period without redoing month-start-day logic.
+- New `CategoryDetailViewModel` + `CategoryDetailScreen`: summary card (total + percent of period spend) + "최근 거래" transaction list for one category, bespoke (does not reuse/extend `HistoryViewModel`).
+- New `CategoryBreakdownViewModel` + `CategoryBreakdownScreen`: full category ranking for the period via `Aggregator.totalsByCategory` directly (not `Donut.slices`, so no 6-item cap/bucketing); each row pushes into `CategoryDetailScreen`.
+- `DashboardScreen`: wrapped `DonutCard` in a `Button` (guarded on non-empty donut data) that captures `d.period`/`d.periodLabel` at tap time and pushes `CategoryBreakdownScreen` via a second `.navigationDestination(isPresented:)`, following the existing `AIReportScreen` push pattern exactly (own `@Environment(\.dismiss)`, custom `backRow`, `.navigationBarBackButtonHidden(true)` on both new screens).
+
+Real bug found and fixed during Task 6 verification (not in the original plan text): wrapping `DonutCard` in a `Button` made SwiftUI auto-compose its accessibility label from all child `Text` views (title + legend, including category names like "식비" when expense data exists). This collided with the pre-existing `CoreFlowUITests.testQuickAddExpenseFlowUpdatesHistory`'s `button(containing: "식비", in: app)` helper, which started grabbing the now-hidden (behind a sheet) donut button instead of the intended category chip. Fixed with a fixed `.accessibilityLabel("카테고리 비중")` on the button. The final whole-branch reviewer confirmed this is a minimal, well-targeted fix for a regression this same commit introduced, not scope creep — noting the trade-off that VoiceOver now announces only the fixed label instead of the composed total+legend (acceptable, logged as non-blocking).
+
+Files touched:
+
+- `WadeMoney/Screens/Dashboard/DashboardComponents.swift` (`TrendCard`)
+- `WadeMoney/Screens/Dashboard/DashboardViewModel.swift` (`period` field)
+- `WadeMoney/Screens/Dashboard/DashboardScreen.swift` (donut tap wiring)
+- `WadeMoney/Screens/Dashboard/CategoryDetailViewModel.swift` (new)
+- `WadeMoney/Screens/Dashboard/CategoryDetailScreen.swift` (new)
+- `WadeMoney/Screens/Dashboard/CategoryBreakdownViewModel.swift` (new)
+- `WadeMoney/Screens/Dashboard/CategoryBreakdownScreen.swift` (new)
+- `WadeMoneyTests/TrendCardSelectionTests.swift` (new), `WadeMoneyTests/DashboardViewModelTests.swift`, `WadeMoneyTests/CategoryDetailViewModelTests.swift` (new), `WadeMoneyTests/CategoryBreakdownViewModelTests.swift` (new)
+- `docs/superpowers/specs/2026-07-07-dashboard-trend-and-category-detail-design.md`, `docs/superpowers/plans/2026-07-07-dashboard-trend-and-category-detail.md`
+
+Commits on `main` (6 task commits, all reviewed individually then as a whole branch):
+
+- `e5ab9cf feat(dashboard): make trend card amount tap-to-inspect, fix truncation`
+- `4e93a5d feat(dashboard): expose the resolved period on DashboardDisplay`
+- `1f6be6d feat(dashboard): add category detail view model`
+- `3f6f76a feat(dashboard): add category detail screen`
+- `4475525 feat(dashboard): add category breakdown view model`
+- `66f2b4d feat(dashboard): add category breakdown screen, wire up donut card tap`
+
+Verification performed:
+
+- Every task had its own implementer (TDD red/green where the task had pure logic) + independent task-reviewer subagent; all 6 Approved with 0 Critical/Important findings.
+- New Swift files were added to the Xcode project via `xcodegen generate` (not hand-edited `project.pbxproj`, which stays gitignored) — confirmed safe since `project.yml`'s `WadeMoney` target source glob covers the whole `WadeMoney/` directory recursively.
+- Manual screenshot verification (temporary XCUITest methods, added/run/exported via `xcresulttool`/reverted each time, confirmed via `git diff` empty before each commit) for: the trend card's no-truncation header + tap-to-highlight; the full breakdown-list → detail-screen tap flow with a real transaction.
+- Final whole-branch review (opus) re-ran the full suite (green), traced cross-task interfaces by hand, and specifically checked that `CategoryBreakdownViewModel` and `CategoryDetailViewModel` compute "percent of period total" identically (same repository query, same `Aggregator.totalsByCategory`, same formula) so a category's percent never differs between the two screens. Verdict: **Ready to merge: Yes**, 0 Critical/Important, 4 non-blocking Minor notes (a provably-safe force-unwrap inherited from the plan's own code; the VoiceOver trade-off above; uncategorized-expense edge case shared with the pre-existing donut — unreachable since expense entry requires a category; one harmless redundant date-range filter).
+- Full test suite at the end: 169 tests, 0 failures.
+
+Known limitations / follow-up:
+
+- None new. Pre-existing `SentenceHighlighter.swift` `Text + Text` deprecation warning still outstanding (see the AI Report section above).
