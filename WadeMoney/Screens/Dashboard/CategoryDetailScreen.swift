@@ -1,0 +1,138 @@
+import SwiftUI
+import WadeMoneyCore
+
+struct CategoryDetailScreen: View {
+    @Environment(\.colorScheme) private var scheme
+    @Environment(\.dismiss) private var dismiss
+    @State private var viewModel: CategoryDetailViewModel?
+
+    let categoryID: UUID
+    let categoryName: String
+    let categoryIconName: String
+    let categoryColorHex: String
+    let period: Period
+    let periodLabel: String
+    let repository: LedgerRepository
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: WadeSpacing.cardGap) {
+                backRow
+                if let vm = viewModel {
+                    summaryCard(vm)
+                    Text("최근 거래")
+                        .font(WadeFont.pretendard(15, weight: .heavy))
+                        .foregroundStyle(WadeColors.ink(scheme))
+                    if vm.rows.isEmpty {
+                        emptyState
+                    } else {
+                        listCard(vm)
+                    }
+                }
+            }
+            .padding(.horizontal, WadeSpacing.screenH)
+            .padding(.top, WadeSpacing.contentTop)
+            .padding(.bottom, WadeSpacing.contentBottom)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(WadeColors.bg(scheme))
+        .navigationBarBackButtonHidden(true)
+        .onAppear {
+            if viewModel == nil {
+                let vm = CategoryDetailViewModel(
+                    repository: repository,
+                    categoryID: categoryID,
+                    categoryName: categoryName,
+                    period: period,
+                    calendar: .current
+                )
+                vm.load()
+                viewModel = vm
+            }
+        }
+    }
+
+    private var backRow: some View {
+        Button { dismiss() } label: {
+            HStack(spacing: 3) { Icon("chevron_left", size: 18); Text("카테고리별 지출").font(WadeFont.pretendard(14, weight: .semibold)) }
+                .foregroundStyle(WadeColors.ink2(scheme))
+        }.buttonStyle(.plain)
+    }
+
+    private func card<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
+        let sh = WadeShadow.card(scheme)
+        return content()
+            .padding(WadeSpacing.cardPadding)
+            .background(WadeColors.card(scheme))
+            .clipShape(RoundedRectangle(cornerRadius: WadeRadius.card, style: .continuous))
+            .shadow(color: sh.color, radius: sh.radius, y: sh.y)
+    }
+
+    private func summaryCard(_ vm: CategoryDetailViewModel) -> some View {
+        card {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(spacing: 10) {
+                    Icon(categoryIconName, size: 22).foregroundStyle(Color(hex: categoryColorHex))
+                        .frame(width: 42, height: 42)
+                        .background(Color(hex: categoryColorHex).opacity(0.13), in: RoundedRectangle(cornerRadius: WadeRadius.iconTile))
+                    Text(categoryName).font(WadeFont.pretendard(19, weight: .heavy)).foregroundStyle(WadeColors.ink(scheme))
+                }
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    Text(periodLabel).font(WadeFont.pretendard(12.5, weight: .semibold)).foregroundStyle(WadeColors.ink3(scheme))
+                    Text("₩\(vm.totalText)").font(WadeFont.pretendard(22, weight: .heavy)).foregroundStyle(WadeColors.ink(scheme))
+                    Text("· 지출 \(vm.percentText)").font(WadeFont.pretendard(13, weight: .bold)).foregroundStyle(WadeColors.ink2(scheme))
+                }
+            }
+        }
+    }
+
+    private func listCard(_ vm: CategoryDetailViewModel) -> some View {
+        VStack(spacing: 0) {
+            ForEach(vm.rows) { row in
+                rowView(row)
+                if row.id != vm.rows.last?.id {
+                    Divider().overlay(WadeColors.line(scheme)).padding(.leading, 16)
+                }
+            }
+        }
+        .background(WadeColors.card(scheme), in: RoundedRectangle(cornerRadius: WadeRadius.listCard, style: .continuous))
+        .shadow(color: WadeShadow.list(scheme).color, radius: WadeShadow.list(scheme).radius, y: WadeShadow.list(scheme).y)
+    }
+
+    private func rowView(_ row: CategoryDetailViewModel.Row) -> some View {
+        HStack(spacing: 13) {
+            Text(row.dateText)
+                .font(WadeFont.pretendard(12, weight: .semibold))
+                .foregroundStyle(WadeColors.ink3(scheme))
+                .frame(width: 36, alignment: .leading)
+            HStack(spacing: 6) {
+                Text(row.memo).font(WadeFont.pretendard(14.5, weight: .semibold)).foregroundStyle(WadeColors.ink(scheme)).lineLimit(1)
+                if row.showsBudgetExcludedLabel {
+                    Text("예산 제외")
+                        .font(WadeFont.pretendard(10.5, weight: .heavy))
+                        .foregroundStyle(Color(hex: "#B4811F"))
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 3)
+                        .background(Color(hex: "#D3A850").opacity(scheme == .dark ? 0.18 : 0.16), in: Capsule())
+                        .fixedSize()
+                }
+            }
+            Spacer()
+            Text(row.amountText).font(WadeFont.pretendard(15, weight: .heavy)).foregroundStyle(WadeColors.ink(scheme))
+        }
+        .padding(.horizontal, 16).padding(.vertical, 13)
+        .frame(minHeight: 64)
+    }
+
+    private var emptyState: some View {
+        VStack(spacing: 11) {
+            Icon("receipt_long", size: 38, filled: false).foregroundStyle(WadeColors.ink3(scheme))
+                .frame(width: 74, height: 74)
+                .background(WadeColors.card2(scheme), in: Circle())
+            Text("거래 내역이 없어요")
+                .font(WadeFont.pretendard(16, weight: .heavy))
+                .foregroundStyle(WadeColors.ink2(scheme))
+        }
+        .frame(maxWidth: .infinity).padding(.top, 64)
+    }
+}
