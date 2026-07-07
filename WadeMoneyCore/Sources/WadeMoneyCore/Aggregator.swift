@@ -22,6 +22,17 @@ public enum Aggregator {
         }
     }
 
+    public static func budgetedExpense(_ txns: [TransactionRecord], in period: Period) -> Decimal {
+        budgetedExpense(txns, from: period.start, to: period.end)
+    }
+
+    public static func budgetedExpense(_ txns: [TransactionRecord], from start: Date, to end: Date) -> Decimal {
+        txns.reduce(Decimal(0)) { acc, t in
+            guard t.type == .expense, !t.isExcludedFromBudget, t.date >= start, t.date < end else { return acc }
+            return acc + t.amount
+        }
+    }
+
     public static func totalIncome(_ txns: [TransactionRecord], in period: Period) -> Decimal {
         txns.reduce(Decimal(0)) { acc, t in
             guard t.type == .income, t.date >= period.start, t.date < period.end else { return acc }

@@ -93,4 +93,28 @@ struct HistoryViewModelTests {
         #expect(vm.groups[0].sumIsIncome == false)
         _ = c
     }
+
+    @Test func excludedExpenseRowsExposeBudgetExcludedLabel() throws {
+        let (r, c) = try repo()
+        let food = try catID(r, "식비")
+        try r.addTransaction(
+            amount: 500_000,
+            type: .expense,
+            categoryID: food,
+            memo: "첫 월급 부모님 용돈",
+            date: date(2026, 7, 15, 12),
+            isExcludedFromBudget: true
+        )
+        try r.addTransaction(amount: 9_000, type: .expense, categoryID: food, memo: "점심", date: date(2026, 7, 15, 11))
+        try r.addTransaction(amount: 45_000, type: .income, categoryID: nil, memo: "환급", date: date(2026, 7, 15, 10))
+
+        let vm = HistoryViewModel(repository: r, now: date(2026, 7, 15, 20), calendar: utc)
+        vm.load()
+        let rows = vm.groups.flatMap(\.rows)
+
+        #expect(rows.first { $0.name == "첫 월급 부모님 용돈" }?.showsBudgetExcludedLabel == true)
+        #expect(rows.first { $0.name == "점심" }?.showsBudgetExcludedLabel == false)
+        #expect(rows.first { $0.name == "환급" }?.showsBudgetExcludedLabel == false)
+        _ = c
+    }
 }

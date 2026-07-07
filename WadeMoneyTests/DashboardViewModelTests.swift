@@ -62,4 +62,30 @@ struct DashboardViewModelTests {
         #expect(d.dayBudget != nil)
         _ = container
     }
+
+    @Test func dashboardTotalIncludesExcludedExpenseButBudgetLineUsesBudgetedExpense() throws {
+        let (repo, settings, container) = try makeRepo()
+        try settings.setMonthlyBudget(1_000_000, for: YearMonth(year: 2026, month: 7))
+        let food = try catID(repo, "식비")
+        try repo.addTransaction(amount: 680_000, type: .expense, categoryID: food, memo: nil, date: date(2026, 7, 5))
+        try repo.addTransaction(
+            amount: 500_000,
+            type: .expense,
+            categoryID: food,
+            memo: "첫 월급 부모님 용돈",
+            date: date(2026, 7, 6),
+            isExcludedFromBudget: true
+        )
+
+        let vm = DashboardViewModel(repository: repo, now: date(2026, 7, 15), calendar: utc)
+        vm.kind = .month
+        vm.load()
+
+        let d = try #require(vm.display)
+        #expect(d.totalText == "1,180,000")
+        #expect(d.remainText == "320,000")
+        #expect(d.consumedPercentText == "68%")
+        #expect(d.budgetBasisText == "예산 반영 680,000원 · 제외 500,000원")
+        _ = container
+    }
 }

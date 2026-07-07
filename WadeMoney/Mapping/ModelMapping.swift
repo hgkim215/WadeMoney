@@ -25,7 +25,8 @@ extension TransactionModel {
             categoryID: category?.id,
             memo: memo,
             date: date,
-            createdAt: createdAt
+            createdAt: createdAt,
+            isExcludedFromBudget: type == .expense ? isExcludedFromBudget : false
         )
     }
 }

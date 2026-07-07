@@ -3,26 +3,38 @@ import SwiftUI
 /// 마스코트(도넛 먹는 돼지)의 애니메이션 가능한 상태. 모든 좌표는 200×200 authoring
 /// 캔버스 기준이며, 앱 아이콘(AppIcon.appiconset) 생성에 쓰인 것과 동일한 지오메트리를 공유한다.
 struct MascotAnimationState: Equatable {
-    /// 돼지 얼굴 그룹 전체 스케일. 1.0이 기본, 베어무는 순간 잠깐 커진다.
-    var faceScale: CGFloat = 1.0
+    /// 돼지 몸통 그룹의 비등방 스케일. (1,1)이 기본. 웅크릴 땐 세로<1·가로>1(스쿼시),
+    /// 도넛으로 뻗을 땐 세로>1·가로<1(스트레치)로 무게감을 준다.
+    var pigScale: CGSize = CGSize(width: 1, height: 1)
+    /// 돼지 몸통 그룹의 평행이동(캔버스pt). .zero면 아이콘과 동일한 최종 위치.
+    /// 시작 시 도넛 반대쪽(좌하)으로 물러나 있다가 .zero로 달려들며 베어문다.
+    var pigOffset: CGSize = .zero
+    /// 돼지 몸통 기울기(도). 0이 기본. 웅크릴 때 뒤로(+), 달려들 때 앞으로(-) 살짝 기운다.
+    var pigLeanDegrees: Double = 0
     /// 도넛의 최종 위치(캔버스 (158,124))로부터의 오프셋. .zero면 최종 위치.
     var donutOffset: CGSize = .zero
     /// 도넛 회전각(도). 최종값은 -16.
     var donutRotationDegrees: Double = -16
     /// 0=베어물기 전(완전한 원), 1=최종 베어문 자국(반지름 17.5pt) 완성.
     var biteMaskProgress: CGFloat = 1
-    /// 0=입 다뭄, 1=씹느라 살짝 벌어짐.
+    /// 0=입 다뭄, 1=크게 벌림. 씹는 동안은 작은 폭으로만 움직이고, 베어물 준비 때 크게 벌린다.
     var mouthOpenProgress: CGFloat = 0
-    /// 부스러기 3개 각각의 등장 진행도(0=안 보임, 1=완전히 팝).
+    /// 눈 뜬 정도. 1=완전히 뜸(아이콘 상태), 0에 가까우면 감음. 씹는 도중 한 번 깜빡인다.
+    var eyeOpenProgress: CGFloat = 1
+    /// 부스러기 3개 각각의 비행 진행도(0=베어문 지점에 잠복, 1=아이콘상 최종 안착 위치).
     var crumbProgress: [CGFloat] = [1, 1, 1]
 
-    /// 스플래시 시작 시점: 도넛이 화면 위쪽 밖에 있고, 아직 베어물지 않은 완전한 원.
+    /// 스플래시 시작 시점: 도넛은 제자리(회전만 살짝 큼)에 있고, 돼지는 도넛 반대쪽으로
+    /// 물러나 웅크린 채 아직 베어물지 않은 상태. 부스러기는 베어문 지점에 잠복(진행도 0).
     static let initial = MascotAnimationState(
-        faceScale: 1.0,
-        donutOffset: CGSize(width: 0, height: -90),
-        donutRotationDegrees: -34,
+        pigScale: CGSize(width: 1, height: 1),
+        pigOffset: CGSize(width: -20, height: 12),
+        pigLeanDegrees: 4,
+        donutOffset: .zero,
+        donutRotationDegrees: -22,
         biteMaskProgress: 0,
         mouthOpenProgress: 0,
+        eyeOpenProgress: 1,
         crumbProgress: [0, 0, 0]
     )
 
@@ -46,7 +58,12 @@ struct MascotView: View {
     }
 
     private var pig: some View {
-        ZStack {
+        let mouthTop: CGFloat = 154
+        let mouthHeight = 15 + state.mouthOpenProgress * 8
+        let mouthCenterY = mouthTop + mouthHeight / 2
+        let tongueY = mouthTop + mouthHeight - 1
+
+        return ZStack {
             UnevenRoundedRectangle(topLeadingRadius: 24.84, bottomLeadingRadius: 3.68, bottomTrailingRadius: 23, topTrailingRadius: 24.84)
                 .fill(Color(hex: "EA8FA4"))
                 .frame(width: 46, height: 46)
@@ -77,25 +94,37 @@ struct MascotView: View {
             Ellipse().fill(Color(hex: "B0687A")).frame(width: 8, height: 13).position(x: 98.5, y: 138)
 
             UnevenRoundedRectangle(topLeadingRadius: 0, bottomLeadingRadius: 13, bottomTrailingRadius: 13, topTrailingRadius: 0)
-                .fill(Color(hex: "8A4150")).frame(width: 26, height: 15).position(x: 93, y: 161.5)
+                .fill(Color(hex: "8A4150"))
+                .frame(width: 26, height: mouthHeight)
+                .position(x: 93, y: mouthCenterY)
             Ellipse()
                 .fill(Color(hex: "EE8FA0"))
                 .frame(width: 16, height: 10)
-                .scaleEffect(x: 1, y: 1 + state.mouthOpenProgress * 0.3, anchor: .top)
-                .position(x: 93, y: 168)
+                .scaleEffect(x: 1, y: 1 + state.mouthOpenProgress * 0.35, anchor: .top)
+                .opacity(0.72 + Double(state.mouthOpenProgress) * 0.28)
+                .position(x: 93, y: tongueY)
         }
-        .scaleEffect(state.faceScale)
+        .scaleEffect(x: state.pigScale.width, y: state.pigScale.height, anchor: Self.pigPivot)
+        .rotationEffect(.degrees(state.pigLeanDegrees), anchor: Self.pigPivot)
+        .offset(state.pigOffset)
     }
+
+    /// 스쿼시·기울임의 회전 중심. 돼지 몸통 아래쪽(턱/발 부근, 캔버스 ~(94,144))에 두어
+    /// 웅크렸다 뻗을 때 머리가 도넛 쪽으로 호를 그리며 움직이도록 한다.
+    private static let pigPivot = UnitPoint(x: 0.47, y: 0.72)
 
     private func eye(center: CGPoint, highlightCenter: CGPoint) -> some View {
         ZStack {
             Ellipse()
                 .fill(RadialGradient(colors: [Color(hex: "5B3B44"), Color(hex: "3A252C")], center: UnitPoint(x: 0.38, y: 0.30), startRadius: 0, endRadius: 14))
                 .frame(width: 17, height: 20)
+                .scaleEffect(x: 1, y: state.eyeOpenProgress, anchor: .center)
                 .position(x: center.x, y: center.y)
             Circle()
                 .fill(Color.white.opacity(0.92))
                 .frame(width: 5.5, height: 5.5)
+                .scaleEffect(state.eyeOpenProgress, anchor: .center)
+                .opacity(Double(state.eyeOpenProgress))
                 .position(x: highlightCenter.x, y: highlightCenter.y)
         }
     }
@@ -154,19 +183,29 @@ struct MascotView: View {
 
     private var crumbs: some View {
         ZStack {
-            crumb(color: "3E9E7A", size: 8, rotation: 20, cornerRadius: 2, position: CGPoint(x: 116, y: 136), progress: state.crumbProgress[0])
-            crumb(color: "E0A93F", size: 6, rotation: -15, cornerRadius: 2, position: CGPoint(x: 107, y: 147), progress: state.crumbProgress[1])
-            crumb(color: "EC8FB6", size: 5, rotation: 0, cornerRadius: 2.5, position: CGPoint(x: 123.5, y: 149.5), progress: state.crumbProgress[2])
+            crumb(color: "3E9E7A", size: 8, finalRotation: 20, cornerRadius: 2, destination: CGPoint(x: 116, y: 136), progress: state.crumbProgress[0])
+            crumb(color: "E0A93F", size: 6, finalRotation: -15, cornerRadius: 2, destination: CGPoint(x: 107, y: 147), progress: state.crumbProgress[1])
+            crumb(color: "EC8FB6", size: 5, finalRotation: 0, cornerRadius: 2.5, destination: CGPoint(x: 123.5, y: 149.5), progress: state.crumbProgress[2])
         }
     }
 
-    private func crumb(color: String, size: CGFloat, rotation: Double, cornerRadius: CGFloat, position: CGPoint, progress: CGFloat) -> some View {
-        RoundedRectangle(cornerRadius: cornerRadius)
+    /// 부스러기가 베어문 지점(canvas ~(128,135))에서 튀어나와 아이콘상 최종 위치로 포물선을
+    /// 그리며 안착한다. progress=1이면 위치·크기·회전이 모두 아이콘 정지 프레임과 정확히 일치.
+    private func crumb(color: String, size: CGFloat, finalRotation: Double, cornerRadius: CGFloat, destination: CGPoint, progress: CGFloat) -> some View {
+        let origin = CGPoint(x: 128, y: 135)
+        let p = progress
+        let eased = 1 - pow(1 - p, 2)             // easeOut: 초반에 빠르게 튀어나감
+        let x = origin.x + (destination.x - origin.x) * eased
+        let arc = -11 * sin(Double(p) * .pi)      // 비행 중간에 살짝 떠올랐다 내려앉는 포물선
+        let y = origin.y + (destination.y - origin.y) * eased + CGFloat(arc)
+        let spin = finalRotation - 160 * (1 - Double(p)) // 회전하며 날아가 최종 각도로 정착
+        return RoundedRectangle(cornerRadius: cornerRadius)
             .fill(Color(hex: color))
             .frame(width: size, height: size)
-            .rotationEffect(.degrees(rotation))
-            .opacity(progress)
-            .position(x: position.x, y: position.y - 6 * progress)
+            .scaleEffect(min(1, p * 1.5))
+            .rotationEffect(.degrees(spin))
+            .opacity(min(1, p * 2.5))
+            .position(x: x, y: y)
     }
 }
 

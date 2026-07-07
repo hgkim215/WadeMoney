@@ -3,19 +3,24 @@ import Testing
 @testable import WadeMoney
 
 struct SplashTests {
-    @Test func standardTimelineTotalsAboutOnePointFourSeconds() {
+    @Test func standardTimelineTotalsAboutOnePointEightSixSeconds() {
         let t = SplashTimeline.standard
-        #expect(abs(t.total - 1.40) < 0.001)
+        #expect(abs(t.total - 1.86) < 0.001)
+    }
+
+    @Test func standardTimelineHasChewPhase() {
+        #expect(SplashTimeline.standard.chew > 0)
     }
 
     @Test func reducedTimelineIsShorterThanStandard() {
         #expect(SplashTimeline.reduced.total < SplashTimeline.standard.total)
     }
 
-    @Test func reducedTimelineSkipsDonutApproachAndBite() {
+    @Test func reducedTimelineSkipsDonutApproachBiteAndChew() {
         let t = SplashTimeline.reduced
         #expect(t.donutApproach == 0)
         #expect(t.biteImpact == 0)
+        #expect(t.chew == 0)
         #expect(t.crumbStagger == 0)
     }
 

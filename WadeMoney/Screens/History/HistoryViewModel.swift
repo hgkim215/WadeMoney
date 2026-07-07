@@ -20,6 +20,7 @@ final class HistoryViewModel {
         let timeText: String
         let amountText: String
         let isIncome: Bool
+        let showsBudgetExcludedLabel: Bool
     }
     struct DayGroup: Identifiable {
         let id: String
@@ -103,7 +104,8 @@ final class HistoryViewModel {
             categoryName: isIncome ? "수입" : (cat?.name ?? "기타"),
             timeText: timeLabel(r.date),
             amountText: "\(sign)\(Won.string(r.amount))",
-            isIncome: isIncome
+            isIncome: isIncome,
+            showsBudgetExcludedLabel: !isIncome && r.isExcludedFromBudget
         )
     }
 

@@ -5,30 +5,34 @@ struct SplashTimeline: Equatable {
     let entrance: TimeInterval
     let donutApproach: TimeInterval
     let biteImpact: TimeInterval
+    let chew: TimeInterval
     let crumbStagger: TimeInterval
     let hold: TimeInterval
     let exit: TimeInterval
 
     var total: TimeInterval {
-        entrance + donutApproach + biteImpact + hold + exit
+        entrance + donutApproach + biteImpact + chew + hold + exit
     }
 
-    /// 기본 애니메이션: 등장 → 도넛 접근 → 베어물기 → 정지 → 퇴장, 총 1.4초.
+    /// 기본 애니메이션: 등장 → 도넛 접근 → 베어물기 → 씹기(입 오물오물+눈 두 번 깜빡) → 정지
+    /// → 퇴장, 총 1.86초. 브랜드 인지는 남기되 콜드 스타트 대기감은 짧게 유지한다.
     static let standard = SplashTimeline(
-        entrance: 0.35,
-        donutApproach: 0.40,
-        biteImpact: 0.20,
-        crumbStagger: 0.05,
-        hold: 0.25,
-        exit: 0.20
+        entrance: 0.36,
+        donutApproach: 0.42,
+        biteImpact: 0.16,
+        chew: 0.54,
+        crumbStagger: 0.06,
+        hold: 0.22,
+        exit: 0.16
     )
 
-    /// Reduce Motion용: 슬라이드·바운스 구간을 사실상 0초로 접어 순간적으로 최종 포즈만
+    /// Reduce Motion용: 슬라이드·바운스·씹기 구간을 사실상 0초로 접어 순간적으로 최종 포즈만
     /// 보여주고, 정지 구간만 조금 더 길게(0.4초) 유지한다.
     static let reduced = SplashTimeline(
         entrance: 0.20,
         donutApproach: 0,
         biteImpact: 0,
+        chew: 0,
         crumbStagger: 0,
         hold: 0.40,
         exit: 0.20

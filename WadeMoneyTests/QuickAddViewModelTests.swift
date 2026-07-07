@@ -45,4 +45,29 @@ struct QuickAddViewModelTests {
         #expect(all[0].type == .income)
         _ = container
     }
+
+    @Test func expenseCanSaveAsBudgetExcluded() throws {
+        let (vm, repo, container) = try makeVM()
+        vm.tapKey("5"); vm.tapKey("00"); vm.tapKey("000")
+        vm.selectedCategoryID = vm.categories.first?.id
+        vm.isExcludedFromBudget = true
+        vm.date = date()
+
+        try vm.save()
+
+        let all = try repo.allTransactions()
+        #expect(all.count == 1)
+        #expect(all[0].type == .expense)
+        #expect(all[0].isExcludedFromBudget == true)
+        _ = container
+    }
+
+    @Test func switchingToIncomeClearsBudgetExclusion() throws {
+        let (vm, _, container) = try makeVM()
+        vm.isExcludedFromBudget = true
+        vm.type = .income
+
+        #expect(vm.isExcludedFromBudget == false)
+        _ = container
+    }
 }

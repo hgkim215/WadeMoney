@@ -160,7 +160,21 @@ struct HistoryScreen: View {
                 .frame(width: 38, height: 38)
                 .background(Color(hex: row.colorHex).opacity(0.13), in: RoundedRectangle(cornerRadius: WadeRadius.iconTile))
             VStack(alignment: .leading, spacing: 2) {
-                Text(row.name).font(WadeFont.pretendard(14.5, weight: .semibold)).foregroundStyle(WadeColors.ink(scheme)).lineLimit(1)
+                HStack(spacing: 6) {
+                    Text(row.name)
+                        .font(WadeFont.pretendard(14.5, weight: .semibold))
+                        .foregroundStyle(WadeColors.ink(scheme))
+                        .lineLimit(1)
+                    if row.showsBudgetExcludedLabel {
+                        Text("예산 제외")
+                            .font(WadeFont.pretendard(10.5, weight: .heavy))
+                            .foregroundStyle(Color(hex: "#B4811F"))
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 3)
+                            .background(Color(hex: "#D3A850").opacity(scheme == .dark ? 0.18 : 0.16), in: Capsule())
+                            .fixedSize()
+                    }
+                }
                 Text("\(row.categoryName) · \(row.timeText)").font(WadeFont.pretendard(11.5)).foregroundStyle(WadeColors.ink3(scheme))
             }
             Spacer()
@@ -168,6 +182,7 @@ struct HistoryScreen: View {
                 .foregroundStyle(row.isIncome ? WadeColors.good(scheme) : WadeColors.ink(scheme))
         }
         .padding(.horizontal, 16).padding(.vertical, 13)
+        .frame(minHeight: 64)
     }
 
     private func emptyState(_ vm: HistoryViewModel) -> some View {

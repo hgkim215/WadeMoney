@@ -88,6 +88,8 @@ struct QuickAddSheet: View {
                     }
                 }
 
+                if vm.type == .expense { budgetExclusionRow(vm) }
+
                 AmountKeypad(onKey: { vm.tapKey($0) }, onBackspace: { vm.backspace() })
 
                 Button {
@@ -143,6 +145,52 @@ struct QuickAddSheet: View {
             }
         }
         .padding(3).background(WadeColors.card2(scheme), in: Capsule())
+    }
+
+    private func budgetExclusionRow(_ vm: QuickAddViewModel) -> some View {
+        Button {
+            withAnimation(.easeInOut(duration: 0.16)) {
+                vm.isExcludedFromBudget.toggle()
+            }
+        } label: {
+            HStack(spacing: 12) {
+                Icon("savings", size: 19, filled: false)
+                    .foregroundStyle(vm.isExcludedFromBudget ? WadeColors.primary(scheme) : WadeColors.ink3(scheme))
+                    .frame(width: 36, height: 36)
+                    .background(
+                        vm.isExcludedFromBudget ? WadeColors.primarysoft(scheme) : WadeColors.card2(scheme),
+                        in: RoundedRectangle(cornerRadius: WadeRadius.iconTile, style: .continuous)
+                    )
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("예산에서 제외")
+                        .font(WadeFont.pretendard(13.5, weight: .heavy))
+                        .foregroundStyle(WadeColors.ink(scheme))
+                    Text("총 내역에는 남고, 이번 달 예산 계산에는 빠져요")
+                        .font(WadeFont.pretendard(11.5))
+                        .foregroundStyle(WadeColors.ink3(scheme))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.82)
+                }
+
+                Spacer(minLength: 8)
+
+                RoundedRectangle(cornerRadius: 999, style: .continuous)
+                    .fill(vm.isExcludedFromBudget ? WadeColors.primary(scheme) : WadeColors.track(scheme))
+                    .frame(width: 44, height: 26)
+                    .overlay(alignment: vm.isExcludedFromBudget ? .trailing : .leading) {
+                        Circle()
+                            .fill(vm.isExcludedFromBudget ? WadeColors.onPrimary(scheme) : WadeColors.ink3(scheme))
+                            .frame(width: 20, height: 20)
+                            .padding(3)
+                    }
+            }
+            .padding(13)
+            .background(WadeColors.card2(scheme), in: RoundedRectangle(cornerRadius: WadeRadius.segment, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("예산에서 제외")
+        .accessibilityValue(vm.isExcludedFromBudget ? "켬" : "끔")
     }
 
     private func stepChips(_ vm: QuickAddViewModel) -> some View {

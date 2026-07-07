@@ -17,6 +17,7 @@ final class TransactionModel {
     var memo: String?
     var date: Date = Date(timeIntervalSince1970: 0)
     var createdAt: Date = Date(timeIntervalSince1970: 0)
+    var isExcludedFromBudget: Bool = false
 
     var type: TransactionKind {
         get { TransactionKind(rawValue: typeRaw) ?? .expense }
@@ -30,7 +31,8 @@ final class TransactionModel {
         category: CategoryModel?,
         memo: String?,
         date: Date,
-        createdAt: Date = Date(timeIntervalSince1970: 0)
+        createdAt: Date = Date(timeIntervalSince1970: 0),
+        isExcludedFromBudget: Bool = false
     ) {
         self.id = id
         self.amount = amount
@@ -39,5 +41,6 @@ final class TransactionModel {
         self.memo = memo
         self.date = date
         self.createdAt = createdAt
+        self.isExcludedFromBudget = isExcludedFromBudget
     }
 }

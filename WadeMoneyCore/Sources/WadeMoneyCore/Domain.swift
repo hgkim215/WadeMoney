@@ -13,6 +13,7 @@ public struct TransactionRecord: Identifiable, Equatable, Sendable {
     public var memo: String?
     public var date: Date
     public var createdAt: Date
+    public var isExcludedFromBudget: Bool
 
     public init(
         id: UUID = UUID(),
@@ -21,7 +22,8 @@ public struct TransactionRecord: Identifiable, Equatable, Sendable {
         categoryID: UUID? = nil,
         memo: String? = nil,
         date: Date,
-        createdAt: Date = .init(timeIntervalSince1970: 0)
+        createdAt: Date = .init(timeIntervalSince1970: 0),
+        isExcludedFromBudget: Bool = false
     ) {
         self.id = id
         self.amount = amount
@@ -30,6 +32,7 @@ public struct TransactionRecord: Identifiable, Equatable, Sendable {
         self.memo = memo
         self.date = date
         self.createdAt = createdAt
+        self.isExcludedFromBudget = isExcludedFromBudget
     }
 }
 

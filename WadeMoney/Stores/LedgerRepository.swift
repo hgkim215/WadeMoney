@@ -48,7 +48,8 @@ final class LedgerRepository {
         type: TransactionKind,
         categoryID: UUID?,
         memo: String?,
-        date: Date
+        date: Date,
+        isExcludedFromBudget: Bool = false
     ) throws {
         var category: CategoryModel?
         // 수입은 카테고리를 갖지 않는다 — updateTransaction과 동일한 규칙.
@@ -63,7 +64,8 @@ final class LedgerRepository {
             category: category,
             memo: memo,
             date: date,
-            createdAt: date
+            createdAt: date,
+            isExcludedFromBudget: type == .expense ? isExcludedFromBudget : false
         ))
         try context.save()
         WidgetCenter.shared.reloadAllTimelines()
@@ -114,7 +116,8 @@ final class LedgerRepository {
         type: TransactionKind,
         categoryID: UUID?,
         memo: String?,
-        date: Date
+        date: Date,
+        isExcludedFromBudget: Bool = false
     ) throws {
         guard let model = try context.fetch(
             FetchDescriptor<TransactionModel>(predicate: #Predicate { $0.id == id })
@@ -130,6 +133,7 @@ final class LedgerRepository {
         model.category = type == .income ? nil : category
         model.memo = memo
         model.date = date
+        model.isExcludedFromBudget = type == .expense ? isExcludedFromBudget : false
         try context.save()
         WidgetCenter.shared.reloadAllTimelines()
     }
@@ -143,6 +147,8 @@ final class LedgerRepository {
     struct DashboardSummary {
         let period: Period
         let totalExpense: Decimal
+        let budgetedExpense: Decimal
+        let excludedExpense: Decimal
         let totalIncome: Decimal
         let budget: Decimal?
         let remaining: Decimal?
@@ -172,6 +178,8 @@ final class LedgerRepository {
         }
         let txns = try transactions(from: fetchStart, to: period.end)
         let total = Aggregator.totalExpense(txns, in: period)
+        let budgeted = Aggregator.budgetedExpense(txns, in: period)
+        let excluded = total - budgeted
 
         let book = try settingsStore.budgetBook()
         let rawBudget: Decimal?
@@ -184,9 +192,9 @@ final class LedgerRepository {
         // 스냅샷 없음과 동일하게 취급해 화면에서 "예산 미설정"으로 보이게 한다.
         let budget = rawBudget.flatMap { $0 > 0 ? $0 : nil }
 
-        let remaining = budget.map { $0 - total }
+        let remaining = budget.map { $0 - budgeted }
         let consumed: Double? = budget.flatMap { b in
-            b > 0 ? (total / b).doubleValue : nil
+            b > 0 ? (budgeted / b).doubleValue : nil
         }
 
         // 페이스는 월·연에서만(일 뷰는 일예산 대비로 표시 — 화면 계층).
@@ -199,11 +207,13 @@ final class LedgerRepository {
         let elapsed = calc.daysElapsed(in: period, asOf: now)
         let projected: Decimal? = (kind == .day)
             ? nil
-            : Projection.projectedTotal(cumulative: total, daysElapsed: elapsed, daysInPeriod: calc.dayCount(of: period))
+            : Projection.projectedTotal(cumulative: budgeted, daysElapsed: elapsed, daysInPeriod: calc.dayCount(of: period))
 
         return DashboardSummary(
             period: period,
             totalExpense: total,
+            budgetedExpense: budgeted,
+            excludedExpense: excluded,
             totalIncome: Aggregator.totalIncome(txns, in: period),
             budget: budget,
             remaining: remaining,

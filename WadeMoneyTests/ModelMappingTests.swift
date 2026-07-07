@@ -16,6 +16,16 @@ struct ModelMappingTests {
         #expect(rec.categoryID == cat.id)
         #expect(rec.memo == "점심")
         #expect(rec.date == Date(timeIntervalSince1970: 500))
+        #expect(rec.isExcludedFromBudget == false)
+    }
+
+    @Test func transactionModelMapsBudgetExclusionFlag() {
+        let cat = CategoryModel(name: "가족", iconName: "family_restroom", colorHex: "#D3A850", sortOrder: 0)
+        let tx = TransactionModel(amount: 500_000, type: .expense, category: cat,
+                                  memo: "첫 월급", date: Date(timeIntervalSince1970: 500),
+                                  isExcludedFromBudget: true)
+
+        #expect(tx.toRecord().isExcludedFromBudget == true)
     }
 
     @Test func incomeMapsWithNilCategory() {

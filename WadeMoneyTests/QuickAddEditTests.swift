@@ -74,4 +74,28 @@ struct QuickAddEditTests {
         #expect(updated.date == newDate)
         _ = c
     }
+
+    @Test func editingPrefillsAndUpdatesBudgetExclusion() throws {
+        let (r, c) = try repo()
+        let food = try catID(r, "식비")
+        try r.addTransaction(
+            amount: 5000,
+            type: .expense,
+            categoryID: food,
+            memo: nil,
+            date: date(),
+            isExcludedFromBudget: true
+        )
+        let rec = try r.transactions(filter: .all)[0]
+
+        let vm = QuickAddViewModel(repository: r, editing: rec)
+        #expect(vm.isExcludedFromBudget == true)
+
+        vm.isExcludedFromBudget = false
+        try vm.save()
+
+        let updated = try #require(try r.transactionRecord(id: rec.id))
+        #expect(updated.isExcludedFromBudget == false)
+        _ = c
+    }
 }

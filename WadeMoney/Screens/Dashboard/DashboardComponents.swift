@@ -117,7 +117,11 @@ struct HeroBudgetCard: View {
                 }
                 if let remain = display.remainText, let budget = display.budgetText {
                     HStack {
-                        Text("예산 \(budget)원").font(WadeFont.pretendard(12)).foregroundStyle(WadeColors.ink3(scheme))
+                        Text(display.budgetBasisText ?? "예산 \(budget)원")
+                            .font(WadeFont.pretendard(12))
+                            .foregroundStyle(WadeColors.ink3(scheme))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.78)
                         Spacer()
                         Text("\(remain)원 남음").font(WadeFont.pretendard(12, weight: .bold)).foregroundStyle(WadeColors.ink2(scheme))
                     }
@@ -297,7 +301,6 @@ struct DonutRing: View {
     let lineWidth: CGFloat
     @Environment(\.colorScheme) private var scheme
 
-    /// legend는 Donut.slices()가 이미 지출액 내림차순으로 정렬해 준다 — 첫 항목이 곧 최다 지출 카테고리.
     private var top: DashboardViewModel.DonutLegendItem? { legend.first }
 
     private var arcs: [(start: Double, end: Double, color: Color)] {
@@ -316,21 +319,29 @@ struct DonutRing: View {
         let pathSize = max(1, outerSize - lineWidth)
 
         ZStack {
+            Circle()
+                .stroke(WadeColors.track(scheme), lineWidth: lineWidth)
+                .frame(width: pathSize, height: pathSize)
             ForEach(Array(arcs.enumerated()), id: \.offset) { _, arc in
                 Circle()
                     .trim(from: arc.start, to: arc.end)
-                    .stroke(arc.color, lineWidth: lineWidth)
+                    .stroke(arc.color, style: StrokeStyle(lineWidth: lineWidth, lineCap: .butt))
                     .rotationEffect(.degrees(-90))
                     .frame(width: pathSize, height: pathSize)
             }
             if let top {
-                VStack(spacing: 1) {
-                    Text("최다 지출").font(WadeFont.pretendard(10.5, weight: .semibold)).foregroundStyle(WadeColors.ink3(scheme))
-                    Text(top.name).font(WadeFont.pretendard(15, weight: .heavy)).foregroundStyle(WadeColors.ink(scheme))
-                        .lineLimit(1).minimumScaleFactor(0.7)
-                    Text(top.percentText).font(WadeFont.pretendard(13, weight: .heavy)).foregroundStyle(WadeColors.ink2(scheme))
+                VStack(spacing: 3) {
+                    Text("최다 지출")
+                        .font(WadeFont.pretendard(9.5, weight: .semibold))
+                        .foregroundStyle(WadeColors.ink3(scheme))
+                    Text(top.name)
+                        .font(WadeFont.pretendard(14, weight: .heavy))
+                        .foregroundStyle(WadeColors.ink(scheme))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.72)
                 }
-                .padding(.horizontal, 8)
+                .multilineTextAlignment(.center)
+                .frame(width: max(42, outerSize - (lineWidth * 2) - 12))
             }
         }
         .frame(width: outerSize, height: outerSize)

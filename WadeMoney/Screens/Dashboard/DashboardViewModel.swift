@@ -38,6 +38,7 @@ final class DashboardViewModel {
         let totalText: String
         let hasExpense: Bool
         let budgetText: String?
+        let budgetBasisText: String?
         let remainText: String?
         let consumedPercentText: String?
         let consumedFraction: Double?
@@ -149,9 +150,14 @@ final class DashboardViewModel {
         let dayBudget: DayBudgetInfo? = (kind == .day)
             ? s.budget.map { b in
                 DayBudgetInfo(dayBudgetText: Won.string(b),
-                              remainText: Won.string((b - s.totalExpense)))
+                              remainText: Won.string((b - s.budgetedExpense)))
               }
             : nil
+
+        let budgetBasisText: String? = {
+            guard s.budget != nil, s.excludedExpense > 0 else { return nil }
+            return "예산 반영 \(Won.string(s.budgetedExpense))원 · 제외 \(Won.string(s.excludedExpense))원"
+        }()
 
         let legend: [DonutLegendItem] = s.donut.map { slice in
             let name = slice.isOther ? "기타" : (slice.categoryID.flatMap { byID[$0]?.name } ?? "기타")
@@ -182,6 +188,7 @@ final class DashboardViewModel {
             totalText: Won.string(s.totalExpense),
             hasExpense: s.totalExpense > 0,
             budgetText: s.budget.map { Won.string($0) },
+            budgetBasisText: budgetBasisText,
             remainText: s.remaining.map { Won.string($0) },
             consumedPercentText: s.consumedFraction.map { "\(Int(($0 * 100).rounded()))%" },
             consumedFraction: s.consumedFraction,

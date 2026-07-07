@@ -23,6 +23,32 @@ struct AggregatorTests {
         #expect(Aggregator.totalExpense(txns(), in: p) == 17000)   // 9000+4800+3200
     }
 
+    @Test func totalExpenseIncludesBudgetExcludedExpenses() {
+        let p = cal.period(.month, containing: TS.date(2026, 7, 1))
+        let special = TransactionRecord(
+            amount: 500_000,
+            type: .expense,
+            categoryID: food,
+            date: TS.date(2026, 7, 7),
+            isExcludedFromBudget: true
+        )
+
+        #expect(Aggregator.totalExpense(txns() + [special], in: p) == 517_000)
+    }
+
+    @Test func budgetedExpenseExcludesBudgetExcludedExpenses() {
+        let p = cal.period(.month, containing: TS.date(2026, 7, 1))
+        let special = TransactionRecord(
+            amount: 500_000,
+            type: .expense,
+            categoryID: food,
+            date: TS.date(2026, 7, 7),
+            isExcludedFromBudget: true
+        )
+
+        #expect(Aggregator.budgetedExpense(txns() + [special], in: p) == 17_000)
+    }
+
     @Test func totalIncomeSumsIncomeOnly() {
         let p = cal.period(.month, containing: TS.date(2026, 7, 1))
         #expect(Aggregator.totalIncome(txns(), in: p) == 45000)

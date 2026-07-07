@@ -39,6 +39,24 @@ struct LedgerRepositoryTests {
         _ = container
     }
 
+    @Test func addTransactionPreservesBudgetExclusionFlag() throws {
+        let (repo, _, container) = try freshRepo()
+        let food = try categoryID(repo, "식비")
+        try repo.addTransaction(
+            amount: 500_000,
+            type: .expense,
+            categoryID: food,
+            memo: "첫 월급 부모님 용돈",
+            date: date(2026, 7, 3),
+            isExcludedFromBudget: true
+        )
+
+        let all = try repo.allTransactions()
+        #expect(all.count == 1)
+        #expect(all[0].isExcludedFromBudget == true)
+        _ = container
+    }
+
     @Test func deleteTransactionRemovesIt() throws {
         let (repo, _, container) = try freshRepo()
         let food = try categoryID(repo, "식비")
@@ -65,6 +83,29 @@ struct LedgerRepositoryTests {
         #expect(s.donut.count == 2)                      // 식비, 카페
         #expect(s.donut.first?.total == 100_000)         // 최대 먼저
         #expect(s.pace != nil)
+        _ = container
+    }
+
+    @Test func dashboardSummaryKeepsExcludedExpenseInTotalButNotBudgetMath() throws {
+        let (repo, settings, container) = try freshRepo()
+        try settings.setMonthlyBudget(1_000_000, for: YearMonth(year: 2026, month: 7))
+        let food = try categoryID(repo, "식비")
+        try repo.addTransaction(amount: 680_000, type: .expense, categoryID: food, memo: nil, date: date(2026, 7, 5))
+        try repo.addTransaction(
+            amount: 500_000,
+            type: .expense,
+            categoryID: food,
+            memo: "첫 월급 부모님 용돈",
+            date: date(2026, 7, 6),
+            isExcludedFromBudget: true
+        )
+
+        let s = try repo.dashboardSummary(kind: .month, offset: 0, now: date(2026, 7, 15), calendar: utc)
+        #expect(s.totalExpense == 1_180_000)
+        #expect(s.budgetedExpense == 680_000)
+        #expect(s.excludedExpense == 500_000)
+        #expect(s.remaining == 320_000)
+        #expect(abs((s.consumedFraction ?? 0) - 0.68) < 0.0001)
         _ = container
     }
 

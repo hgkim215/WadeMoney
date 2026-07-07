@@ -10,8 +10,16 @@ final class QuickAddViewModel {
     private let memoPolisher: MemoPolishing
 
     var amountDigits: String = ""
-    var type: TransactionKind = .expense { didSet { if type == .income { selectedCategoryID = nil } } }
+    var type: TransactionKind = .expense {
+        didSet {
+            if type == .income {
+                selectedCategoryID = nil
+                isExcludedFromBudget = false
+            }
+        }
+    }
     var selectedCategoryID: UUID?
+    var isExcludedFromBudget: Bool = false
     var memo: String = "" {
         didSet {
             // 다듬은 뒤 사용자가 메모를 고치면 다시 다듬을 수 있게 되돌린다.
@@ -49,6 +57,7 @@ final class QuickAddViewModel {
             self.amountDigits = "\(NSDecimalNumber(decimal: editing.amount).intValue)"
             self.type = editing.type == .income ? .income : .expense
             self.selectedCategoryID = editing.categoryID
+            self.isExcludedFromBudget = editing.type == .expense && editing.isExcludedFromBudget
             self.memo = editing.memo ?? ""
         } else {
             self.editingID = nil
@@ -109,10 +118,12 @@ final class QuickAddViewModel {
         let catID = type == .income ? nil : selectedCategoryID
         if let editingID {
             try repository.updateTransaction(id: editingID, amount: amountDecimal, type: type,
-                                             categoryID: catID, memo: memo.isEmpty ? nil : memo, date: date)
+                                             categoryID: catID, memo: memo.isEmpty ? nil : memo, date: date,
+                                             isExcludedFromBudget: type == .expense && isExcludedFromBudget)
         } else {
             try repository.addTransaction(amount: amountDecimal, type: type,
-                                          categoryID: catID, memo: memo.isEmpty ? nil : memo, date: date)
+                                          categoryID: catID, memo: memo.isEmpty ? nil : memo, date: date,
+                                          isExcludedFromBudget: type == .expense && isExcludedFromBudget)
         }
     }
 }
