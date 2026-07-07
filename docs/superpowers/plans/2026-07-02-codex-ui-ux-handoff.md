@@ -556,3 +556,40 @@ Known limitations / follow-up:
 - Existing unrelated warnings remain:
   - `SentenceHighlighter.swift` uses deprecated `Text + Text` composition on iOS 26.
   - App extension `CFBundleVersion` is `1` while containing app is `2`.
+
+## 2026-07-07 Codex Main Push Preparation
+
+User request:
+
+- Push the completed Codex work to `main`.
+
+What changed in this turn:
+
+- Created commit `f9c4206` on `codex/special-expense-budget-exclusion` with the selected app/test/docs changes.
+- Created a temporary clean `main` worktree at `/tmp/wademoney-main-push-1783389854`.
+- Cherry-picked the feature commit onto local `main`, producing main commit `70af140`.
+- Excluded the dirty `docs/design/app-design-specification-analysis` bundle changes from staging/push because they were not Codex-authored app changes in this turn.
+- Generated `WadeMoney.xcodeproj` in the temporary worktree with `xcodegen generate` because `.xcodeproj` is generated from `project.yml`.
+
+Files included in the main push scope:
+
+- Budget-excluded expense domain/model/repository/dashboard/history/quick-add changes.
+- Dashboard category donut center text polish.
+- Splash screen design alignment, duration reduction, text-size reduction, and mouth animation polish.
+- Related tests.
+- Superpowers handoff/spec/plan/mockup docs.
+
+Verification on the merged main result:
+
+- `git diff --check HEAD~1..HEAD`: passed.
+- `swift test --package-path WadeMoneyCore`: passed 37 tests.
+- `xcodegen generate`: succeeded in the temporary main worktree.
+- XcodeBuildMCP `build_run_sim`: succeeded on iPhone 17e simulator.
+- XcodeBuildMCP `test_sim`: passed 141 tests.
+
+Known limitations / follow-up:
+
+- XcodeBuildMCP reported existing warnings unrelated to this push:
+  - `SentenceHighlighter.swift` uses deprecated `Text + Text` composition on iOS 26.
+  - `DesignTokenTests.swift` calls main actor-isolated `symbolFont(size:filled:)` from a synchronous nonisolated context.
+- The original working tree still has unstaged/untracked `docs/design/app-design-specification-analysis` bundle changes that were intentionally not included.
