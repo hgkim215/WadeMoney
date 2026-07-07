@@ -233,9 +233,9 @@ final class DashboardViewModel {
     private func barLabel(for p: Period) -> String {
         let c = calendar.dateComponents([.year, .month, .day], from: p.start)
         switch kind {
-        case .day: return "\(c.day ?? 0)"
+        case .day: return "\(c.day ?? 0)일"
         case .month: return "\(c.month ?? 0)월"
-        case .year: return "\(c.year ?? 0)"
+        case .year: return "\(c.year ?? 0)년"
         }
     }
 }

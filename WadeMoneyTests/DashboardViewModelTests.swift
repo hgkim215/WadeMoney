@@ -89,4 +89,26 @@ struct DashboardViewModelTests {
         #expect(d.budgetBasisText == "예산 반영 680,000원 · 제외 500,000원")
         _ = container
     }
+
+    @Test func trendBarLabelsIncludeUnitSuffixForEachPeriodKind() throws {
+        let (repo, _, container) = try makeRepo()
+        let food = try catID(repo, "식비")
+        try repo.addTransaction(amount: 10_000, type: .expense, categoryID: food, memo: nil, date: date(2026, 7, 15))
+
+        let vm = DashboardViewModel(repository: repo, now: date(2026, 7, 15), calendar: utc)
+
+        vm.kind = .day
+        vm.load()
+        #expect(try #require(vm.display).trend.last?.label == "15일")
+
+        vm.kind = .month
+        vm.load()
+        #expect(try #require(vm.display).trend.last?.label == "7월")
+
+        vm.kind = .year
+        vm.load()
+        #expect(try #require(vm.display).trend.last?.label == "2026년")
+
+        _ = container
+    }
 }
