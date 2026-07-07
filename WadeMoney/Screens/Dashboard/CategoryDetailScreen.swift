@@ -71,17 +71,25 @@ struct CategoryDetailScreen: View {
 
     private func summaryCard(_ vm: CategoryDetailViewModel) -> some View {
         card {
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 16) {
                 HStack(spacing: 10) {
                     Icon(categoryIconName, size: 22).foregroundStyle(Color(hex: categoryColorHex))
                         .frame(width: 42, height: 42)
                         .background(Color(hex: categoryColorHex).opacity(0.13), in: RoundedRectangle(cornerRadius: WadeRadius.iconTile))
                     Text(categoryName).font(WadeFont.pretendard(19, weight: .heavy)).foregroundStyle(WadeColors.ink(scheme))
+                    Spacer()
+                    Text("지출 비중 \(vm.percentText)")
+                        .font(WadeFont.pretendard(12, weight: .bold))
+                        .foregroundStyle(WadeColors.primary(scheme))
+                        .padding(.horizontal, 10).padding(.vertical, 5)
+                        .background(WadeColors.primarysoft(scheme), in: Capsule())
                 }
-                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                VStack(alignment: .leading, spacing: 4) {
                     Text(periodLabel).font(WadeFont.pretendard(12.5, weight: .semibold)).foregroundStyle(WadeColors.ink3(scheme))
-                    Text("₩\(vm.totalText)").font(WadeFont.pretendard(22, weight: .heavy)).foregroundStyle(WadeColors.ink(scheme))
-                    Text("· 지출 \(vm.percentText)").font(WadeFont.pretendard(13, weight: .bold)).foregroundStyle(WadeColors.ink2(scheme))
+                    HStack(alignment: .firstTextBaseline, spacing: 2) {
+                        Text("₩").font(WadeFont.pretendard(15, weight: .bold)).foregroundStyle(WadeColors.ink2(scheme))
+                        Text(vm.totalText).font(WadeFont.pretendard(30, weight: .heavy)).foregroundStyle(WadeColors.ink(scheme))
+                    }
                 }
             }
         }
