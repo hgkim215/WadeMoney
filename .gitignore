@@ -7,3 +7,6 @@ DerivedData/
 build/
 *.xcuserstate
 .swiftpm/
+
+# Local implementation worktrees
+.worktrees/
