@@ -38,6 +38,7 @@ struct DashboardViewModelTests {
 
         let d = try #require(vm.display)
         #expect(d.periodLabel == "2026년 7월")
+        #expect(d.period.kind == .month)
         #expect(d.totalText == "160,000")
         #expect(d.budgetText == "1,000,000")
         #expect(d.remainText == "840,000")

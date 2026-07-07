@@ -46,6 +46,7 @@ final class DashboardViewModel {
         let dayBudget: DayBudgetInfo?
         let donut: [DonutLegendItem]
         let trend: [TrendBar]
+        let period: Period
     }
 
     private let repository: LedgerRepository
@@ -195,7 +196,8 @@ final class DashboardViewModel {
             pace: pace,
             dayBudget: dayBudget,
             donut: legend,
-            trend: buildTrend(currentPeriodStart: s.period.start)
+            trend: buildTrend(currentPeriodStart: s.period.start),
+            period: s.period
         )
     }
 
