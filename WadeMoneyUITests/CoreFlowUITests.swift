@@ -39,6 +39,12 @@ final class CoreFlowUITests: XCTestCase {
         XCTAssertTrue(foodChip.waitForExistence(timeout: 5), "식비 카테고리 칩 없음")
         foodChip.tap()
 
+        // 4-1. 메모 입력(필수)
+        let memoField = app.textFields["메모 (어떤 내역인가요?)"]
+        XCTAssertTrue(memoField.waitForExistence(timeout: 3), "메모 입력란 없음")
+        memoField.tap()
+        memoField.typeText("점심")
+
         // 5. 저장
         let save = button(containing: "저장하기", in: app)
         XCTAssertTrue(save.waitForExistence(timeout: 3), "저장 버튼 없음")

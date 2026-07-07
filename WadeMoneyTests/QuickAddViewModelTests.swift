@@ -26,8 +26,19 @@ struct QuickAddViewModelTests {
     @Test func expenseRequiresCategory() throws {
         let (vm, _, container) = try makeVM()
         vm.tapKey("5"); vm.tapKey("0"); vm.tapKey("00")
+        vm.memo = "점심"
         #expect(vm.canSave == false)            // 카테고리 미선택
         vm.selectedCategoryID = vm.categories.first?.id
+        #expect(vm.canSave == true)
+        _ = container
+    }
+
+    @Test func expenseRequiresMemo() throws {
+        let (vm, _, container) = try makeVM()
+        vm.tapKey("5"); vm.tapKey("0"); vm.tapKey("00")
+        vm.selectedCategoryID = vm.categories.first?.id
+        #expect(vm.canSave == false)            // 메모 미입력
+        vm.memo = "점심"
         #expect(vm.canSave == true)
         _ = container
     }
@@ -36,6 +47,7 @@ struct QuickAddViewModelTests {
         let (vm, repo, container) = try makeVM()
         vm.type = .income
         vm.tapKey("4"); vm.tapKey("5"); vm.tapKey("000")
+        vm.memo = "월급"
         #expect(vm.selectedCategoryID == nil)
         #expect(vm.canSave == true)
         vm.date = date()
@@ -50,6 +62,7 @@ struct QuickAddViewModelTests {
         let (vm, repo, container) = try makeVM()
         vm.tapKey("5"); vm.tapKey("00"); vm.tapKey("000")
         vm.selectedCategoryID = vm.categories.first?.id
+        vm.memo = "적금"
         vm.isExcludedFromBudget = true
         vm.date = date()
 

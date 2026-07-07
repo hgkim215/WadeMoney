@@ -52,13 +52,12 @@ struct QuickAddSheet: View {
 
                 dateRow(vm)
 
-                if !vm.isEditing { stepChips(vm) }
-
                 if vm.type == .expense { categorySelector(vm) }
 
                 VStack(alignment: .leading, spacing: 6) {
                     HStack(spacing: 8) {
-                        TextField("메모 (선택)", text: Binding(get: { vm.memo }, set: { vm.memo = $0 }))
+                        Icon("edit_note", size: 18, filled: false).foregroundStyle(WadeColors.ink3(scheme))
+                        TextField("메모 (어떤 내역인가요?)", text: Binding(get: { vm.memo }, set: { vm.memo = $0 }))
                             .font(WadeFont.pretendard(14.5))
                         if vm.showsPolishButton || vm.hasPolished {
                             Button {
@@ -80,15 +79,13 @@ struct QuickAddSheet: View {
                             .disabled(vm.isPolishing || vm.hasPolished)
                         }
                     }
-                    .padding(13)
+                    .padding(.horizontal, 14).padding(.vertical, 13)
                     .background(WadeColors.card2(scheme), in: RoundedRectangle(cornerRadius: WadeRadius.segment))
 
                     if let note = vm.polishNote {
                         Text(note).font(WadeFont.pretendard(11.5)).foregroundStyle(WadeColors.primary(scheme))
                     }
                 }
-
-                if vm.type == .expense { budgetExclusionRow(vm) }
 
                 AmountKeypad(onKey: { vm.tapKey($0) }, onBackspace: { vm.backspace() })
 
@@ -116,19 +113,59 @@ struct QuickAddSheet: View {
     }
 
     private func dateRow(_ vm: QuickAddViewModel) -> some View {
-        HStack {
-            Icon("event", size: 17, filled: false).foregroundStyle(WadeColors.ink3(scheme))
-            Text("날짜").font(WadeFont.pretendard(13, weight: .semibold)).foregroundStyle(WadeColors.ink3(scheme))
-            Spacer()
-            DatePicker(
-                "", selection: Binding(get: { vm.date }, set: { vm.date = $0 }),
-                in: ...Date(), displayedComponents: [.date]
-            )
-            .labelsHidden()
-            .tint(WadeColors.primary(scheme))
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 8) {
+                Icon("event", size: 17, filled: false).foregroundStyle(WadeColors.ink3(scheme))
+                Text("날짜").font(WadeFont.pretendard(13, weight: .semibold)).foregroundStyle(WadeColors.ink3(scheme))
+                DatePicker(
+                    "", selection: Binding(get: { vm.date }, set: { vm.date = $0 }),
+                    in: ...Date(), displayedComponents: [.date]
+                )
+                .labelsHidden()
+                .tint(WadeColors.primary(scheme))
+
+                Spacer()
+
+                if vm.type == .expense {
+                    Divider().frame(height: 16)
+                    budgetExclusionToggle(vm)
+                }
+            }
+
+            if vm.type == .expense && vm.isExcludedFromBudget {
+                Text("이번 달 예산 계산에서 제외돼요")
+                    .font(WadeFont.pretendard(11, weight: .medium))
+                    .foregroundStyle(WadeColors.primary(scheme))
+                    .padding(.leading, 27)
+            }
         }
         .padding(.horizontal, 14).padding(.vertical, 10)
         .background(WadeColors.card2(scheme), in: RoundedRectangle(cornerRadius: WadeRadius.segment))
+    }
+
+    private func budgetExclusionToggle(_ vm: QuickAddViewModel) -> some View {
+        Button {
+            withAnimation(.easeInOut(duration: 0.16)) {
+                vm.isExcludedFromBudget.toggle()
+            }
+        } label: {
+            HStack(spacing: 4) {
+                Icon("savings", size: 15, filled: false)
+                Text("제외").font(WadeFont.pretendard(11.5, weight: .bold))
+            }
+            .foregroundStyle(vm.isExcludedFromBudget ? WadeColors.primary(scheme) : WadeColors.ink3(scheme))
+            .padding(.horizontal, 9).padding(.vertical, 6)
+            .background(
+                vm.isExcludedFromBudget ? WadeColors.primarysoft(scheme) : Color.clear,
+                in: Capsule()
+            )
+            .overlay(
+                Capsule().stroke(vm.isExcludedFromBudget ? Color.clear : WadeColors.track(scheme), lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("예산에서 제외")
+        .accessibilityValue(vm.isExcludedFromBudget ? "켬" : "끔")
     }
 
     private func typeToggle(_ vm: QuickAddViewModel) -> some View {
@@ -145,84 +182,6 @@ struct QuickAddSheet: View {
             }
         }
         .padding(3).background(WadeColors.card2(scheme), in: Capsule())
-    }
-
-    private func budgetExclusionRow(_ vm: QuickAddViewModel) -> some View {
-        Button {
-            withAnimation(.easeInOut(duration: 0.16)) {
-                vm.isExcludedFromBudget.toggle()
-            }
-        } label: {
-            HStack(spacing: 12) {
-                Icon("savings", size: 19, filled: false)
-                    .foregroundStyle(vm.isExcludedFromBudget ? WadeColors.primary(scheme) : WadeColors.ink3(scheme))
-                    .frame(width: 36, height: 36)
-                    .background(
-                        vm.isExcludedFromBudget ? WadeColors.primarysoft(scheme) : WadeColors.card2(scheme),
-                        in: RoundedRectangle(cornerRadius: WadeRadius.iconTile, style: .continuous)
-                    )
-
-                VStack(alignment: .leading, spacing: 3) {
-                    Text("예산에서 제외")
-                        .font(WadeFont.pretendard(13.5, weight: .heavy))
-                        .foregroundStyle(WadeColors.ink(scheme))
-                    Text("총 내역에는 남고, 이번 달 예산 계산에는 빠져요")
-                        .font(WadeFont.pretendard(11.5))
-                        .foregroundStyle(WadeColors.ink3(scheme))
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.82)
-                }
-
-                Spacer(minLength: 8)
-
-                RoundedRectangle(cornerRadius: 999, style: .continuous)
-                    .fill(vm.isExcludedFromBudget ? WadeColors.primary(scheme) : WadeColors.track(scheme))
-                    .frame(width: 44, height: 26)
-                    .overlay(alignment: vm.isExcludedFromBudget ? .trailing : .leading) {
-                        Circle()
-                            .fill(vm.isExcludedFromBudget ? WadeColors.onPrimary(scheme) : WadeColors.ink3(scheme))
-                            .frame(width: 20, height: 20)
-                            .padding(3)
-                    }
-            }
-            .padding(13)
-            .background(WadeColors.card2(scheme), in: RoundedRectangle(cornerRadius: WadeRadius.segment, style: .continuous))
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel("예산에서 제외")
-        .accessibilityValue(vm.isExcludedFromBudget ? "켬" : "끔")
-    }
-
-    private func stepChips(_ vm: QuickAddViewModel) -> some View {
-        let activeIndex: Int = {
-            if vm.amountDigits.isEmpty { return 0 }
-            if vm.type == .expense && vm.selectedCategoryID == nil { return 1 }
-            return 2
-        }()
-        let steps: [(icon: String, label: String)] = [
-            ("payments", "금액"),
-            ("category", "카테고리"),
-            ("check_circle", "저장")
-        ]
-
-        return HStack(spacing: 7) {
-            ForEach(Array(steps.enumerated()), id: \.offset) { index, step in
-                let hot = index <= activeIndex
-                HStack(spacing: 5) {
-                    Icon(step.icon, size: 15, filled: false)
-                    Text(step.label).font(WadeFont.pretendard(11.5, weight: .bold))
-                }
-                .foregroundStyle(hot ? WadeColors.primary(scheme) : WadeColors.ink3(scheme))
-                .padding(.horizontal, 11).padding(.vertical, 5)
-                .background(hot ? WadeColors.primarysoft(scheme) : WadeColors.card2(scheme), in: Capsule())
-
-                if index < steps.count - 1 {
-                    Icon("chevron_right", size: 15, filled: false)
-                        .foregroundStyle(WadeColors.ink3(scheme))
-                }
-            }
-        }
-        .padding(.bottom, 2)
     }
 
     private func categorySelector(_ vm: QuickAddViewModel) -> some View {
@@ -276,7 +235,10 @@ struct QuickAddSheet: View {
                     .padding(.top, 2)
             } else {
                 GeometryReader { proxy in
-                    let chipWidth = max(72, (proxy.size.width - chipSpacing * 3) / 4)
+                    // 4개 초과일 때는 3.6개만 들어갈 폭으로 계산해 다음 칩이 살짝 잘려 보이게 만든다
+                    // — 가로 스크롤이 더 있다는 걸 암묵적으로 알려준다.
+                    let visibleSlots: CGFloat = categories.count > 4 ? 3.6 : 4
+                    let chipWidth = max(72, (proxy.size.width - chipSpacing * 3) / visibleSlots)
 
                     ScrollView(.horizontal, showsIndicators: false) {
                         LazyHStack(spacing: chipSpacing) {

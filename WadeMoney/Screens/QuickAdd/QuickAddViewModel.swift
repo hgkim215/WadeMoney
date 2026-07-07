@@ -99,7 +99,9 @@ final class QuickAddViewModel {
     var amountDecimal: Decimal { Decimal(string: amountDigits) ?? 0 }
 
     var canSave: Bool {
-        amountDecimal > 0 && (type == .income || selectedCategoryID != nil)
+        // 편집 중인 기존 내역은 메모 없이 저장된 것일 수 있으니, 새로 만들 때만 메모를 필수로 요구한다.
+        let memoOK = isEditing || !memo.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        return amountDecimal > 0 && (type == .income || selectedCategoryID != nil) && memoOK
     }
 
     func tapKey(_ key: String) {
