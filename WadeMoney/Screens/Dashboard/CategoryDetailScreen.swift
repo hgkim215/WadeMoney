@@ -84,8 +84,9 @@ struct CategoryDetailScreen: View {
                         .padding(.horizontal, 10).padding(.vertical, 5)
                         .background(WadeColors.primarysoft(scheme), in: Capsule())
                 }
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(periodLabel).font(WadeFont.pretendard(12.5, weight: .semibold)).foregroundStyle(WadeColors.ink3(scheme))
+                HStack(alignment: .lastTextBaseline) {
+                    Text(periodLabel).font(WadeFont.pretendard(16, weight: .bold)).foregroundStyle(WadeColors.ink2(scheme))
+                    Spacer()
                     HStack(alignment: .firstTextBaseline, spacing: 2) {
                         Text("₩").font(WadeFont.pretendard(15, weight: .bold)).foregroundStyle(WadeColors.ink2(scheme))
                         Text(vm.totalText).font(WadeFont.pretendard(30, weight: .heavy)).foregroundStyle(WadeColors.ink(scheme))
