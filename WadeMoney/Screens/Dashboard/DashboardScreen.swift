@@ -7,6 +7,9 @@ struct DashboardScreen: View {
     @Environment(\.modelContext) private var modelContext
     @State private var viewModel: DashboardViewModel?
     @State private var showReport = false
+    @State private var showCategoryBreakdown = false
+    @State private var breakdownPeriod: Period?
+    @State private var breakdownPeriodLabel: String = ""
     var refreshToken: Int = 0
 
     var body: some View {
@@ -43,7 +46,16 @@ struct DashboardScreen: View {
                         if let insight = vm.insightText {
                             InsightCard(text: insight, isGood: vm.insightIsGood ?? true) { showReport = true }
                         }
-                        DonutCard(total: d.totalText, hasExpense: d.hasExpense, legend: d.donut)
+                        Button {
+                            guard !d.donut.isEmpty else { return }
+                            breakdownPeriod = d.period
+                            breakdownPeriodLabel = d.periodLabel
+                            showCategoryBreakdown = true
+                        } label: {
+                            DonutCard(total: d.totalText, hasExpense: d.hasExpense, legend: d.donut)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("카테고리 비중")
                         TrendCard(bars: d.trend)
                     }
                 }
@@ -54,6 +66,11 @@ struct DashboardScreen: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(WadeColors.bg(scheme))
             .navigationDestination(isPresented: $showReport) { AIReportScreen() }
+            .navigationDestination(isPresented: $showCategoryBreakdown) {
+                if let period = breakdownPeriod {
+                    CategoryBreakdownScreen(period: period, periodLabel: breakdownPeriodLabel, repository: LedgerRepository(context: modelContext))
+                }
+            }
             .onAppear {
                 if viewModel == nil {
                     let vm = DashboardViewModel(
