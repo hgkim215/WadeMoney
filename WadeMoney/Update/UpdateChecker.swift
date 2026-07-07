@@ -59,7 +59,7 @@ struct UpdateChecker: @unchecked Sendable {
             let data = try await fetch(url)
             let response = try JSONDecoder().decode(LookupResponse.self, from: data)
             guard let result = response.results.first,
-                  let storeURL = appStoreURL(from: result.trackViewUrl),
+                  let storeURL = AppStoreLink.detailURL(from: result.trackViewUrl),
                   AppVersion.isVersion(result.version, newerThan: currentVersion) else {
                 return nil
             }
@@ -74,16 +74,6 @@ struct UpdateChecker: @unchecked Sendable {
             return true
         }
         return now().timeIntervalSince(last) >= interval
-    }
-
-    private func appStoreURL(from string: String) -> URL? {
-        guard let url = URL(string: string),
-              let scheme = url.scheme?.lowercased(),
-              ["http", "https"].contains(scheme),
-              url.host != nil else {
-            return nil
-        }
-        return url
     }
 }
 

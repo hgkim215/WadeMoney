@@ -897,6 +897,54 @@ Verification performed:
 Known limitations / follow-up:
 
 - This is a debug preview path only; the production update check is still driven by `UpdateChecker` and the App Store Lookup response.
-- The preview App Store URL is a WadeMoney search URL because the repo does not currently encode a confirmed App Store app ID.
+- Superseded by the next bugfix section: the preview App Store URL no longer uses search and now points to the confirmed WadeMoney app detail URL.
 - No manual simulator screenshot pass was done; verification was build/test focused.
+- The handoff file and `docs/design/app-design-specification-analysis/` still contain pre-existing uncommitted changes from prior work; avoid staging unrelated docs/design files accidentally.
+
+## 2026-07-07 Codex Bugfix: App Store Update Button URL
+
+User request:
+
+- The debug app update button showed the update popup, but tapping the update action failed with `LSApplicationWorkspaceErrorDomain Code=115` for `https://apps.apple.com/kr/search?term=WadeMoney`.
+
+Root cause:
+
+- The debug preview used an App Store search URL, which is not a stable app-detail destination for `openURL`.
+- A temporary native-link helper converted detail URLs into `itms-apps://itunes.apple.com/app/id...`, but that scheme fails on Simulator because the App Store app is not available there.
+
+What changed:
+
+- Added `AppStoreLink.detailURL(...)` to build and validate only HTTPS `apps.apple.com` app-detail URLs that contain a numeric `/id...` path component.
+- Updated the DEBUG update preview to use WadeMoney's actual App Store app ID `6786733784` and detail URL:
+  `https://apps.apple.com/kr/app/wademoney-%EA%B0%84%EB%8B%A8-%EC%8B%AC%ED%94%8C-%EA%B0%80%EA%B3%84%EB%B6%80/id6786733784?uo=4`
+- Updated `UpdateChecker` to reject App Store URLs without an app ID, so search URLs cannot reach the popup action path.
+- Kept HTTPS detail URLs as the stored `UpdateInfo.storeURL`; on Simulator they open in Safari, and on real devices Apple can hand them off to the App Store app.
+
+Files touched:
+
+- `WadeMoney/Update/AppStoreLink.swift`
+- `WadeMoney/Update/DebugUpdatePrompt.swift`
+- `WadeMoney/Update/UpdateChecker.swift`
+- `WadeMoneyTests/DebugUpdatePromptTests.swift`
+- `WadeMoneyTests/UpdateCheckerTests.swift`
+- `docs/superpowers/plans/2026-07-02-codex-ui-ux-handoff.md`
+
+Verification performed:
+
+- TDD red/green:
+  - Before implementation, focused tests failed because the preview/checker returned `itms-apps://itunes.apple.com/app/id...` instead of the expected HTTPS App Store detail URL.
+  - After implementation, `xcodebuild test -scheme WadeMoney -destination 'platform=iOS Simulator,name=iPhone 17e' -only-testing:WadeMoneyTests/DebugUpdatePromptTests -only-testing:WadeMoneyTests/UpdateCheckerTests` passed, 7 tests.
+- URL behavior:
+  - `xcrun simctl openurl booted 'itms-apps://itunes.apple.com/app/id6786733784'` failed with `LSApplicationWorkspaceErrorDomain Code=115`.
+  - `xcrun simctl openurl booted 'https://apps.apple.com/kr/app/wademoney-%EA%B0%84%EB%8B%A8-%EC%8B%AC%ED%94%8C-%EA%B0%80%EA%B3%84%EB%B6%80/id6786733784?uo=4'` succeeded.
+- Full verification:
+  - `swift test --package-path WadeMoneyCore`: passed, 37 tests.
+  - `xcodebuild test -scheme WadeMoney -destination 'platform=iOS Simulator,name=iPhone 17e'`: passed, 158 tests.
+  - `xcodebuild build -scheme WadeMoney -destination 'platform=iOS Simulator,name=iPhone 17e'`: passed.
+  - `xcodebuild build -scheme WadeMoney -configuration Release -destination 'platform=iOS Simulator,name=iPhone 17e'`: passed.
+  - `git diff --check`: passed.
+
+Known limitations / follow-up:
+
+- Real-device App Store handoff still needs a final manual tap check on a device with App Store available, but the URL is now the actual WadeMoney app detail URL instead of search.
 - The handoff file and `docs/design/app-design-specification-analysis/` still contain pre-existing uncommitted changes from prior work; avoid staging unrelated docs/design files accidentally.

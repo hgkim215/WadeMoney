@@ -10,7 +10,7 @@ struct UpdateCheckerTests {
         return defaults
     }
 
-    private func json(version: String, url: String = "https://apps.apple.com/kr/app/wademoney/id1234567890") -> Data {
+    private func json(version: String, url: String = "https://apps.apple.com/kr/app/wademoney/id1234567890?uo=4") -> Data {
         """
         {
           "resultCount": 1,
@@ -40,7 +40,7 @@ struct UpdateCheckerTests {
 
         let info = await checker.check()
 
-        #expect(info == UpdateInfo(version: "1.0.1", storeURL: URL(string: "https://apps.apple.com/kr/app/wademoney/id1234567890")!))
+        #expect(info == UpdateInfo(version: "1.0.1", storeURL: URL(string: "https://apps.apple.com/kr/app/wademoney/id1234567890?uo=4")!))
         #expect(requestedURL?.absoluteString.contains("bundleId=com.kimhyeongi.WadeMoney") == true)
         #expect(requestedURL?.absoluteString.contains("country=kr") == true)
     }
@@ -80,6 +80,20 @@ struct UpdateCheckerTests {
             defaults: defaults("bad-url"),
             now: { Date(timeIntervalSince1970: 1_000) },
             fetch: { _ in json(version: "2.0.0", url: "not a url") }
+        )
+
+        let info = await checker.check()
+
+        #expect(info == nil)
+    }
+
+    @Test func returnsNilForAppStoreURLWithoutAppID() async {
+        let checker = UpdateChecker(
+            bundleID: "com.kimhyeongi.WadeMoney",
+            currentVersion: "1.0.0",
+            defaults: defaults("missing-id"),
+            now: { Date(timeIntervalSince1970: 1_000) },
+            fetch: { _ in json(version: "2.0.0", url: "https://apps.apple.com/kr/search?term=WadeMoney") }
         )
 
         let info = await checker.check()

@@ -11,7 +11,10 @@ enum DebugUpdatePrompt {
     static var updateInfo: UpdateInfo {
         UpdateInfo(
             version: previewVersion,
-            storeURL: URL(string: "https://apps.apple.com/kr/search?term=WadeMoney")!
+            storeURL: AppStoreLink.detailURL(
+                appID: "6786733784",
+                encodedSlug: "wademoney-%EA%B0%84%EB%8B%A8-%EC%8B%AC%ED%94%8C-%EA%B0%80%EA%B3%84%EB%B6%80"
+            )!
         )
     }
 
