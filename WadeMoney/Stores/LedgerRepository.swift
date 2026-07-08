@@ -205,9 +205,15 @@ final class LedgerRepository {
         let donut = Donut.slices(Aggregator.totalsByCategory(txns, in: period), maxSlices: 6)
 
         let elapsed = calc.daysElapsed(in: period, asOf: now)
+        // 월초 큰 지출 하나가 달 전체로 외삽되지 않도록 일회성을 분리해 예측한다.
         let projected: Decimal? = (kind == .day)
             ? nil
-            : Projection.projectedTotal(cumulative: budgeted, daysElapsed: elapsed, daysInPeriod: calc.dayCount(of: period))
+            : Projection.stabilizedProjectedTotal(
+                amounts: txns
+                    .filter { $0.type == .expense && !$0.isExcludedFromBudget && $0.date >= period.start && $0.date < period.end }
+                    .map(\.amount),
+                daysElapsed: elapsed,
+                daysInPeriod: calc.dayCount(of: period))
 
         return DashboardSummary(
             period: period,
