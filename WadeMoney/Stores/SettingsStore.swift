@@ -89,4 +89,12 @@ final class SettingsStore {
         model.appearanceRaw = appearance.rawValue
         try context.save()
     }
+
+    func setDailyReminder(enabled: Bool, hour: Int, minute: Int) throws {
+        let model = try settingsModel()
+        model.dailyReminderEnabled = enabled
+        model.dailyReminderHour = min(max(hour, 0), 23)
+        model.dailyReminderMinute = min(max(minute, 0), 59)
+        try context.save()
+    }
 }

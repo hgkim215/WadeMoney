@@ -31,6 +31,30 @@ struct SettingsStoreTests {
         _ = container
     }
 
+    @Test func dailyReminderDefaultsToDisabledAndPersistsWhenSet() throws {
+        let (s, container) = try store()
+        let defaults = try s.settingsModel()
+        #expect(defaults.dailyReminderEnabled == false)
+        #expect(defaults.dailyReminderHour == 22)
+        #expect(defaults.dailyReminderMinute == 0)
+
+        try s.setDailyReminder(enabled: true, hour: 9, minute: 30)
+        let updated = try s.settingsModel()
+        #expect(updated.dailyReminderEnabled == true)
+        #expect(updated.dailyReminderHour == 9)
+        #expect(updated.dailyReminderMinute == 30)
+        _ = container
+    }
+
+    @Test func dailyReminderClampsHourAndMinuteToValidRanges() throws {
+        let (s, container) = try store()
+        try s.setDailyReminder(enabled: true, hour: 99, minute: -5)
+        let model = try s.settingsModel()
+        #expect(model.dailyReminderHour == 23)
+        #expect(model.dailyReminderMinute == 0)
+        _ = container
+    }
+
     @Test func duplicateSettingsRowsResolveDeterministicallyAndMergeSeedFlag() throws {
         // CloudKit 병합으로 설정 행이 2개가 된 상황: id 최솟값 행이 승자, 시드 플래그는 합집합.
         let (s, container) = try store()
