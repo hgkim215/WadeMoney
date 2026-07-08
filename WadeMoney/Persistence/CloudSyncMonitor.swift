@@ -16,6 +16,11 @@ final class CloudSyncMonitor {
     private(set) var state: State
     /// 로컬 변경사항이 아직 iCloud로 업로드되지 않았으면 true (삭제 전 백업 확인에 사용).
     private(set) var pendingExport: Bool = false
+    /// deinit은 Swift 6에서 항상 nonisolated로 실행되므로, MainActor 격리 없이 접근 가능해야 한다.
+    /// NotificationCenter.removeObserver(_:)는 어느 스레드에서 호출해도 안전하다.
+    /// (plain `nonisolated`는 @Observable 매크로의 @ObservationTracked 확장과 충돌해 빌드가 깨진다 — unsafe 필요.)
+    @ObservationIgnored
+    private nonisolated(unsafe) var observer: NSObjectProtocol?
 
     init(cloudKitEnabled: Bool, isSignedIntoiCloud: Bool, hasExistingData: Bool) {
         state = CloudSyncMonitor.initialState(
@@ -23,6 +28,15 @@ final class CloudSyncMonitor {
             isSignedIntoiCloud: isSignedIntoiCloud,
             hasExistingData: hasExistingData
         )
+        if cloudKitEnabled {
+            startObserving()
+        }
+    }
+
+    deinit {
+        if let observer {
+            NotificationCenter.default.removeObserver(observer)
+        }
     }
 
     static func initialState(cloudKitEnabled: Bool, isSignedIntoiCloud: Bool, hasExistingData: Bool) -> State {
@@ -50,5 +64,24 @@ final class CloudSyncMonitor {
     ) -> Bool {
         guard eventType == .export else { return current }
         return isFinished ? !succeeded : true
+    }
+
+    private func startObserving() {
+        observer = NotificationCenter.default.addObserver(
+            forName: NSPersistentCloudKitContainer.eventChangedNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] note in
+            guard let event = note.userInfo?[NSPersistentCloudKitContainer.eventNotificationUserInfoKey]
+                as? NSPersistentCloudKitContainer.Event else { return }
+            let type = event.type
+            let isFinished = event.endDate != nil
+            let succeeded = event.succeeded
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                self.state = CloudSyncMonitor.nextState(current: self.state, eventType: type, isFinished: isFinished, succeeded: succeeded)
+                self.pendingExport = CloudSyncMonitor.nextPendingExport(current: self.pendingExport, eventType: type, isFinished: isFinished, succeeded: succeeded)
+            }
+        }
     }
 }
