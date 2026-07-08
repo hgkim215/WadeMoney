@@ -6,8 +6,10 @@ import WadeMoneyCore
 @Observable
 final class QuickAddViewModel {
     private let repository: LedgerRepository
-    private let aiAvailability: AIAvailabilityChecking
     private let memoPolisher: MemoPolishing
+    // 시트가 떠 있는 동안 바뀌지 않는 값 — 계산 프로퍼티에서 매번 DB를 조회하면
+    // 메모 TextField가 body를 재평가할 때마다(키 입력마다) SwiftData fetch가 발생한다.
+    private let aiPolishEnabled: Bool
 
     var amountDigits: String = ""
     var type: TransactionKind = .expense {
@@ -36,9 +38,7 @@ final class QuickAddViewModel {
     private(set) var polishNote: String?
 
     var showsPolishButton: Bool {
-        !memo.trimmingCharacters(in: .whitespaces).isEmpty
-            && aiAvailability.isAvailable
-            && (try? repository.aiEnabled()) == true
+        !memo.trimmingCharacters(in: .whitespaces).isEmpty && aiPolishEnabled
     }
 
     init(
@@ -48,8 +48,8 @@ final class QuickAddViewModel {
         memoPolisher: MemoPolishing = FoundationModelsMemoPolisher()
     ) {
         self.repository = repository
-        self.aiAvailability = aiAvailability
         self.memoPolisher = memoPolisher
+        self.aiPolishEnabled = aiAvailability.isAvailable && (try? repository.aiEnabled()) == true
         self.categories = (try? repository.allCategories(includeArchived: false)) ?? []
         if let editing {
             self.editingID = editing.id

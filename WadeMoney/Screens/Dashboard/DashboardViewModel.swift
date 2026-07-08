@@ -73,11 +73,12 @@ final class DashboardViewModel {
         self.calendar = calendar
         self.aiAvailability = aiAvailability
         self.insightGenerator = insightGenerator
+        self.showsAIReportEntry = aiAvailability.isAvailable && (try? repository.aiEnabled()) == true
     }
 
-    var showsAIReportEntry: Bool {
-        aiAvailability.isAvailable && (try? repository.aiEnabled()) == true
-    }
+    // 계산 프로퍼티로 두면 대시보드 body 재평가마다 SwiftData fetch가 발생한다 —
+    // 뷰모델은 화면 진입마다 새로 만들어지므로 init 1회 조회로 충분하다.
+    let showsAIReportEntry: Bool
 
     func load() {
         do {
