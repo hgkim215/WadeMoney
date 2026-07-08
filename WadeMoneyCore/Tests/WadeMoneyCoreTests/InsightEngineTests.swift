@@ -107,4 +107,100 @@ struct InsightEngineTests {
         let result = engine.insights(txns: txns, period: july, asOf: date(2026, 7, 10, 20), budget: nil)
         #expect(!result.contains { if case .dailyAveragePace = $0 { return true }; return false })
     }
+
+    // MARK: - frequency
+
+    @Test func frequencyEmittedAtFiveVisits() {
+        let cafe = UUID()
+        let txns = (1...5).map { expense(4_800, 7, $0, category: cafe) }
+        let result = engine.insights(txns: txns, period: july, asOf: date(2026, 7, 6), budget: nil)
+        guard case .frequency(let cid, let count, let total, let avg) = result.first(where: {
+            if case .frequency = $0 { return true }; return false
+        }) ?? .noSpendDays(count: 0) else { Issue.record("frequency 없음: \(result)"); return }
+        #expect(cid == cafe)
+        #expect(count == 5)
+        #expect(total == 24_000)
+        #expect(avg == 4_800)
+    }
+
+    @Test func frequencySuppressedAtFourVisits() {
+        let cafe = UUID()
+        let txns = (1...4).map { expense(4_800, 7, $0, category: cafe) }
+        let result = engine.insights(txns: txns, period: july, asOf: date(2026, 7, 6), budget: nil)
+        #expect(!result.contains { if case .frequency = $0 { return true }; return false })
+    }
+
+    @Test func frequencyTieBrokenByHigherTotal() {
+        let cafe = UUID(), food = UUID()
+        let txns = (1...5).map { expense(4_800, 7, $0, category: cafe) }
+            + (1...5).map { expense(9_000, 7, $0, category: food) }
+        let result = engine.insights(txns: txns, period: july, asOf: date(2026, 7, 6), budget: nil)
+        guard case .frequency(let cid, _, _, _) = result.first(where: {
+            if case .frequency = $0 { return true }; return false
+        }) ?? .noSpendDays(count: 0) else { Issue.record("frequency 없음"); return }
+        #expect(cid == food)
+    }
+
+    // MARK: - weekendConcentration
+
+    @Test func weekendConcentrationEmittedWhenHalfOrMoreOnWeekend() {
+        // 주말(7/4·5) 6만 + 평일 4만 = 60% ≥ 50%, 경과 14일
+        let txns = [expense(30_000, 7, 4), expense(30_000, 7, 5), expense(40_000, 7, 8)]
+        let result = engine.insights(txns: txns, period: july, asOf: date(2026, 7, 14, 20), budget: nil)
+        guard case .weekendConcentration(let fraction) = result.first(where: {
+            if case .weekendConcentration = $0 { return true }; return false
+        }) ?? .noSpendDays(count: 0) else { Issue.record("weekend 없음: \(result)"); return }
+        #expect(fraction == Decimal(6) / 10)
+    }
+
+    @Test func weekendConcentrationSuppressedBeforeFourteenDaysElapsed() {
+        let txns = [expense(30_000, 7, 4), expense(30_000, 7, 5), expense(40_000, 7, 8)]
+        let result = engine.insights(txns: txns, period: july, asOf: date(2026, 7, 13, 20), budget: nil)
+        #expect(!result.contains { if case .weekendConcentration = $0 { return true }; return false })
+    }
+
+    @Test func weekendConcentrationSuppressedBelowHalf() {
+        let txns = [expense(30_000, 7, 4), expense(70_000, 7, 8)]
+        let result = engine.insights(txns: txns, period: july, asOf: date(2026, 7, 14, 20), budget: nil)
+        #expect(!result.contains { if case .weekendConcentration = $0 { return true }; return false })
+    }
+
+    // MARK: - noSpendDays
+
+    @Test func noSpendDaysCountsElapsedDaysWithoutExpense() {
+        // 7일 경과, 지출은 5개 날짜에만 → 무지출일 2일
+        let txns = [1, 2, 3, 4, 5].map { expense(10_000, 7, $0) }
+        let result = engine.insights(txns: txns, period: july, asOf: date(2026, 7, 7, 20), budget: nil)
+        guard case .noSpendDays(let count) = result.first(where: {
+            if case .noSpendDays = $0 { return true }; return false
+        }) ?? .weekendConcentration(fraction: 0) else { Issue.record("noSpend 없음: \(result)"); return }
+        #expect(count == 2)
+    }
+
+    @Test func noSpendDaysSuppressedBeforeSevenDaysElapsed() {
+        let txns = [expense(10_000, 7, 1)]
+        let result = engine.insights(txns: txns, period: july, asOf: date(2026, 7, 6, 20), budget: nil)
+        #expect(!result.contains { if case .noSpendDays = $0 { return true }; return false })
+    }
+
+    @Test func noSpendDaysSuppressedWhenEveryDayHasExpense() {
+        let txns = (1...7).map { expense(10_000, 7, $0) }
+        let result = engine.insights(txns: txns, period: july, asOf: date(2026, 7, 7, 20), budget: nil)
+        #expect(!result.contains { if case .noSpendDays = $0 { return true }; return false })
+    }
+
+    // MARK: - 우선순위·상한
+
+    @Test func capsAtThreeInsightsInDeclarationOrder() {
+        // runway+largest+pace+frequency 동시 자격 → 앞 3개만
+        let cafe = UUID()
+        let txns = (1...10).map { expense(3_000, 6, $0) }                       // 지난달 (pace 비교용)
+            + (1...5).map { expense(4_800, 7, $0, category: cafe) }             // frequency 자격
+            + [expense(30_000, 7, 6, memo: "선물")]                             // largest 자격 (30000/54000 ≈ 56%)
+        let result = engine.insights(txns: txns, period: july, asOf: date(2026, 7, 10, 20), budget: 60_000)
+        #expect(result.count == 3)
+        guard case .budgetRunway = result[0] else { Issue.record("0번은 runway: \(result)"); return }
+        guard case .largestExpense = result[1] else { Issue.record("1번은 largest: \(result)"); return }
+        guard case .dailyAveragePace = result[2] else { Issue.record("2번은 pace: \(result)"); return }
+    }
 }

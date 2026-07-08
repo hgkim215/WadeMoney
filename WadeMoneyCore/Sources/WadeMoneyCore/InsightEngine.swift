@@ -87,9 +87,44 @@ public struct InsightEngine: Sendable {
         return .dailyAveragePace(currentDailyAverage: currentAvg, deltaRatio: delta)
     }
 
-    private func frequency(expenses: [TransactionRecord]) -> Insight? { nil }
+    /// 건수 최다 카테고리(5회 이상). 동수면 총액 큰 쪽.
+    private func frequency(expenses: [TransactionRecord]) -> Insight? {
+        var buckets: [UUID: (count: Int, total: Decimal)] = [:]
+        for t in expenses {
+            guard let cid = t.categoryID else { continue }
+            var b = buckets[cid] ?? (0, 0)
+            b.count += 1
+            b.total += t.amount
+            buckets[cid] = b
+        }
+        guard let best = buckets.max(by: { ($0.value.count, $0.value.total) < ($1.value.count, $1.value.total) }),
+              best.value.count >= 5 else { return nil }
+        return .frequency(
+            categoryID: best.key,
+            count: best.value.count,
+            total: best.value.total,
+            averagePerVisit: best.value.total / Decimal(best.value.count)
+        )
+    }
 
-    private func weekendConcentration(expenses: [TransactionRecord], daysElapsed d: Int) -> Insight? { nil }
+    /// 주말 지출 비중이 50% 이상이면 노출. 경과 14일 미만이면 표본 부족으로 미노출.
+    private func weekendConcentration(expenses: [TransactionRecord], daysElapsed d: Int) -> Insight? {
+        guard d >= 14 else { return nil }
+        let total = expenses.map(\.amount).reduce(Decimal(0), +)
+        guard total > 0 else { return nil }
+        let weekend = expenses.filter { calendar.isDateInWeekend($0.date) }
+            .map(\.amount).reduce(Decimal(0), +)
+        let fraction = weekend / total
+        guard fraction >= Decimal(1) / 2 else { return nil }
+        return .weekendConcentration(fraction: fraction)
+    }
 
-    private func noSpendDays(expenses: [TransactionRecord], daysElapsed d: Int) -> Insight? { nil }
+    /// 경과일 중 지출 거래가 없는 날 수. 경과 7일 미만이면 미노출.
+    private func noSpendDays(expenses: [TransactionRecord], daysElapsed d: Int) -> Insight? {
+        guard d >= 7 else { return nil }
+        let spendDays = Set(expenses.map { calendar.startOfDay(for: $0.date) })
+        let count = d - spendDays.count
+        guard count >= 1 else { return nil }
+        return .noSpendDays(count: count)
+    }
 }
