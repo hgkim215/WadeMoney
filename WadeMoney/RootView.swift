@@ -6,7 +6,9 @@ struct RootView: View {
     @Environment(\.openURL) private var openURL
     @Environment(\.scenePhase) private var scenePhase
     @State private var showSplash = SplashVisibility.shouldShowOnLaunch()
+    @State private var showOnboarding = false
     @State private var pendingUpdate: UpdateInfo?
+    let hasExistingData: Bool
 
     private let updateChecker = UpdateChecker()
 
@@ -17,11 +19,15 @@ struct RootView: View {
         return AppAppearance(rawValue: winner?.appearanceRaw ?? 0) ?? .system
     }
 
+    private var didCompleteOnboarding: Bool {
+        settingsModels.min { $0.id < $1.id }?.didCompleteOnboarding ?? false
+    }
+
     var body: some View {
         ZStack {
             RootTabView()
 
-            if let pendingUpdate, !showSplash {
+            if let pendingUpdate, !showSplash, !showOnboarding {
                 Color.black.opacity(0.28)
                     .ignoresSafeArea()
                     .transition(.opacity)
@@ -40,26 +46,39 @@ struct RootView: View {
                 .zIndex(1)
             }
 
-            if showSplash {
-                SplashScreen(onFinished: {
-                    showSplash = false
+            if showOnboarding {
+                OnboardingView(onFinished: {
+                    showOnboarding = false
                     Task { await checkForUpdateAfterSplash() }
                 })
                 .zIndex(2)
             }
+
+            if showSplash {
+                SplashScreen(onFinished: {
+                    showSplash = false
+                    if OnboardingGate.shouldShow(didCompleteOnboarding: didCompleteOnboarding, hasExistingData: hasExistingData) {
+                        showOnboarding = true
+                    } else {
+                        Task { await checkForUpdateAfterSplash() }
+                    }
+                })
+                .zIndex(3)
+            }
         }
         .preferredColorScheme(appearance.colorScheme)
         .task {
-            guard !showSplash else { return }
+            guard !showSplash, !showOnboarding else { return }
             await checkForUpdateAfterSplash()
         }
         .onChange(of: scenePhase) { _, newPhase in
-            guard newPhase == .active, !showSplash else { return }
+            guard newPhase == .active, !showSplash, !showOnboarding else { return }
             Task { await checkForUpdateAfterSplash() }
         }
         #if DEBUG
         .onReceive(NotificationCenter.default.publisher(for: .debugShowUpdatePrompt)) { _ in
             showSplash = false
+            showOnboarding = false
             pendingUpdate = DebugUpdatePrompt.updateInfo
         }
         #endif
@@ -74,5 +93,5 @@ struct RootView: View {
 }
 
 #Preview {
-    RootView()
+    RootView(hasExistingData: false)
 }

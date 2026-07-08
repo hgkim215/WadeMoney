@@ -5,6 +5,7 @@ import SwiftData
 struct WadeMoneyApp: App {
     let container: ModelContainer
     let syncMonitor: CloudSyncMonitor
+    let hasExistingData: Bool
 
     init() {
         // 테스트 호스트로 실행 중이면 App Group/CloudKit 엔타이틀먼트가 없어
@@ -12,6 +13,7 @@ struct WadeMoneyApp: App {
         if ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil {
             container = try! PersistenceController.makeInMemoryContainer()
             syncMonitor = CloudSyncMonitor(cloudKitEnabled: false, isSignedIntoiCloud: false, hasExistingData: false)
+            hasExistingData = false
             return
         }
         let resolved: ModelContainer
@@ -36,17 +38,18 @@ struct WadeMoneyApp: App {
         try? CategorySeeder.reconcileDuplicateCategories(resolved.mainContext)
         try? _ = SettingsStore(context: resolved.mainContext).settingsModel()
 
-        let hasExistingData = ((try? resolved.mainContext.fetchCount(FetchDescriptor<TransactionModel>())) ?? 0) > 0
+        let existingData = ((try? resolved.mainContext.fetchCount(FetchDescriptor<TransactionModel>())) ?? 0) > 0
+        hasExistingData = existingData
         syncMonitor = CloudSyncMonitor(
             cloudKitEnabled: cloudKitEnabled,
             isSignedIntoiCloud: FileManager.default.ubiquityIdentityToken != nil,
-            hasExistingData: hasExistingData
+            hasExistingData: existingData
         )
     }
 
     var body: some Scene {
         WindowGroup {
-            RootView()
+            RootView(hasExistingData: hasExistingData)
         }
         .modelContainer(container)
         .environment(syncMonitor)
