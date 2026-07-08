@@ -17,6 +17,7 @@ struct SettingsScreen: View {
     private enum SettingsSheet: Identifiable {
         case budget
         case monthStartDay
+        case notificationTime
         case share(URL)
         case feedbackMail
 
@@ -24,6 +25,7 @@ struct SettingsScreen: View {
             switch self {
             case .budget: return "budget"
             case .monthStartDay: return "monthStartDay"
+            case .notificationTime: return "notificationTime"
             case .share(let url): return "share-\(url.absoluteString)"
             case .feedbackMail: return "feedbackMail"
             }
@@ -60,6 +62,12 @@ struct SettingsScreen: View {
                                 syncStatusRow()
                                 backupCheckRow()
                                 row(icon: "ios_share", tint: WadeColors.ink2(scheme), label: "CSV 내보내기", trailing: nil) { exportCSV() }
+                            }
+                            section("알림") {
+                                dailyReminderToggleRow(vm)
+                                if vm.dailyReminderEnabled {
+                                    dailyReminderTimeRow(vm)
+                                }
                             }
                             section("도움말") {
                                 row(
@@ -121,6 +129,7 @@ struct SettingsScreen: View {
                                            categoryStore: CategoryStore(context: ctx),
                                            now: Date(), calendar: .current)
                 vm.load(); viewModel = vm
+                Task { await vm.reconcilePermission() }
             }
         }
         .onDisappear {
@@ -146,6 +155,11 @@ struct SettingsScreen: View {
             BudgetSheet(current: viewModel?.budget ?? 0) { amount in viewModel?.setBudget(amount) }
         case .monthStartDay:
             MonthStartDaySheet(current: viewModel?.monthStartDay ?? 1) { day in viewModel?.setMonthStartDay(day) }
+        case .notificationTime:
+            NotificationTimeSheet(
+                hour: viewModel?.dailyReminderHour ?? 22,
+                minute: viewModel?.dailyReminderMinute ?? 0
+            ) { hour, minute in viewModel?.setDailyReminderTime(hour: hour, minute: minute) }
         case .share(let url):
             ActivityView(url: url)
         case .feedbackMail:
@@ -338,5 +352,29 @@ struct SettingsScreen: View {
             Toggle("", isOn: Binding(get: { vm.aiEnabled }, set: { _ in vm.toggleAI() })).labelsHidden().tint(WadeColors.primary(scheme))
         }
         .padding(.horizontal, 16).padding(.vertical, 12)
+    }
+
+    private func dailyReminderToggleRow(_ vm: SettingsViewModel) -> some View {
+        HStack(spacing: 13) {
+            Icon("notifications", size: 20).foregroundStyle(WadeColors.ink2(scheme)).frame(width: 36, height: 36)
+                .background(WadeColors.ink2(scheme).opacity(0.15), in: RoundedRectangle(cornerRadius: 10))
+            Text("오늘 지출 알림").font(WadeFont.pretendard(15, weight: .semibold)).foregroundStyle(WadeColors.ink(scheme))
+            Spacer()
+            Toggle("", isOn: Binding(get: { vm.dailyReminderEnabled }, set: { newValue in
+                Task {
+                    let succeeded = await vm.setDailyReminderEnabled(newValue)
+                    if newValue && !succeeded {
+                        showSettingsToast("iOS 설정에서 알림 권한을 허용해주세요")
+                    }
+                }
+            })).labelsHidden().tint(WadeColors.primary(scheme))
+        }
+        .padding(.horizontal, 16).padding(.vertical, 12)
+    }
+
+    private func dailyReminderTimeRow(_ vm: SettingsViewModel) -> some View {
+        row(icon: "schedule", tint: WadeColors.ink2(scheme), label: "알림 시각", trailing: vm.dailyReminderTimeText) {
+            presentedSheet = .notificationTime
+        }
     }
 }
