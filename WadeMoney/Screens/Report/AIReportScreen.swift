@@ -33,6 +33,7 @@ struct AIReportScreen: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(WadeColors.bg(scheme))
         .navigationBarBackButtonHidden(true)
+        .enableSwipeBack { dismiss() }
         .task {
             if viewModel == nil {
                 let vm = AIReportViewModel(repository: LedgerRepository(context: modelContext), now: Date(), calendar: .current)

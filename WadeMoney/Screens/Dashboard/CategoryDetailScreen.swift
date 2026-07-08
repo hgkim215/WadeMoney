@@ -37,6 +37,7 @@ struct CategoryDetailScreen: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(WadeColors.bg(scheme))
         .navigationBarBackButtonHidden(true)
+        .enableSwipeBack { dismiss() }
         .onAppear {
             if viewModel == nil {
                 let vm = CategoryDetailViewModel(

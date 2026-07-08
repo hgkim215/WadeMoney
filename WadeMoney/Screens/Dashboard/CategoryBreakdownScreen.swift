@@ -34,6 +34,7 @@ struct CategoryBreakdownScreen: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(WadeColors.bg(scheme))
         .navigationBarBackButtonHidden(true)
+        .enableSwipeBack { dismiss() }
         .navigationDestination(isPresented: $showDetail) {
             if let row = selectedRow {
                 CategoryDetailScreen(

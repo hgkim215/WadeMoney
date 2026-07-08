@@ -79,4 +79,58 @@ final class CoreFlowUITests: XCTestCase {
         button(containing: "한눈에", in: app).tap()
         XCTAssertTrue(app.staticTexts["한눈에"].waitForExistence(timeout: 5))
     }
+
+    /// navigationBarBackButtonHidden(true)를 쓰는 화면은 SwiftUI가 인터랙티브 스와이프-백
+    /// 제스처까지 함께 꺼버린다 — SwipeBackEnabler로 되살렸는지 왼쪽 엣지 스와이프로 검증한다.
+    private func edgeSwipeRight(in app: XCUIApplication) {
+        let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0.02, dy: 0.5))
+        let end = app.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5))
+        start.press(forDuration: 0.05, thenDragTo: end)
+    }
+
+    func testSwipeBackWorksOnCategoryManageScreen() {
+        let app = XCUIApplication()
+        app.launch()
+        XCTAssertTrue(app.staticTexts["한눈에"].waitForExistence(timeout: 15))
+        button(containing: "설정", in: app).tap()
+        button(containing: "카테고리 관리", in: app).tap()
+        XCTAssertTrue(app.staticTexts["카테고리 관리"].waitForExistence(timeout: 5), "카테고리 관리 화면 진입 실패")
+
+        edgeSwipeRight(in: app)
+
+        // "설정" 탭바 라벨은 어느 화면에서든 항상 보이므로 판정 기준으로 쓰지 않는다 —
+        // 설정 루트에만 있는 "월 시작일" 행으로 실제로 돌아왔는지 확인한다.
+        let monthStartRow = app.descendants(matching: .any)
+            .matching(NSPredicate(format: "label CONTAINS %@", "월 시작일")).firstMatch
+        XCTAssertTrue(monthStartRow.waitForExistence(timeout: 3), "카테고리 관리에서 스와이프-백으로 설정 루트로 돌아오지 않음")
+    }
+
+    func testSwipeBackWorksOnCategoryBreakdownAndDetailScreens() {
+        let app = XCUIApplication()
+        app.launch()
+        XCTAssertTrue(app.staticTexts["한눈에"].waitForExistence(timeout: 15))
+
+        let donut = button(containing: "카테고리 비중", in: app)
+        XCTAssertTrue(donut.waitForExistence(timeout: 10), "카테고리 비중 카드 없음(지출 데이터 필요)")
+        donut.tap()
+
+        let breakdownTitle = app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "카테고리별 지출")).firstMatch
+        XCTAssertTrue(breakdownTitle.waitForExistence(timeout: 5), "카테고리별 지출(breakdown) 화면 진입 실패")
+
+        // 1) breakdown -> 스와이프-백 -> 대시보드
+        edgeSwipeRight(in: app)
+        XCTAssertTrue(app.staticTexts["카테고리 비중"].waitForExistence(timeout: 3),
+                      "카테고리별 지출(breakdown)에서 스와이프-백으로 대시보드로 돌아오지 않음")
+
+        // 2) 다시 breakdown 진입 -> 행 탭 -> detail -> 스와이프-백 -> breakdown
+        donut.tap()
+        XCTAssertTrue(breakdownTitle.waitForExistence(timeout: 5))
+        let firstRow = app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "%")).firstMatch
+        XCTAssertTrue(firstRow.waitForExistence(timeout: 3), "breakdown에 카테고리 행이 없음")
+        firstRow.tap()
+        XCTAssertTrue(app.staticTexts["최근 거래"].waitForExistence(timeout: 5), "카테고리 상세(detail) 화면 진입 실패")
+
+        edgeSwipeRight(in: app)
+        XCTAssertTrue(breakdownTitle.waitForExistence(timeout: 3), "카테고리 상세(detail)에서 스와이프-백으로 breakdown으로 돌아오지 않음")
+    }
 }

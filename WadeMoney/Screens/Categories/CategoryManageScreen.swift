@@ -87,6 +87,7 @@ struct CategoryManageScreen: View {
             }
         }
         .navigationBarBackButtonHidden(true)
+        .enableSwipeBack { dismiss() }
         .toolbar(.hidden, for: .navigationBar)
     }
 
