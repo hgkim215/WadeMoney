@@ -28,6 +28,26 @@ private let aiInstructions = """
 당신은 그 값을 그대로 인용해 자연스러운 한국어 문장만 작성합니다. 스스로 숫자를 계산하거나 추정하지 마세요.
 """
 
+/// 온디바이스 생성이 드물게 스톨하면 이를 끊을 방법이 없어 호출부의 로딩 상태
+/// (인사이트 스피너, 다듬기 버튼 disabled 등)가 영구 고착된다 — 상한을 두고
+/// 초과 시 에러를 던져 호출부의 기존 실패 경로로 회복시킨다.
+func withGenerationTimeout<T: Sendable>(
+    seconds: TimeInterval = 30,
+    _ operation: @escaping @Sendable () async throws -> T
+) async throws -> T {
+    try await withThrowingTaskGroup(of: T.self) { group in
+        group.addTask { try await operation() }
+        group.addTask {
+            try await Task.sleep(for: .seconds(seconds))
+            throw CancellationError()
+        }
+        // 먼저 끝난 태스크가 결과를 결정한다 — 타임아웃이 이기면 생성 태스크는 취소된다.
+        let result = try await group.next()!
+        group.cancelAll()
+        return result
+    }
+}
+
 struct FoundationModelsInsightGenerator: InsightGenerating {
     func generate(_ input: InsightInput) async throws -> String {
         let session = LanguageModelSession(instructions: aiInstructions)
@@ -38,8 +58,9 @@ struct FoundationModelsInsightGenerator: InsightGenerating {
         최다 지출 카테고리: \(input.topCategoryName ?? "없음") \(input.topCategoryPercentText ?? "")
         위 정보로 1~2문장짜리 소비 인사이트를 작성해줘.
         """
-        let response = try await session.respond(to: prompt, generating: InsightNarrationOutput.self)
-        return response.content.sentence
+        return try await withGenerationTimeout {
+            try await session.respond(to: prompt, generating: InsightNarrationOutput.self).content.sentence
+        }
     }
 }
 
@@ -51,10 +72,12 @@ struct FoundationModelsMemoPolisher: MemoPolishing {
         카테고리 목록: \(categoryNames.joined(separator: ", "))
         위 메모를 다듬고, 카테고리 목록 중 가장 어울리는 것을 하나 골라줘.
         """
-        let response = try await session.respond(to: prompt, generating: MemoPolishOutput.self)
-        let suggestion = response.content.suggestedCategoryName
+        let output = try await withGenerationTimeout {
+            try await session.respond(to: prompt, generating: MemoPolishOutput.self).content
+        }
+        let suggestion = output.suggestedCategoryName
         return MemoPolishResult(
-            polishedMemo: response.content.polishedMemo,
+            polishedMemo: output.polishedMemo,
             suggestedCategoryName: categoryNames.contains(suggestion) ? suggestion : nil
         )
     }
@@ -74,12 +97,14 @@ struct FoundationModelsReportNarrator: ReportNarrating {
         위 정보로 요약 문장 1~2개와 절약 팁 1문장을 작성해줘.
         """
         // 출력은 짧은 문장 2~3개뿐 — 토큰 상한으로 생성 꼬리 지연을 차단한다.
-        let response = try await session.respond(
-            to: prompt,
-            generating: ReportNarrationOutput.self,
-            options: GenerationOptions(maximumResponseTokens: 256)
-        )
-        return ReportNarration(summarySentence: response.content.summarySentence, tipSentence: response.content.tipSentence)
+        let output = try await withGenerationTimeout {
+            try await session.respond(
+                to: prompt,
+                generating: ReportNarrationOutput.self,
+                options: GenerationOptions(maximumResponseTokens: 256)
+            ).content
+        }
+        return ReportNarration(summarySentence: output.summarySentence, tipSentence: output.tipSentence)
     }
 
     /// 리포트 화면 진입 시점에 모델 로드를 미리 시작해 첫 응답까지의 지연을 데이터 준비와 겹친다.

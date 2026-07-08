@@ -217,3 +217,21 @@ struct AIReportViewModelTests {
         _ = container
     }
 }
+
+/// 온디바이스 생성이 스톨하면 호출부 로딩 상태가 영구 고착된다 —
+/// withGenerationTimeout이 상한 초과 시 에러로 회복시키는지 검증한다.
+struct GenerationTimeoutTests {
+    @Test func returnsValueWhenOperationFinishesInTime() async throws {
+        let value = try await withGenerationTimeout(seconds: 5) { "ok" }
+        #expect(value == "ok")
+    }
+
+    @Test func throwsWhenOperationExceedsTimeout() async {
+        await #expect(throws: (any Error).self) {
+            try await withGenerationTimeout(seconds: 0.05) { () -> String in
+                try await Task.sleep(for: .seconds(10))
+                return "late"
+            }
+        }
+    }
+}
