@@ -82,7 +82,9 @@ final class HistoryViewModel {
             let sumIsIncome = expense == 0 && income > 0
             let sumText = sumIsIncome ? "+\(Won.string(income))" : "−\(Won.string(expense))"
             return DayGroup(
-                id: ISO8601DateFormatter().string(from: day),
+                // id는 날짜별 안정 문자열이면 충분하다 — ISO8601DateFormatter를 그룹마다
+                // 새로 만들면 로드(검색 키 입력 포함)마다 무거운 할당이 반복된다.
+                id: String(day.timeIntervalSinceReferenceDate),
                 dateLabel: dayLabel(day),
                 tag: relativeTag(day),
                 sumText: sumText,

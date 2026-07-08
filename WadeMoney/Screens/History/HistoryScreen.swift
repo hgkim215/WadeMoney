@@ -10,6 +10,7 @@ struct HistoryScreen: View {
     @State private var editingRecord: TransactionRecord?
     @State private var pendingDeleteID: UUID?
     @State private var searchText = ""
+    @State private var searchDebounceTask: Task<Void, Never>?
     let refreshToken: Int
 
     var body: some View {
@@ -42,8 +43,11 @@ struct HistoryScreen: View {
                     if vm.isEmpty {
                         emptyState(vm)
                     } else {
-                        ForEach(vm.groups) { group in
-                            groupView(group)
+                        // 내역은 무한히 자라는 리스트다 — 지연 렌더링으로 화면 밖 행 생성을 미룬다.
+                        LazyVStack(alignment: .leading, spacing: 0) {
+                            ForEach(vm.groups) { group in
+                                groupView(group)
+                            }
                         }
                     }
                 }
@@ -71,8 +75,20 @@ struct HistoryScreen: View {
         }
         .onChange(of: refreshToken) { viewModel?.load() }
         .onChange(of: searchText) { _, newValue in
-            viewModel?.searchQuery = newValue
-            viewModel?.load()
+            // 키 입력마다 전체 재조회하면 큰 원장에서 입력이 랙 걸린다 — 250ms 디바운스.
+            // 지우기(빈 문자열)는 즉시 반영해 클리어 버튼이 굼뜨지 않게 한다.
+            searchDebounceTask?.cancel()
+            if newValue.isEmpty {
+                viewModel?.searchQuery = ""
+                viewModel?.load()
+                return
+            }
+            searchDebounceTask = Task {
+                try? await Task.sleep(for: .milliseconds(250))
+                guard !Task.isCancelled else { return }
+                viewModel?.searchQuery = newValue
+                viewModel?.load()
+            }
         }
         .onAppear {
             if viewModel == nil {
