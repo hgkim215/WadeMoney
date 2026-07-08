@@ -66,7 +66,7 @@ extension CategorySeederTests {
                                   date: Date(timeIntervalSince1970: 1_000_000), createdAt: Date(timeIntervalSince1970: 1_000_000)))
         try c.save()
 
-        try CategorySeeder.reconcileDuplicateDefaults(c)
+        try CategorySeeder.reconcileDuplicateCategories(c)
 
         let remaining = try c.fetch(FetchDescriptor<CategoryModel>()).filter { $0.name == "식비" }
         #expect(remaining.count == 1)
@@ -76,16 +76,19 @@ extension CategorySeederTests {
         _ = try #require(txn)
     }
 
-    @Test func reconcileLeavesUniqueAndCustomCategoriesAlone() throws {
+    @Test func reconcileMergesDuplicateCustomCategoriesToo() throws {
+        // 커스텀 카테고리도 이름이 같으면 병합 대상이다 (기본 카테고리만 다루던 이전 동작을 일반화).
         let c = try ctx()
         try CategorySeeder.seedIfNeeded(c)   // 기본 8종(중복 없음)
         c.insert(CategoryModel(name: "구독", iconName: "category", colorHex: "#000000", sortOrder: 8))
-        c.insert(CategoryModel(name: "구독", iconName: "category", colorHex: "#000000", sortOrder: 9))   // 커스텀 중복은 대상 아님
+        c.insert(CategoryModel(name: "구독", iconName: "category", colorHex: "#000000", sortOrder: 9))
         try c.save()
 
-        try CategorySeeder.reconcileDuplicateDefaults(c)
+        try CategorySeeder.reconcileDuplicateCategories(c)
 
-        #expect(try c.fetchCount(FetchDescriptor<CategoryModel>()) == 10)   // 변화 없음(멱등·범위 제한)
+        let remaining = try c.fetch(FetchDescriptor<CategoryModel>()).filter { $0.name == "구독" }
+        #expect(remaining.count == 1)
+        #expect(try c.fetchCount(FetchDescriptor<CategoryModel>()) == 9)   // 기본 8 + 구독 1(병합됨)
     }
 
     @Test func backfillsFlagWhenCategoriesAlreadyExistWithoutFlag() throws {
