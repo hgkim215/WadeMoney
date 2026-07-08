@@ -419,3 +419,37 @@ struct TrendCard: View {
         return bars.first { $0.isCurrent }
     }
 }
+
+struct SyncStatusBanner: View {
+    @Environment(\.colorScheme) private var scheme
+    let state: CloudSyncMonitor.State
+
+    var body: some View {
+        switch state {
+        case .normal:
+            EmptyView()
+        case .importing:
+            content(icon: "cloud_sync", tint: WadeColors.ink2(scheme)) {
+                HStack(spacing: 0) {
+                    Text("iCloud에서 가져오는 중").font(WadeFont.pretendard(12.5, weight: .semibold))
+                    AnimatedDots().font(WadeFont.pretendard(12.5, weight: .semibold))
+                }
+            }
+        case .unavailable:
+            content(icon: "cloud_off", tint: WadeColors.ink3(scheme)) {
+                Text("iCloud 동기화 꺼짐").font(WadeFont.pretendard(12.5, weight: .semibold))
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func content<Label: View>(icon: String, tint: Color, @ViewBuilder label: () -> Label) -> some View {
+        HStack(spacing: 6) {
+            Icon(icon, size: 14, filled: false).foregroundStyle(tint)
+            label().foregroundStyle(tint)
+        }
+        .padding(.horizontal, 12).padding(.vertical, 8)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(WadeColors.card2(scheme), in: RoundedRectangle(cornerRadius: WadeRadius.smallTile, style: .continuous))
+    }
+}

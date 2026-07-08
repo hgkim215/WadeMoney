@@ -5,6 +5,7 @@ import WadeMoneyCore
 struct DashboardScreen: View {
     @Environment(\.colorScheme) private var scheme
     @Environment(\.modelContext) private var modelContext
+    @Environment(CloudSyncMonitor.self) private var syncMonitor
     @State private var viewModel: DashboardViewModel?
     @State private var showReport = false
     @State private var showCategoryBreakdown = false
@@ -33,6 +34,8 @@ struct DashboardScreen: View {
                         }
                     }
                     .frame(maxWidth: .infinity)
+
+                    SyncStatusBanner(state: syncMonitor.state)
 
                     if let vm = viewModel, let d = vm.display {
                         PeriodSegment(kind: Binding(get: { vm.kind }, set: { selectPeriod($0, vm) }))
