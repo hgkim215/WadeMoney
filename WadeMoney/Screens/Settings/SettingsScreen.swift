@@ -7,6 +7,7 @@ import WadeMoneyCore
 struct SettingsScreen: View {
     @Environment(\.colorScheme) private var scheme
     @Environment(\.modelContext) private var modelContext
+    @Environment(CloudSyncMonitor.self) private var syncMonitor
     @State private var viewModel: SettingsViewModel?
     @State private var showCategories = false
     @State private var presentedSheet: SettingsSheet?
@@ -56,8 +57,8 @@ struct SettingsScreen: View {
                                 appearanceRow(vm)
                             }
                             section("동기화 · 데이터") {
-                                row(icon: "cloud_done", tint: WadeColors.good(scheme), label: "iCloud 동기화",
-                                    subtitle: "iCloud에 안전하게 보관돼요", subtitleColor: WadeColors.good(scheme), trailing: nil, action: nil)
+                                syncStatusRow()
+                                backupCheckRow()
                                 row(icon: "ios_share", tint: WadeColors.ink2(scheme), label: "CSV 내보내기", trailing: nil) { exportCSV() }
                             }
                             section("도움말") {
@@ -281,6 +282,39 @@ struct SettingsScreen: View {
             .frame(width: 156)
         }
         .padding(.horizontal, 16).padding(.vertical, 12)
+    }
+
+    private func syncStatusRow() -> some View {
+        switch syncMonitor.state {
+        case .normal:
+            return row(icon: "cloud_done", tint: WadeColors.good(scheme), label: "iCloud 동기화",
+                       subtitle: "모든 기기에서 최신 상태로 유지돼요", subtitleColor: WadeColors.good(scheme), trailing: nil, action: nil)
+        case .importing:
+            return row(icon: "cloud_sync", tint: WadeColors.ink2(scheme), label: "iCloud 동기화",
+                       subtitle: "iCloud에서 가져오는 중", subtitleColor: WadeColors.ink2(scheme), trailing: nil, action: nil)
+        case .unavailable:
+            return row(icon: "cloud_off", tint: WadeColors.ink3(scheme), label: "iCloud 동기화",
+                       subtitle: "iCloud 로그인 상태를 확인해주세요", subtitleColor: WadeColors.ink3(scheme), trailing: nil, action: nil)
+        }
+    }
+
+    private func backupCheckRow() -> some View {
+        let unavailable = syncMonitor.state == .unavailable
+        return row(
+            icon: "cloud_upload",
+            tint: unavailable ? WadeColors.ink3(scheme) : WadeColors.ink2(scheme),
+            label: "iCloud 백업 상태 확인",
+            trailing: unavailable ? "확인 불가" : nil,
+            action: unavailable ? nil : { checkBackupStatus() }
+        )
+    }
+
+    private func checkBackupStatus() {
+        if syncMonitor.pendingExport {
+            showSettingsToast("아직 업로드 중이에요. 네트워크 연결을 확인하고 잠시 후 다시 확인해주세요.")
+        } else {
+            showSettingsToast("모든 데이터가 iCloud에 안전하게 저장됐어요. 지금 앱을 삭제해도 괜찮아요.")
+        }
     }
 
     private func aiToggleRow(_ vm: SettingsViewModel) -> some View {
