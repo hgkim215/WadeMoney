@@ -13,9 +13,28 @@ final class CoreFlowUITests: XCTestCase {
         app.buttons.matching(NSPredicate(format: "label CONTAINS %@", label)).firstMatch
     }
 
+    /// 신규 설치 상태로 앱을 켜면 온보딩 투어가 자동으로 떠서 대시보드/탭 전체를 덮는다 —
+    /// 온보딩 자체를 검증하는 테스트가 아니라면 먼저 걷어내고 시작해야 나머지 UI가 눌린다.
+    /// 온보딩이 끝나면 (건너뛴 경우와 동일하게) 지연됐던 업데이트 체크가 실행되므로, 실제
+    /// 스토어 버전과 로컬 빌드 버전이 다르면 그 직후 업데이트 팝업도 뜰 수 있어 함께 걷어낸다.
+    private func dismissOnboardingIfPresent(_ app: XCUIApplication) {
+        let skip = button(containing: "건너뛰기", in: app)
+        if skip.waitForExistence(timeout: 3) {
+            skip.tap()
+            button(containing: "나중에 하기", in: app).tap()
+            sleep(1)
+        }
+        let updateLater = button(containing: "나중에", in: app)
+        if updateLater.waitForExistence(timeout: 3) {
+            updateLater.tap()
+            sleep(1)
+        }
+    }
+
     func testQuickAddExpenseFlowUpdatesHistory() {
         let app = XCUIApplication()
         app.launch()
+        dismissOnboardingIfPresent(app)
 
         // 1. 대시보드 로드
         XCTAssertTrue(app.staticTexts["한눈에"].waitForExistence(timeout: 15), "대시보드가 뜨지 않음")
@@ -63,6 +82,7 @@ final class CoreFlowUITests: XCTestCase {
     func testTabNavigationAndSettings() {
         let app = XCUIApplication()
         app.launch()
+        dismissOnboardingIfPresent(app)
         XCTAssertTrue(app.staticTexts["한눈에"].waitForExistence(timeout: 15))
 
         // 설정 탭
@@ -91,6 +111,7 @@ final class CoreFlowUITests: XCTestCase {
     func testSwipeBackWorksOnCategoryManageScreen() {
         let app = XCUIApplication()
         app.launch()
+        dismissOnboardingIfPresent(app)
         XCTAssertTrue(app.staticTexts["한눈에"].waitForExistence(timeout: 15))
         button(containing: "설정", in: app).tap()
         button(containing: "카테고리 관리", in: app).tap()
@@ -108,6 +129,7 @@ final class CoreFlowUITests: XCTestCase {
     func testSwipeBackWorksOnCategoryBreakdownAndDetailScreens() {
         let app = XCUIApplication()
         app.launch()
+        dismissOnboardingIfPresent(app)
         XCTAssertTrue(app.staticTexts["한눈에"].waitForExistence(timeout: 15))
 
         let donut = button(containing: "카테고리 비중", in: app)
@@ -140,6 +162,7 @@ final class CoreFlowUITests: XCTestCase {
     func testOnboardingGuideReplayFromSettingsSkipAndDismiss() {
         let app = XCUIApplication()
         app.launch()
+        dismissOnboardingIfPresent(app)
         XCTAssertTrue(app.staticTexts["한눈에"].waitForExistence(timeout: 15))
         button(containing: "설정", in: app).tap()
         button(containing: "가이드 다시 보기", in: app).tap()
