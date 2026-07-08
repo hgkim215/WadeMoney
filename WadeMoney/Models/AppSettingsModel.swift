@@ -12,6 +12,7 @@ final class AppSettingsModel {
     var dailyReminderEnabled: Bool = false
     var dailyReminderHour: Int = 22
     var dailyReminderMinute: Int = 0
+    var didCompleteOnboarding: Bool = false
 
     init(
         id: UUID = UUID(),
@@ -21,7 +22,8 @@ final class AppSettingsModel {
         appearanceRaw: Int = 0,
         dailyReminderEnabled: Bool = false,
         dailyReminderHour: Int = 22,
-        dailyReminderMinute: Int = 0
+        dailyReminderMinute: Int = 0,
+        didCompleteOnboarding: Bool = false
     ) {
         self.id = id
         self.monthStartDay = monthStartDay
@@ -31,5 +33,6 @@ final class AppSettingsModel {
         self.dailyReminderEnabled = dailyReminderEnabled
         self.dailyReminderHour = dailyReminderHour
         self.dailyReminderMinute = dailyReminderMinute
+        self.didCompleteOnboarding = didCompleteOnboarding
     }
 }

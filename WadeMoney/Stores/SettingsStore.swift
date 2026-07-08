@@ -97,4 +97,10 @@ final class SettingsStore {
         model.dailyReminderMinute = min(max(minute, 0), 59)
         try context.save()
     }
+
+    func setDidCompleteOnboarding(_ completed: Bool) throws {
+        let model = try settingsModel()
+        model.didCompleteOnboarding = completed
+        try context.save()
+    }
 }

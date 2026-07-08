@@ -55,6 +55,14 @@ struct SettingsStoreTests {
         _ = container
     }
 
+    @Test func onboardingDefaultsToIncompleteAndPersistsWhenSet() throws {
+        let (s, container) = try store()
+        #expect(try s.settingsModel().didCompleteOnboarding == false)
+        try s.setDidCompleteOnboarding(true)
+        #expect(try s.settingsModel().didCompleteOnboarding == true)
+        _ = container
+    }
+
     @Test func duplicateSettingsRowsResolveDeterministicallyAndMergeSeedFlag() throws {
         // CloudKit 병합으로 설정 행이 2개가 된 상황: id 최솟값 행이 승자, 시드 플래그는 합집합.
         let (s, container) = try store()
