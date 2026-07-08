@@ -133,4 +133,25 @@ final class CoreFlowUITests: XCTestCase {
         edgeSwipeRight(in: app)
         XCTAssertTrue(breakdownTitle.waitForExistence(timeout: 3), "카테고리 상세(detail)에서 스와이프-백으로 breakdown으로 돌아오지 않음")
     }
+
+    /// 자동 첫 실행 경로(신규 설치 + 데이터 없음)는 테스트 스위트 내 다른 테스트가 만든 데이터에
+    /// 영향을 받아 불안정하므로, 데이터 상태와 무관하게 항상 동작하는 설정 화면의
+    /// "가이드 다시 보기" 진입점으로 건너뛰기/다음/종료 동작만 검증한다.
+    func testOnboardingGuideReplayFromSettingsSkipAndDismiss() {
+        let app = XCUIApplication()
+        app.launch()
+        XCTAssertTrue(app.staticTexts["한눈에"].waitForExistence(timeout: 15))
+        button(containing: "설정", in: app).tap()
+        button(containing: "가이드 다시 보기", in: app).tap()
+
+        XCTAssertTrue(app.staticTexts["WadeMoney에 오신 걸 환영해요"].waitForExistence(timeout: 5), "온보딩 첫 페이지가 뜨지 않음")
+
+        button(containing: "건너뛰기", in: app).tap()
+        XCTAssertTrue(app.staticTexts["매일 잊지 않게 알려드릴게요"].waitForExistence(timeout: 3), "건너뛰기가 알림 페이지로 이동하지 않음")
+
+        button(containing: "나중에 하기", in: app).tap()
+        let monthStartRow = app.descendants(matching: .any)
+            .matching(NSPredicate(format: "label CONTAINS %@", "월 시작일")).firstMatch
+        XCTAssertTrue(monthStartRow.waitForExistence(timeout: 3), "온보딩 종료 후 설정 화면으로 돌아오지 않음")
+    }
 }

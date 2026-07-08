@@ -18,6 +18,7 @@ struct SettingsScreen: View {
         case budget
         case monthStartDay
         case notificationTime
+        case onboardingGuide
         case share(URL)
         case feedbackMail
 
@@ -26,6 +27,7 @@ struct SettingsScreen: View {
             case .budget: return "budget"
             case .monthStartDay: return "monthStartDay"
             case .notificationTime: return "notificationTime"
+            case .onboardingGuide: return "onboardingGuide"
             case .share(let url): return "share-\(url.absoluteString)"
             case .feedbackMail: return "feedbackMail"
             }
@@ -78,6 +80,14 @@ struct SettingsScreen: View {
                                     trailing: nil
                                 ) {
                                     startFeedbackMail()
+                                }
+                                row(
+                                    icon: "explore",
+                                    tint: WadeColors.ink2(scheme),
+                                    label: "가이드 다시 보기",
+                                    trailing: nil
+                                ) {
+                                    presentedSheet = .onboardingGuide
                                 }
                                 #if DEBUG
                                 row(
@@ -160,6 +170,8 @@ struct SettingsScreen: View {
                 hour: viewModel?.dailyReminderHour ?? 22,
                 minute: viewModel?.dailyReminderMinute ?? 0
             ) { hour, minute in viewModel?.setDailyReminderTime(hour: hour, minute: minute) }
+        case .onboardingGuide:
+            OnboardingView(onFinished: { presentedSheet = nil })
         case .share(let url):
             ActivityView(url: url)
         case .feedbackMail:
