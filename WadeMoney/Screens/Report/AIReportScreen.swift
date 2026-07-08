@@ -16,6 +16,7 @@ struct AIReportScreen: View {
                 if let vm = viewModel, let d = vm.display {
                     summaryCard(d, isNarrating: vm.isNarrating)
                     projectionCard(d)
+                    if !d.insightCards.isEmpty { insightsCard(d) }
                     if !d.changes.isEmpty { changesCard(d) }
                     if let tip = d.tipSentence {
                         tipCard(tip)
@@ -66,12 +67,14 @@ struct AIReportScreen: View {
 
     private func card<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
         let sh = WadeShadow.card(scheme)
+        // frame이 background보다 먼저 와야 카드 배경이 항상 화면 폭을 채운다 —
+        // 뒤에 두면 레이아웃 박스만 넓어지고 배경은 콘텐츠 폭에 머문다.
         return content()
+            .frame(maxWidth: .infinity, alignment: .leading)
             .padding(WadeSpacing.cardPadding)
             .background(WadeColors.card(scheme))
             .clipShape(RoundedRectangle(cornerRadius: WadeRadius.card, style: .continuous))
             .shadow(color: sh.color, radius: sh.radius, y: sh.y)
-            .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func summaryCard(_ d: AIReportViewModel.Display, isNarrating: Bool) -> some View {
@@ -117,6 +120,26 @@ struct AIReportScreen: View {
                         .padding(.horizontal, 10).padding(.vertical, 5)
                         .background(WadeColors.badsoft(scheme), in: Capsule())
                 }
+                if let caption = d.projectionCaption {
+                    Text(caption).font(WadeFont.pretendard(11.5)).foregroundStyle(WadeColors.ink3(scheme))
+                }
+            }
+        }
+    }
+
+    private func insightsCard(_ d: AIReportViewModel.Display) -> some View {
+        card {
+            VStack(alignment: .leading, spacing: 14) {
+                Text("이번 달 발견").font(WadeFont.pretendard(13, weight: .bold)).foregroundStyle(WadeColors.ink(scheme))
+                ForEach(d.insightCards) { item in
+                    HStack(alignment: .top, spacing: 10) {
+                        Icon(item.iconName, size: 18).foregroundStyle(WadeColors.primary(scheme))
+                            .frame(width: 32, height: 32)
+                            .background(WadeColors.primarysoft(scheme), in: RoundedRectangle(cornerRadius: WadeRadius.smallTile))
+                        SentenceHighlighter.styledText(item.text, font: WadeFont.pretendard(13.5), scheme: scheme)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                }
             }
         }
     }
@@ -148,9 +171,9 @@ struct AIReportScreen: View {
             Icon("lightbulb", size: 19).foregroundStyle(WadeColors.primary(scheme))
             SentenceHighlighter.styledText(tip, font: WadeFont.pretendard(13.5), scheme: scheme)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(WadeSpacing.cardPadding)
         .background(WadeColors.primarysoft(scheme), in: RoundedRectangle(cornerRadius: WadeRadius.card, style: .continuous))
-        .frame(maxWidth: .infinity, alignment: .leading)
         .redacted(reason: isPlaceholder ? .placeholder : [])
     }
 
