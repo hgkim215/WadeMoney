@@ -1,6 +1,11 @@
 import Foundation
 import SwiftData
 
+struct AppContainerResult {
+    let container: ModelContainer
+    let cloudKitEnabled: Bool
+}
+
 enum PersistenceController {
     static let sharedSchema = Schema([
         CategoryModel.self,
@@ -20,9 +25,9 @@ enum PersistenceController {
     /// App Group이 프로비저닝되지 않은 환경(미서명 시뮬레이터 등)에서는
     /// 공유·CloudKit 없이 로컬 온디스크로 기동해 앱이 크래시 없이 뜨게 한다.
     /// (실제 동기화는 유료 Apple Developer 계정 + 프로비저닝된 iCloud 컨테이너 + 실기기 필요.)
-    static func makeAppContainer() throws -> ModelContainer {
+    static func makeAppContainer() throws -> AppContainerResult {
         guard isAppGroupAvailable else {
-            return try makeLocalContainer()   // unsigned simulator: plain on-disk
+            return AppContainerResult(container: try makeLocalContainer(), cloudKitEnabled: false)   // unsigned simulator: plain on-disk
         }
         do {
             let config = ModelConfiguration(
@@ -30,11 +35,13 @@ enum PersistenceController {
                 groupContainer: .identifier(AppIDs.appGroup),
                 cloudKitDatabase: .private(AppIDs.iCloudContainer)
             )
-            return try ModelContainer(for: sharedSchema, configurations: [config])
+            let container = try ModelContainer(for: sharedSchema, configurations: [config])
+            return AppContainerResult(container: container, cloudKitEnabled: true)
         } catch {
             // CloudKit init 실패 시에도 App Group 공유 저장소는 유지(위젯이 읽을 수 있게).
             let config = ModelConfiguration(schema: sharedSchema, groupContainer: .identifier(AppIDs.appGroup))
-            return try ModelContainer(for: sharedSchema, configurations: [config])
+            let container = try ModelContainer(for: sharedSchema, configurations: [config])
+            return AppContainerResult(container: container, cloudKitEnabled: false)
         }
     }
 
