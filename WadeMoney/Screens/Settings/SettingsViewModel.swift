@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import UserNotifications
 import WadeMoneyCore
 
 @MainActor
@@ -19,12 +20,25 @@ final class SettingsViewModel {
     private(set) var aiEnabled: Bool = true
     private(set) var categoryCountText: String = "0개"
     private(set) var appearance: AppAppearance = .system
+    private(set) var dailyReminderEnabled: Bool = false
+    private(set) var dailyReminderHour: Int = 22
+    private(set) var dailyReminderMinute: Int = 0
+    var dailyReminderTimeText: String { formatReminderTime(hour: dailyReminderHour, minute: dailyReminderMinute) }
 
-    init(settingsStore: SettingsStore, categoryStore: CategoryStore, now: Date, calendar: Calendar) {
+    private let notificationScheduler: NotificationScheduling
+
+    init(
+        settingsStore: SettingsStore,
+        categoryStore: CategoryStore,
+        now: Date,
+        calendar: Calendar,
+        notificationScheduler: NotificationScheduling = DailyReminderScheduler()
+    ) {
         self.settingsStore = settingsStore
         self.categoryStore = categoryStore
         self.now = now
         self.calendar = calendar
+        self.notificationScheduler = notificationScheduler
     }
 
     private var currentYearMonth: YearMonth {
@@ -43,6 +57,11 @@ final class SettingsViewModel {
         let count = (try? categoryStore.active().count) ?? 0
         categoryCountText = "\(count)개"
         appearance = (try? settingsStore.appearance()) ?? .system
+        if let model = try? settingsStore.settingsModel() {
+            dailyReminderEnabled = model.dailyReminderEnabled
+            dailyReminderHour = model.dailyReminderHour
+            dailyReminderMinute = model.dailyReminderMinute
+        }
     }
 
     func setAppearance(_ appearance: AppAppearance) {
@@ -63,5 +82,40 @@ final class SettingsViewModel {
     func toggleAI() {
         try? settingsStore.setAIEnabled(!aiEnabled)
         load()
+    }
+
+    @discardableResult
+    func setDailyReminderEnabled(_ enabled: Bool) async -> Bool {
+        if enabled {
+            guard await notificationScheduler.requestAuthorization() else { return false }
+            try? settingsStore.setDailyReminder(enabled: true, hour: dailyReminderHour, minute: dailyReminderMinute)
+            notificationScheduler.schedule(hour: dailyReminderHour, minute: dailyReminderMinute)
+        } else {
+            try? settingsStore.setDailyReminder(enabled: false, hour: dailyReminderHour, minute: dailyReminderMinute)
+            notificationScheduler.cancel()
+        }
+        load()
+        return true
+    }
+
+    func setDailyReminderTime(hour: Int, minute: Int) {
+        try? settingsStore.setDailyReminder(enabled: true, hour: hour, minute: minute)
+        notificationScheduler.schedule(hour: hour, minute: minute)
+        load()
+    }
+
+    /// 마지막으로 저장된 설정은 그대로 두고, 표시상의 켜짐 상태만 실제 OS 권한 상태에 맞춘다 —
+    /// 사용자가 iOS 설정에서 권한을 회수해도 저장된 선호도 자체는 덮어쓰지 않는다.
+    func reconcilePermission() async {
+        guard dailyReminderEnabled else { return }
+        if await notificationScheduler.currentAuthorizationStatus() != .authorized {
+            dailyReminderEnabled = false
+        }
+    }
+
+    private func formatReminderTime(hour: Int, minute: Int) -> String {
+        let period = hour < 12 ? "오전" : "오후"
+        let displayHour = (1...12).contains(hour) ? hour : (hour == 0 ? 12 : hour - 12)
+        return String(format: "%@ %d:%02d", period, displayHour, minute)
     }
 }

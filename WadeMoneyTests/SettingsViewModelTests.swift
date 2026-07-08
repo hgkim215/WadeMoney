@@ -1,8 +1,25 @@
 import Foundation
 import SwiftData
 import Testing
+import UserNotifications
 import WadeMoneyCore
 @testable import WadeMoney
+
+final class FakeNotificationScheduler: NotificationScheduling, @unchecked Sendable {
+    var authorizationGranted = true
+    var authorizationStatus: UNAuthorizationStatus = .notDetermined
+    var scheduledHour: Int?
+    var scheduledMinute: Int?
+    var cancelCallCount = 0
+
+    func requestAuthorization() async -> Bool { authorizationGranted }
+    func currentAuthorizationStatus() async -> UNAuthorizationStatus { authorizationStatus }
+    func schedule(hour: Int, minute: Int) {
+        scheduledHour = hour
+        scheduledMinute = minute
+    }
+    func cancel() { cancelCallCount += 1 }
+}
 
 @MainActor
 struct SettingsViewModelTests {
@@ -18,6 +35,16 @@ struct SettingsViewModelTests {
         let vm = SettingsViewModel(settingsStore: SettingsStore(context: ctx),
                                    categoryStore: CategoryStore(context: ctx),
                                    now: date(2026, 7, 15), calendar: utc)
+        return (vm, container)
+    }
+    func vm(scheduler: NotificationScheduling) throws -> (SettingsViewModel, ModelContainer) {
+        let container = try PersistenceController.makeInMemoryContainer()
+        try CategorySeeder.seedIfNeeded(container.mainContext)
+        let ctx = container.mainContext
+        let vm = SettingsViewModel(settingsStore: SettingsStore(context: ctx),
+                                   categoryStore: CategoryStore(context: ctx),
+                                   now: date(2026, 7, 15), calendar: utc,
+                                   notificationScheduler: scheduler)
         return (vm, container)
     }
 
@@ -61,6 +88,80 @@ struct SettingsViewModelTests {
         vm.setMonthStartDay(15)
         #expect(vm.monthStartDay == 15)
         #expect(vm.monthStartDayText == "매월 15일")
+        _ = c
+    }
+
+    @Test func dailyReminderDefaultsToDisabledWithDefaultTime() throws {
+        let (vm, c) = try vm()
+        vm.load()
+        #expect(vm.dailyReminderEnabled == false)
+        #expect(vm.dailyReminderHour == 22)
+        #expect(vm.dailyReminderMinute == 0)
+        #expect(vm.dailyReminderTimeText == "오후 10:00")
+        _ = c
+    }
+
+    @Test func enablingReminderRequestsAuthorizationAndSchedulesOnGrant() async throws {
+        let fake = FakeNotificationScheduler()
+        fake.authorizationGranted = true
+        let (vm, c) = try vm(scheduler: fake)
+        vm.load()
+        let succeeded = await vm.setDailyReminderEnabled(true)
+        #expect(succeeded == true)
+        #expect(vm.dailyReminderEnabled == true)
+        #expect(fake.scheduledHour == 22)
+        #expect(fake.scheduledMinute == 0)
+        _ = c
+    }
+
+    @Test func enablingReminderStaysOffWhenAuthorizationDenied() async throws {
+        let fake = FakeNotificationScheduler()
+        fake.authorizationGranted = false
+        let (vm, c) = try vm(scheduler: fake)
+        vm.load()
+        let succeeded = await vm.setDailyReminderEnabled(true)
+        #expect(succeeded == false)
+        #expect(vm.dailyReminderEnabled == false)
+        #expect(fake.scheduledHour == nil)
+        _ = c
+    }
+
+    @Test func disablingReminderCancelsSchedule() async throws {
+        let fake = FakeNotificationScheduler()
+        fake.authorizationGranted = true
+        let (vm, c) = try vm(scheduler: fake)
+        vm.load()
+        _ = await vm.setDailyReminderEnabled(true)
+        _ = await vm.setDailyReminderEnabled(false)
+        #expect(vm.dailyReminderEnabled == false)
+        #expect(fake.cancelCallCount == 1)
+        _ = c
+    }
+
+    @Test func setDailyReminderTimePersistsAndReschedules() throws {
+        let fake = FakeNotificationScheduler()
+        let (vm, c) = try vm(scheduler: fake)
+        vm.load()
+        vm.setDailyReminderTime(hour: 9, minute: 30)
+        #expect(vm.dailyReminderHour == 9)
+        #expect(vm.dailyReminderMinute == 30)
+        #expect(vm.dailyReminderTimeText == "오전 9:30")
+        #expect(fake.scheduledHour == 9)
+        #expect(fake.scheduledMinute == 30)
+        _ = c
+    }
+
+    @Test func reconcilePermissionTurnsDisplayOffWhenOSPermissionRevoked() async throws {
+        let fake = FakeNotificationScheduler()
+        fake.authorizationGranted = true
+        let (vm, c) = try vm(scheduler: fake)
+        vm.load()
+        _ = await vm.setDailyReminderEnabled(true)
+        #expect(vm.dailyReminderEnabled == true)
+
+        fake.authorizationStatus = .denied
+        await vm.reconcilePermission()
+        #expect(vm.dailyReminderEnabled == false)
         _ = c
     }
 }

@@ -2,7 +2,7 @@ import Foundation
 import UserNotifications
 
 /// SettingsViewModel이 실제 UNUserNotificationCenter 대신 주입해 테스트할 수 있도록 하는 얇은 시임.
-protocol NotificationScheduling {
+protocol NotificationScheduling: Sendable {
     func requestAuthorization() async -> Bool
     func currentAuthorizationStatus() async -> UNAuthorizationStatus
     func schedule(hour: Int, minute: Int)
