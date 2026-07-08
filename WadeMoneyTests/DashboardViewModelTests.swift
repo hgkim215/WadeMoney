@@ -111,4 +111,31 @@ struct DashboardViewModelTests {
 
         _ = container
     }
+
+    @Test func donutLegendDistinguishesOtherBucketFromRealMiscCategory() throws {
+        let (repo, _, container) = try makeRepo()
+        // 상위 5개(카페~기타)는 개별 슬라이스로, 하위 3개(문화/의료/주거)는 "그 외" 버킷으로 묶인다(maxSlices=6).
+        // 기본 카테고리 "기타"가 상위 5개 안에 들어가야 "그 외" 버킷과 동시에 표시되는 충돌 상황이 재현된다.
+        let amounts: [(String, Decimal)] = [
+            ("카페", 900_000), ("식비", 800_000), ("교통", 700_000), ("쇼핑", 600_000), ("기타", 500_000),
+            ("문화", 150_000), ("의료", 100_000), ("주거", 50_000),
+        ]
+        for (name, amount) in amounts {
+            let id = try catID(repo, name)
+            try repo.addTransaction(amount: amount, type: .expense, categoryID: id, memo: nil, date: date(2026, 7, 5))
+        }
+
+        let vm = DashboardViewModel(repository: repo, now: date(2026, 7, 15), calendar: utc)
+        vm.kind = .month
+        vm.load()
+
+        let d = try #require(vm.display)
+        let realMisc = try #require(d.donut.first { $0.name == "기타" && !$0.isOther })
+        let bucket = try #require(d.donut.first { $0.isOther })
+        #expect(realMisc.colorHex == "#A69B8C")
+        #expect(bucket.name == "그 외")
+        #expect(bucket.colorHex == "#8A94A6")
+        #expect(bucket.colorHex != realMisc.colorHex)
+        _ = container
+    }
 }

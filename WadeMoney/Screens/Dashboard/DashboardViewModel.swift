@@ -161,8 +161,8 @@ final class DashboardViewModel {
         }()
 
         let legend: [DonutLegendItem] = s.donut.map { slice in
-            let name = slice.isOther ? "기타" : (slice.categoryID.flatMap { byID[$0]?.name } ?? "기타")
-            let color = slice.isOther ? "#A69B8C" : (slice.categoryID.flatMap { byID[$0]?.colorHex } ?? "#A69B8C")
+            let name = slice.isOther ? "그 외" : (slice.categoryID.flatMap { byID[$0]?.name } ?? "그 외")
+            let color = slice.isOther ? "#8A94A6" : (slice.categoryID.flatMap { byID[$0]?.colorHex } ?? "#8A94A6")
             let pct = Int((slice.fraction * 100).rounded())
             return DonutLegendItem(
                 id: slice.categoryID?.uuidString ?? "other",
