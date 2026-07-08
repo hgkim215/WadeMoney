@@ -94,7 +94,7 @@ struct HistoryScreen: View {
             if viewModel == nil {
                 let repo = LedgerRepository(context: modelContext)
                 repository = repo
-                let vm = HistoryViewModel(repository: repo, now: Date(), calendar: .current)
+                let vm = HistoryViewModel(repository: repo, now: Date(), calendar: .current, nowProvider: { Date() })
                 vm.load(); viewModel = vm
             }
         }

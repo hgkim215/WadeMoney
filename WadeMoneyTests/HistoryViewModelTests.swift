@@ -35,6 +35,23 @@ struct HistoryViewModelTests {
         _ = c
     }
 
+    @Test func todayTagFollowsNowProviderAfterMidnight() throws {
+        // 앱을 켠 채 자정을 넘기면 "오늘"/"어제" 태그도 로드 시점 날짜 기준이어야 한다.
+        let (r, c) = try repo()
+        let food = try catID(r, "식비")
+        try r.addTransaction(amount: 9000, type: .expense, categoryID: food, memo: "점심", date: date(2026, 7, 16, 12))
+
+        var current = date(2026, 7, 15, 20)
+        let vm = HistoryViewModel(repository: r, now: current, calendar: utc, nowProvider: { current })
+        vm.load()
+        #expect(vm.groups[0].tag == nil)   // 아직 15일 — 16일 거래는 오늘도 어제도 아님
+
+        current = date(2026, 7, 16, 1)   // 자정 경과
+        vm.load()
+        #expect(vm.groups[0].tag == "오늘")
+        _ = c
+    }
+
     @Test func incomeFilterShowsOnlyIncome() throws {
         let (r, c) = try repo()
         let food = try catID(r, "식비")

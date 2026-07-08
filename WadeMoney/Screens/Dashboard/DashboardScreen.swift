@@ -78,7 +78,7 @@ struct DashboardScreen: View {
                 if viewModel == nil {
                     let vm = DashboardViewModel(
                         repository: LedgerRepository(context: modelContext),
-                        now: Date(), calendar: .current)
+                        now: Date(), calendar: .current, nowProvider: { Date() })
                     reload(vm)
                     viewModel = vm
                 }

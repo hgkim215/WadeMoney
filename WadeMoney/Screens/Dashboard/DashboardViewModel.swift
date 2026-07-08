@@ -50,7 +50,10 @@ final class DashboardViewModel {
     }
 
     private let repository: LedgerRepository
-    private let now: Date
+    // 앱을 켠 채 자정을 넘기면 init 시점 Date로는 "오늘"/"이번 달" 경계가 어제에
+    // 머문다 — provider가 주어지면 load()마다 현재 시각으로 갱신한다(테스트는 고정값 유지).
+    private var now: Date
+    private let nowProvider: (() -> Date)?
     private let calendar: Calendar
     private let aiAvailability: AIAvailabilityChecking
     private let insightGenerator: InsightGenerating
@@ -65,11 +68,13 @@ final class DashboardViewModel {
 
     init(
         repository: LedgerRepository, now: Date, calendar: Calendar,
+        nowProvider: (() -> Date)? = nil,
         aiAvailability: AIAvailabilityChecking = SystemLanguageModelAvailability(),
         insightGenerator: InsightGenerating = FoundationModelsInsightGenerator()
     ) {
         self.repository = repository
         self.now = now
+        self.nowProvider = nowProvider
         self.calendar = calendar
         self.aiAvailability = aiAvailability
         self.insightGenerator = insightGenerator
@@ -81,6 +86,7 @@ final class DashboardViewModel {
     let showsAIReportEntry: Bool
 
     func load() {
+        if let nowProvider { now = nowProvider() }
         do {
             let summary = try repository.dashboardSummary(kind: kind, offset: offset, now: now, calendar: calendar)
             let categories = try repository.allCategories(includeArchived: true)

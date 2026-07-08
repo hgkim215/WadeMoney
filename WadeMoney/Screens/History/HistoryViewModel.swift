@@ -32,7 +32,10 @@ final class HistoryViewModel {
     }
 
     private let repository: LedgerRepository
-    private let now: Date
+    // "오늘"/"어제" 태그가 init 시점 날짜에 머물지 않도록, provider가 주어지면
+    // load()마다 현재 시각으로 갱신한다(테스트는 고정값 유지).
+    private var now: Date
+    private let nowProvider: (() -> Date)?
     private let calendar: Calendar
 
     var filter: HistoryFilter = .all
@@ -43,13 +46,15 @@ final class HistoryViewModel {
     var isEmpty: Bool { groups.isEmpty }
     var hasSearchQuery: Bool { !searchQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
 
-    init(repository: LedgerRepository, now: Date, calendar: Calendar) {
+    init(repository: LedgerRepository, now: Date, calendar: Calendar, nowProvider: (() -> Date)? = nil) {
         self.repository = repository
         self.now = now
+        self.nowProvider = nowProvider
         self.calendar = calendar
     }
 
     func load() {
+        if let nowProvider { now = nowProvider() }
         let categories = (try? repository.allCategories(includeArchived: true)) ?? []
         let byID = Dictionary(uniqueKeysWithValues: categories.map { ($0.id, $0) })
         chips = buildChips(categories: categories)

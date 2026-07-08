@@ -112,6 +112,25 @@ struct DashboardViewModelTests {
         _ = container
     }
 
+    @Test func loadRecomputesTodayFromNowProviderAfterMidnight() throws {
+        // 뷰모델이 init 시점 Date를 계속 들고 있으면, 앱을 켠 채 자정을 넘겼을 때
+        // "오늘"/"이번 달" 경계가 어제에 머문다 — 로드마다 nowProvider로 갱신해야 한다.
+        let (repo, _, container) = try makeRepo()
+        let food = try catID(repo, "식비")
+        try repo.addTransaction(amount: 5_000, type: .expense, categoryID: food, memo: nil, date: date(2026, 7, 16))
+
+        var current = date(2026, 7, 15)
+        let vm = DashboardViewModel(repository: repo, now: current, calendar: utc, nowProvider: { current })
+        vm.kind = .day
+        vm.load()
+        #expect(try #require(vm.display).totalText == "0")
+
+        current = date(2026, 7, 16)   // 자정 경과
+        vm.load()
+        #expect(try #require(vm.display).totalText == "5,000")
+        _ = container
+    }
+
     @Test func donutLegendDistinguishesOtherBucketFromRealMiscCategory() throws {
         let (repo, _, container) = try makeRepo()
         // 상위 5개(카페~기타)는 개별 슬라이스로, 하위 3개(문화/의료/주거)는 "그 외" 버킷으로 묶인다(maxSlices=6).
