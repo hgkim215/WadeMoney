@@ -123,16 +123,21 @@ final class AIReportViewModel {
             (summary.projected != nil && dayCount > 0 && Double(elapsed) / Double(dayCount) < 0.25)
             ? "아직 초반이라 예상치가 달라질 수 있어요" : nil
 
+        // 0%·비교 불가 페이스는 문장 재료에서 제외한다.
+        let paceDelta: (percentText: String, increased: Bool)? = summary.pace?.deltaRatio.flatMap { ratio in
+            guard ratio != 0 else { return nil }
+            return ("\(Int((abs(ratio) * 100).doubleValue.rounded()))%", ratio > 0)
+        }
         let input = ReportInput(
             monthLabel: monthLabel,
             daysElapsedText: "\(elapsed)일",
             totalExpenseText: Won.string(summary.totalExpense),
             budgetStatusText: overBudget != nil ? "예산 초과 예상 +\(Won.string(overBudget!))원" : "예산 내 예상",
-            paceDeltaPercentText: summary.pace?.deltaRatio.map { "\(Int((abs($0) * 100).doubleValue.rounded()))%" } ?? "0%",
-            paceIncreased: increased,
+            paceDelta: paceDelta,
             projectedTotalText: summary.projected.map { Won.string($0) } ?? "-",
             topIncrease: topIncrease.map { (name: $0.name, percentText: $0.percentText) },
-            topDecrease: topDecrease.map { (name: $0.name, percentText: $0.percentText) }
+            topDecrease: topDecrease.map { (name: $0.name, percentText: $0.percentText) },
+            insightFacts: insightCards.map(\.text)
         )
 
         // 1단계: 결정적 수치를 즉시 표시한다 — AI 문장을 기다리며 화면을 비워두지 않는다.
@@ -208,10 +213,12 @@ final class AIReportViewModel {
     private static func narrationCacheKey(for input: ReportInput) -> String {
         [
             input.monthLabel, input.daysElapsedText, input.totalExpenseText,
-            input.budgetStatusText, input.paceDeltaPercentText, "\(input.paceIncreased)",
+            input.budgetStatusText,
+            input.paceDelta.map { "\($0.percentText)|\($0.increased)" } ?? "-",
             input.projectedTotalText,
             input.topIncrease.map { "\($0.name)|\($0.percentText)" } ?? "-",
             input.topDecrease.map { "\($0.name)|\($0.percentText)" } ?? "-",
+            input.insightFacts.joined(separator: "\u{1E}"),
         ].joined(separator: "\u{1F}")
     }
 }

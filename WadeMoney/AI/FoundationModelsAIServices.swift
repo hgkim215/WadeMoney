@@ -17,9 +17,9 @@ struct MemoPolishOutput {
 
 @Generable
 struct ReportNarrationOutput {
-    @Guide(description: "이번 달 소비 요약 1~2문장. 한국어 존댓말. 입력으로 주어진 수치만 인용하고 새 숫자를 만들지 않는다.")
+    @Guide(description: "이번 달 소비 요약 1~2문장. 한국어 존댓말. 총지출과 '주요 발견' 중 가장 눈에 띄는 것 하나를 자연스럽게 엮는다. 입력으로 주어진 수치만 인용하고 새 숫자를 만들지 않는다.")
     var summarySentence: String
-    @Guide(description: "실행 가능한 절약 팁 1문장. 한국어 존댓말.")
+    @Guide(description: "'주요 발견' 중 하나에 근거한 실행 가능한 절약 팁 1문장. 한국어 존댓말. 새 숫자를 만들지 않는다.")
     var tipSentence: String
 }
 
@@ -86,16 +86,24 @@ struct FoundationModelsMemoPolisher: MemoPolishing {
 struct FoundationModelsReportNarrator: ReportNarrating {
     func narrate(_ input: ReportInput) async throws -> ReportNarration {
         let session = LanguageModelSession(instructions: aiInstructions)
-        let prompt = """
-        월: \(input.monthLabel) (\(input.daysElapsedText) 경과)
-        총지출: \(input.totalExpenseText)원
-        예산 상태: \(input.budgetStatusText)
-        전월 대비: \(input.paceIncreased ? "증가" : "감소") \(input.paceDeltaPercentText)
-        이번 달 예상 지출: \(input.projectedTotalText)원
-        가장 많이 늘어난 카테고리: \(input.topIncrease.map { "\($0.name) \($0.percentText)" } ?? "없음")
-        가장 많이 줄어든 카테고리: \(input.topDecrease.map { "\($0.name) \($0.percentText)" } ?? "없음")
-        위 정보로 요약 문장 1~2개와 절약 팁 1문장을 작성해줘.
-        """
+        var lines = [
+            "월: \(input.monthLabel) (\(input.daysElapsedText) 경과)",
+            "총지출: \(input.totalExpenseText)원",
+            "예산 상태: \(input.budgetStatusText)",
+        ]
+        // 비교 불가·0%면 줄 자체를 생략 — "감소 0%" 같은 문장이 나올 재료를 주지 않는다.
+        if let pace = input.paceDelta {
+            lines.append("전월 대비: \(pace.increased ? "증가" : "감소") \(pace.percentText)")
+        }
+        lines.append("이번 달 예상 지출: \(input.projectedTotalText)원")
+        lines.append("가장 많이 늘어난 카테고리: \(input.topIncrease.map { "\($0.name) \($0.percentText)" } ?? "없음")")
+        lines.append("가장 많이 줄어든 카테고리: \(input.topDecrease.map { "\($0.name) \($0.percentText)" } ?? "없음")")
+        if !input.insightFacts.isEmpty {
+            lines.append("주요 발견:")
+            lines.append(contentsOf: input.insightFacts.map { "- \($0)" })
+        }
+        lines.append("위 정보로 요약 문장 1~2개와 절약 팁 1문장을 작성해줘. 요약은 총지출과 가장 눈에 띄는 발견을 엮고, 팁은 주요 발견 중 하나에 근거한 구체적 행동을 제안해줘.")
+        let prompt = lines.joined(separator: "\n")
         // 출력은 짧은 문장 2~3개뿐 — 토큰 상한으로 생성 꼬리 지연을 차단한다.
         let output = try await withGenerationTimeout {
             try await session.respond(

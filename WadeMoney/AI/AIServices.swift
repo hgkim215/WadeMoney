@@ -27,11 +27,13 @@ struct ReportInput: Sendable {
     let daysElapsedText: String
     let totalExpenseText: String
     let budgetStatusText: String
-    let paceDeltaPercentText: String
-    let paceIncreased: Bool
+    /// nil이면 프롬프트에서 전월 대비 줄을 통째로 생략한다 — "감소 0%" 같은 무의미 문장 차단.
+    let paceDelta: (percentText: String, increased: Bool)?
     let projectedTotalText: String
     let topIncrease: (name: String, percentText: String)?
     let topDecrease: (name: String, percentText: String)?
+    /// 선정된 인사이트의 결정적 사실 문자열(카드 문장과 동일, 최대 3개). 팁의 근거 재료.
+    let insightFacts: [String]
 }
 
 struct ReportNarration: Equatable, Sendable {

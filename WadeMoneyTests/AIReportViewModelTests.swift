@@ -204,6 +204,61 @@ struct AIReportViewModelTests {
         _ = container
     }
 
+    // MARK: - AI 입력 품질
+
+    @Test func paceDeltaNilWhenNoPriorMonthComparison() async throws {
+        // 지난달 데이터 없음 → deltaRatio nil → paceDelta nil → "0% 감소" 문장 차단
+        let (repo, settings, container) = try makeRepo()
+        try settings.setMonthlyBudget(300_000, for: YearMonth(year: 2026, month: 7))
+        let food = try catID(repo, "식비")
+        try repo.addTransaction(amount: 50_000, type: .expense, categoryID: food, memo: nil, date: date(2026, 7, 5))
+
+        let spy = SpyReportNarrator(result: .success(ReportNarration(summarySentence: "s", tipSentence: "t")))
+        let vm = AIReportViewModel(repository: repo, now: date(2026, 7, 15), calendar: utc, narrator: spy, cache: freshCache())
+        await vm.load()
+        #expect(spy.lastInput?.paceDelta == nil)
+        _ = container
+    }
+
+    @Test func insightFactsForwardedToNarrator() async throws {
+        let (repo, settings, container) = try makeRepo()
+        try settings.setMonthlyBudget(1_000_000, for: YearMonth(year: 2026, month: 7))
+        let cafe = try catID(repo, "카페")
+        for day in 1...5 {
+            try repo.addTransaction(amount: 4_800, type: .expense, categoryID: cafe, memo: nil, date: date(2026, 7, day, 12))
+        }
+        let spy = SpyReportNarrator(result: .success(ReportNarration(summarySentence: "s", tipSentence: "t")))
+        let vm = AIReportViewModel(repository: repo, now: date(2026, 7, 15), calendar: utc, narrator: spy, cache: freshCache())
+        await vm.load()
+        let facts = try #require(spy.lastInput?.insightFacts)
+        #expect(facts.contains("카페에 5번 · 총 24,000원 · 회당 평균 4,800원"))
+        _ = container
+    }
+
+    @Test func narrationRegeneratedWhenInsightFactsChange() async throws {
+        // 총지출·페이스·최대지출이 전부 같아도 인사이트 구성(주말 집중)이 바뀌면 캐시 미스여야 한다.
+        let (repo, settings, container) = try makeRepo()
+        try settings.setMonthlyBudget(1_000_000, for: YearMonth(year: 2026, month: 7))
+        let food = try catID(repo, "식비")
+        // 7/4(토) 40,000 + 7/8(수) 30,000 → 주말 비중 57% ≥ 50% → weekend 인사이트 자격
+        try repo.addTransaction(amount: 40_000, type: .expense, categoryID: food, memo: nil, date: date(2026, 7, 4, 12))
+        try repo.addTransaction(amount: 30_000, type: .expense, categoryID: food, memo: nil, date: date(2026, 7, 8, 12))
+
+        let spy = SpyReportNarrator(result: .success(ReportNarration(summarySentence: "s", tipSentence: "t")))
+        let cache = freshCache()
+        await AIReportViewModel(repository: repo, now: date(2026, 7, 14, 20), calendar: utc, narrator: spy, cache: cache).load()
+        #expect(spy.callCount == 1)
+
+        // 토요일 지출을 월요일(7/6)로 이동 — 총액·최대지출·무지출일 수는 그대로,
+        // 주말 인사이트만 사라진다 → insightFacts만 달라져도 재생성돼야 한다.
+        let saturday = try #require(try repo.transactions(filter: .all).first { $0.amount == 40_000 })
+        try repo.updateTransaction(id: saturday.id, amount: 40_000, type: .expense,
+                                   categoryID: food, memo: nil, date: date(2026, 7, 6, 12))
+        await AIReportViewModel(repository: repo, now: date(2026, 7, 14, 20), calendar: utc, narrator: spy, cache: cache).load()
+        #expect(spy.callCount == 2)
+        _ = container
+    }
+
     // MARK: - 인사이트 카드·예측 캡션
 
     @Test func insightCardsIncludeFrequencyWithDeterministicText() async throws {
