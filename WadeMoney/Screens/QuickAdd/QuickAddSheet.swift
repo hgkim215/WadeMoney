@@ -9,6 +9,7 @@ struct QuickAddSheet: View {
     @State private var vm: QuickAddViewModel?
     @State private var showingCategorySearch = false
     @State private var categoryQuery = ""
+    @State private var didSave = false
     let onSaved: () -> Void
     var editing: TransactionRecord? = nil
     var preselectedCategoryID: UUID? = nil
@@ -90,8 +91,12 @@ struct QuickAddSheet: View {
                 AmountKeypad(onKey: { vm.tapKey($0) }, onBackspace: { vm.backspace() })
 
                 Button {
+                    // dismiss 애니메이션이 끝나기 전 더블탭하면 저장이 두 번 실행돼
+                    // 거래가 중복 삽입된다 — 성공한 저장 이후의 탭은 무시한다.
+                    guard !didSave else { return }
                     do {
                         try vm.save()
+                        didSave = true
                         onSaved()
                         dismiss()
                     } catch {
