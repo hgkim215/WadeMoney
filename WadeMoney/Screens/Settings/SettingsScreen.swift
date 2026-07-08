@@ -171,7 +171,12 @@ struct SettingsScreen: View {
                 minute: viewModel?.dailyReminderMinute ?? 0
             ) { hour, minute in viewModel?.setDailyReminderTime(hour: hour, minute: minute) }
         case .onboardingGuide:
-            OnboardingView(onFinished: { presentedSheet = nil })
+            // OnboardingView가 자체 SettingsViewModel 인스턴스로 알림을 켜므로, 시트가 닫힌 뒤
+            // 이 화면이 들고 있는 viewModel도 다시 읽어와야 토글 등 표시가 최신 상태로 갱신된다.
+            OnboardingView(onFinished: {
+                presentedSheet = nil
+                viewModel?.load()
+            })
         case .share(let url):
             ActivityView(url: url)
         case .feedbackMail:
