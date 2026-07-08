@@ -69,4 +69,36 @@ struct CloudSyncMonitorTests {
         let result = CloudSyncMonitor.nextPendingExport(current: true, eventType: .export, isFinished: true, succeeded: false)
         #expect(result == true)
     }
+
+    @Test func recheckedStateStaysUnavailableWhenCloudKitDisabled() {
+        let result = CloudSyncMonitor.recheckedState(current: .unavailable, cloudKitEnabled: false, isSignedIntoiCloud: true, hasExistingData: true)
+        #expect(result == .unavailable)
+    }
+
+    @Test func recheckedStateStaysUnavailableWhenStillNotSignedIn() {
+        let result = CloudSyncMonitor.recheckedState(current: .unavailable, cloudKitEnabled: true, isSignedIntoiCloud: false, hasExistingData: true)
+        #expect(result == .unavailable)
+    }
+
+    @Test func recheckedStateMovesToImportingWhenNowSignedInWithoutExistingData() {
+        let result = CloudSyncMonitor.recheckedState(current: .unavailable, cloudKitEnabled: true, isSignedIntoiCloud: true, hasExistingData: false)
+        #expect(result == .importing)
+    }
+
+    @Test func recheckedStateMovesToNormalWhenNowSignedInWithExistingData() {
+        let result = CloudSyncMonitor.recheckedState(current: .unavailable, cloudKitEnabled: true, isSignedIntoiCloud: true, hasExistingData: true)
+        #expect(result == .normal)
+    }
+
+    @Test func recheckedStateLeavesNonUnavailableStatesUnchanged() {
+        let result = CloudSyncMonitor.recheckedState(current: .normal, cloudKitEnabled: true, isSignedIntoiCloud: false, hasExistingData: false)
+        #expect(result == .normal)
+    }
+
+    @Test func recheckSignInInstanceStaysUnavailableWithoutRealICloudAccount() {
+        // 테스트 실행 환경에는 iCloud 계정이 로그인돼 있지 않으므로 결정적으로 unavailable을 유지한다.
+        let monitor = CloudSyncMonitor(cloudKitEnabled: true, isSignedIntoiCloud: false, hasExistingData: false)
+        monitor.recheckSignIn()
+        #expect(monitor.state == .unavailable)
+    }
 }

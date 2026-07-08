@@ -294,7 +294,16 @@ struct SettingsScreen: View {
                        subtitle: "iCloud에서 가져오는 중", subtitleColor: WadeColors.ink2(scheme), trailing: nil, action: nil)
         case .unavailable:
             return row(icon: "cloud_off", tint: WadeColors.ink3(scheme), label: "iCloud 동기화",
-                       subtitle: "iCloud 로그인 상태를 확인해주세요", subtitleColor: WadeColors.ink3(scheme), trailing: nil, action: nil)
+                       subtitle: "iCloud 로그인 상태를 확인해주세요 · 탭하여 새로고침", subtitleColor: WadeColors.ink3(scheme), trailing: nil) {
+                recheckSyncStatus()
+            }
+        }
+    }
+
+    private func recheckSyncStatus() {
+        syncMonitor.recheckSignIn()
+        if syncMonitor.state == .unavailable {
+            showSettingsToast("여전히 iCloud에 로그인되어 있지 않아요")
         }
     }
 
