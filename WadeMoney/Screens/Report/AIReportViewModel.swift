@@ -13,6 +13,11 @@ final class AIReportViewModel {
         let percentText: String
         let increased: Bool
     }
+    struct InsightCardItem: Equatable, Identifiable {
+        let id: String
+        let iconName: String
+        let text: String
+    }
     struct Display: Equatable {
         let monthLabel: String
         let monthShortLabel: String
@@ -24,6 +29,8 @@ final class AIReportViewModel {
         let projectedText: String?
         let overBudgetText: String?
         let changes: [CategoryChange]
+        let insightCards: [InsightCardItem]
+        let projectionCaption: String?
         var tipSentence: String?
     }
 
@@ -107,6 +114,15 @@ final class AIReportViewModel {
         let monthLabel = PeriodLabel.text(kind: .month, period: summary.period, now: now, calendar: calendar)
         let monthComponent = calendar.component(.month, from: summary.period.start)
 
+        // 인사이트는 이미 페치한 거래 배열을 재사용해 결정적으로 계산한다 — 추가 DB 조회 없음.
+        let insights = InsightEngine(calc: calc).insights(
+            txns: txns, period: summary.period, asOf: now, budget: summary.budget)
+        let insightCards = insights.map { insightCard($0, byID: byID) }
+        let dayCount = calc.dayCount(of: summary.period)
+        let projectionCaption: String? =
+            (summary.projected != nil && dayCount > 0 && Double(elapsed) / Double(dayCount) < 0.25)
+            ? "아직 초반이라 예상치가 달라질 수 있어요" : nil
+
         let input = ReportInput(
             monthLabel: monthLabel,
             daysElapsedText: "\(elapsed)일",
@@ -131,6 +147,8 @@ final class AIReportViewModel {
             projectedText: summary.projected.map { Won.string($0) },
             overBudgetText: overBudget.map { "+\(Won.string($0))원" },
             changes: changes,
+            insightCards: insightCards,
+            projectionCaption: projectionCaption,
             tipSentence: nil
         )
         isLoading = false
@@ -150,6 +168,35 @@ final class AIReportViewModel {
         guard let narration = try? await narrator.narrate(input) else { return }
         cache.store(narration, for: key)
         apply(narration)
+    }
+
+    /// 인사이트 원시 값 → 카드 문장. 수치는 전부 여기서 포매팅되고 AI는 이 문장을 인용만 한다.
+    private func insightCard(_ insight: Insight, byID: [UUID: CategoryRef]) -> InsightCardItem {
+        func pct(_ ratio: Decimal) -> Int { Int((abs(ratio) * 100).doubleValue.rounded()) }
+        switch insight {
+        case .budgetRunway(let exhaustDate):
+            let c = calendar.dateComponents([.month, .day], from: exhaustDate)
+            return .init(id: "runway", iconName: "hourglass_bottom",
+                         text: "이 속도면 \(c.month ?? 0)월 \(c.day ?? 0)일쯤 예산이 소진돼요")
+        case .largestExpense(let amount, let categoryID, let memo, let share):
+            let name = memo?.isEmpty == false ? memo! : (categoryID.flatMap { byID[$0]?.name } ?? "기타")
+            return .init(id: "largest", iconName: "payments",
+                         text: "가장 큰 지출은 \(name) \(Won.string(amount))원 — 이번 달 지출의 \(pct(share))%예요")
+        case .dailyAveragePace(let avg, let delta):
+            let up = delta > 0
+            return .init(id: "pace", iconName: up ? "trending_up" : "trending_down",
+                         text: "하루 평균 \(Won.string(avg))원 쓰고 있어요 — 지난달 같은 시점보다 \(pct(delta))% \(up ? "높아요" : "낮아요")")
+        case .frequency(let categoryID, let count, let total, let avgPerVisit):
+            let name = categoryID.flatMap { byID[$0]?.name } ?? "기타"
+            return .init(id: "frequency", iconName: "repeat",
+                         text: "\(name)에 \(count)번 · 총 \(Won.string(total))원 · 회당 평균 \(Won.string(avgPerVisit))원")
+        case .weekendConcentration(let fraction):
+            return .init(id: "weekend", iconName: "weekend",
+                         text: "지출의 \(pct(fraction))%가 주말에 몰려 있어요")
+        case .noSpendDays(let count):
+            return .init(id: "nospend", iconName: "event_available",
+                         text: "이번 달 무지출일이 \(count)일 있었어요")
+        }
     }
 
     private func apply(_ narration: ReportNarration) {

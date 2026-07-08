@@ -204,6 +204,45 @@ struct AIReportViewModelTests {
         _ = container
     }
 
+    // MARK: - 인사이트 카드·예측 캡션
+
+    @Test func insightCardsIncludeFrequencyWithDeterministicText() async throws {
+        let (repo, settings, container) = try makeRepo()
+        try settings.setMonthlyBudget(1_000_000, for: YearMonth(year: 2026, month: 7))
+        let cafe = try catID(repo, "카페")
+        for day in 1...5 {
+            try repo.addTransaction(amount: 4_800, type: .expense, categoryID: cafe, memo: nil, date: date(2026, 7, day, 12))
+        }
+        let vm = AIReportViewModel(repository: repo, now: date(2026, 7, 15), calendar: utc,
+                                    narrator: SpyReportNarrator(result: .failure(AIError())), cache: freshCache())
+        await vm.load()
+        let cards = try #require(vm.display?.insightCards)
+        let freq = try #require(cards.first { $0.id == "frequency" })
+        #expect(freq.iconName == "repeat")
+        #expect(freq.text == "카페에 5번 · 총 24,000원 · 회당 평균 4,800원")
+        _ = container
+    }
+
+    @Test func projectionCaptionShownOnlyEarlyInMonth() async throws {
+        let (repo, settings, container) = try makeRepo()
+        try settings.setMonthlyBudget(300_000, for: YearMonth(year: 2026, month: 7))
+        let food = try catID(repo, "식비")
+        try repo.addTransaction(amount: 50_000, type: .expense, categoryID: food, memo: nil, date: date(2026, 7, 2))
+
+        // 7/5 = 5/31 경과(16%) < 25% → 캡션 노출
+        let early = AIReportViewModel(repository: repo, now: date(2026, 7, 5, 12), calendar: utc,
+                                       narrator: SpyReportNarrator(result: .failure(AIError())), cache: freshCache())
+        await early.load()
+        #expect(early.display?.projectionCaption == "아직 초반이라 예상치가 달라질 수 있어요")
+
+        // 7/15 = 15/31 경과(48%) → 캡션 없음
+        let mid = AIReportViewModel(repository: repo, now: date(2026, 7, 15, 12), calendar: utc,
+                                     narrator: SpyReportNarrator(result: .failure(AIError())), cache: freshCache())
+        await mid.load()
+        #expect(mid.display?.projectionCaption == nil)
+        _ = container
+    }
+
     @Test func prewarmCalledOnInitWhenModelAvailable() async throws {
         let (repo, _, container) = try makeRepo()
         let spy = SpyReportNarrator(result: .success(ReportNarration(summarySentence: "s", tipSentence: "t")))
