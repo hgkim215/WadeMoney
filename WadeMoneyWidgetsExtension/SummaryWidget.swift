@@ -16,10 +16,14 @@ struct SummaryProvider: TimelineProvider {
     }
     func getTimeline(in context: Context, completion: @escaping @Sendable (Timeline<SummaryEntry>) -> Void) {
         Task { @MainActor in
-            let container = WidgetPersistence.makeContainer()
-            let repo = LedgerRepository(context: container.mainContext)
             let now = Date()
-            let data = WidgetDataBuilder.summary(repository: repo, now: now, calendar: .current)
+            let data: WidgetDataBuilder.SummaryData
+            if let container = WidgetPersistence.shared {
+                let repo = LedgerRepository(context: container.mainContext)
+                data = WidgetDataBuilder.summary(repository: repo, now: now, calendar: .current)
+            } else {
+                data = .init(todayExpenseText: "0", monthRemainingText: nil, consumedFraction: nil)
+            }
             let next = Calendar.current.date(byAdding: .hour, value: 4, to: now) ?? now.addingTimeInterval(4 * 3600)
             completion(Timeline(entries: [SummaryEntry(date: now, data: data)], policy: .after(next)))
         }

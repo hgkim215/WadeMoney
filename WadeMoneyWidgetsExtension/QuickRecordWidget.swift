@@ -16,9 +16,13 @@ struct QuickRecordProvider: TimelineProvider {
     }
     func getTimeline(in context: Context, completion: @escaping @Sendable (Timeline<QuickRecordEntry>) -> Void) {
         Task { @MainActor in
-            let container = WidgetPersistence.makeContainer()
-            let repo = LedgerRepository(context: container.mainContext)
-            let chips = WidgetDataBuilder.quickRecordChips(repository: repo)
+            let chips: [WidgetDataBuilder.ChipData]
+            if let container = WidgetPersistence.shared {
+                let repo = LedgerRepository(context: container.mainContext)
+                chips = WidgetDataBuilder.quickRecordChips(repository: repo)
+            } else {
+                chips = []
+            }
             let now = Date()
             let next = Calendar.current.date(byAdding: .hour, value: 12, to: now) ?? now.addingTimeInterval(12 * 3600)
             completion(Timeline(entries: [QuickRecordEntry(date: now, chips: chips)], policy: .after(next)))

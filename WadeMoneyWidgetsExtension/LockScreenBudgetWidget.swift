@@ -16,10 +16,14 @@ struct LockScreenProvider: TimelineProvider {
     }
     func getTimeline(in context: Context, completion: @escaping @Sendable (Timeline<LockScreenEntry>) -> Void) {
         Task { @MainActor in
-            let container = WidgetPersistence.makeContainer()
-            let repo = LedgerRepository(context: container.mainContext)
             let now = Date()
-            let data = WidgetDataBuilder.lockScreenBudget(repository: repo, now: now, calendar: .current)
+            let data: WidgetDataBuilder.LockScreenData
+            if let container = WidgetPersistence.shared {
+                let repo = LedgerRepository(context: container.mainContext)
+                data = WidgetDataBuilder.lockScreenBudget(repository: repo, now: now, calendar: .current)
+            } else {
+                data = .init(consumedFraction: nil, remainingText: nil)
+            }
             let next = Calendar.current.date(byAdding: .hour, value: 4, to: now) ?? now.addingTimeInterval(4 * 3600)
             completion(Timeline(entries: [LockScreenEntry(date: now, data: data)], policy: .after(next)))
         }
