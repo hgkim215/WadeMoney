@@ -40,7 +40,6 @@ struct UpdateChecker: @unchecked Sendable {
 
     func check() async -> UpdateInfo? {
         guard shouldCheckNow() else { return nil }
-        defaults.set(now(), forKey: lastCheckKey)
 
         guard let bundleID,
               let currentVersion,
@@ -58,6 +57,9 @@ struct UpdateChecker: @unchecked Sendable {
         do {
             let data = try await fetch(url)
             let response = try JSONDecoder().decode(LookupResponse.self, from: data)
+            // 응답을 성공적으로 받아 해석한 뒤에만 확인 시각을 기록한다 —
+            // 호출 전에 기록하면 오프라인 등으로 실패한 확인이 24시간 재확인까지 삼킨다.
+            defaults.set(now(), forKey: lastCheckKey)
             guard let result = response.results.first,
                   let storeURL = AppStoreLink.detailURL(from: result.trackViewUrl),
                   AppVersion.isVersion(result.version, newerThan: currentVersion) else {

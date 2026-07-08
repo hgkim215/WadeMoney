@@ -101,6 +101,34 @@ struct UpdateCheckerTests {
         #expect(info == nil)
     }
 
+    @Test func failedFetchDoesNotSuppressNextCheck() async {
+        // 네트워크 호출 전에 확인 시각을 기록하면, 하필 그 순간 오프라인이었던
+        // 실패한 확인이 24시간 재확인까지 삼킨다 — 성공한 확인만 기록해야 한다.
+        let defaults = defaults("fetch-fail")
+        var fetchCount = 0
+        var now = Date(timeIntervalSince1970: 1_000)
+        struct Boom: Error {}
+        let checker = UpdateChecker(
+            bundleID: "com.kimhyeongi.WadeMoney",
+            currentVersion: "1.0.0",
+            defaults: defaults,
+            now: { now },
+            fetch: { _ in
+                fetchCount += 1
+                if fetchCount == 1 { throw Boom() }
+                return json(version: "2.0.0")
+            }
+        )
+
+        let first = await checker.check()
+        now = Date(timeIntervalSince1970: 1_000 + 60)
+        let second = await checker.check()
+
+        #expect(first == nil)
+        #expect(second != nil)
+        #expect(fetchCount == 2)
+    }
+
     @Test func respectsTwentyFourHourGate() async {
         let defaults = defaults("gate")
         var fetchCount = 0
