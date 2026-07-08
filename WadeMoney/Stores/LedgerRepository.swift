@@ -139,7 +139,7 @@ final class LedgerRepository {
     }
 
     func totalIncome(in period: Period) throws -> Decimal {
-        Aggregator.totalIncome(try allTransactions(), in: period)
+        Aggregator.totalIncome(try transactions(from: period.start, to: period.end), in: period)
     }
 
     // MARK: - Dashboard

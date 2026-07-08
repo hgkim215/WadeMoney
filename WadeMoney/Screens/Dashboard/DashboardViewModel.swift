@@ -210,7 +210,11 @@ final class DashboardViewModel {
         // 12년치를 다 보여주면 라벨이 좁은 칸에 겹쳐 잘린다 — 월 뷰(6개)와 같은 컨벤션으로 맞춘다.
         case .year: count = 6
         }
-        let txns = (try? repository.allTransactions()) ?? []
+        // 막대 범위를 덮는 날짜 창 하나만 페치한다 — 전체 테이블을 불러오면
+        // 대시보드 로드마다 원장 크기에 비례하는 메인 스레드 비용이 든다.
+        let earliest = calc.period(kind, offset: offset - (count - 1), from: now)
+        let latest = calc.period(kind, offset: offset, from: now)
+        let txns = (try? repository.transactions(from: earliest.start, to: latest.end)) ?? []
         var raw: [(label: String, value: Decimal, isCurrent: Bool)] = []
         for i in stride(from: count - 1, through: 0, by: -1) {
             let p = calc.period(kind, offset: offset - i, from: now)
