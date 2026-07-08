@@ -91,6 +91,20 @@ extension CategorySeederTests {
         #expect(try c.fetchCount(FetchDescriptor<CategoryModel>()) == 9)   // 기본 8 + 구독 1(병합됨)
     }
 
+    @Test func reconcileDoesNotMergeVisuallyDistinctCategoriesWithSameName() throws {
+        // "카페"를 "식비"로 리네임하면 이름만 겹치는 별개 카테고리가 생긴다 —
+        // 진짜 CloudKit 중복(이름+아이콘+색상까지 동일)만 병합하고 이런 경우는 둘 다 남겨야 한다.
+        let c = try ctx()
+        c.insert(CategoryModel(name: "식비", iconName: "restaurant", colorHex: "#E28A4E", sortOrder: 0))
+        c.insert(CategoryModel(name: "식비", iconName: "local_cafe", colorHex: "#C4924E", sortOrder: 1))
+        try c.save()
+
+        try CategorySeeder.reconcileDuplicateCategories(c)
+
+        let remaining = try c.fetch(FetchDescriptor<CategoryModel>()).filter { $0.name == "식비" }
+        #expect(remaining.count == 2)
+    }
+
     @Test func backfillsFlagWhenCategoriesAlreadyExistWithoutFlag() throws {
         let c = try ctx()
         c.insert(CategoryModel(name: "커스텀", iconName: "category", colorHex: "#000000", sortOrder: 0))

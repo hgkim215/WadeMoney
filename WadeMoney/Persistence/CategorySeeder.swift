@@ -50,12 +50,20 @@ enum CategorySeeder {
         try SettingsStore(context: context).settingsModel()
     }
 
-    /// 여러 기기가 CloudKit으로 병합되면 이름이 같은 카테고리가 중복 생성될 수 있다(기본 카테고리든 커스텀 카테고리든).
-    /// 이름이 같은 카테고리를 id 최솟값 행으로 결정적으로 합치고(거래 재연결), 나머지를 지운다.
+    /// 여러 기기가 CloudKit으로 병합되면 같은 카테고리가 중복 생성될 수 있다(기본 카테고리든 커스텀 카테고리든).
+    /// 이름만 비교하면 리네임으로 이름이 겹친 별개 카테고리까지 삭제(비가역 손실)될 수 있으므로,
+    /// 이름+아이콘+색상이 모두 같은 진짜 중복만 id 최솟값 행으로 결정적으로 합치고(거래 재연결) 나머지를 지운다.
     /// 모든 기기가 같은 승자를 고르므로 동기화 후 상태가 수렴한다. 멱등 — 매 실행 시 호출해도 안전.
     static func reconcileDuplicateCategories(_ context: ModelContext) throws {
+        struct DedupKey: Hashable {
+            let name: String
+            let iconName: String
+            let colorHex: String
+        }
         let all = try context.fetch(FetchDescriptor<CategoryModel>())
-        let grouped = Dictionary(grouping: all, by: \.name)
+        let grouped = Dictionary(grouping: all) {
+            DedupKey(name: $0.name, iconName: $0.iconName, colorHex: $0.colorHex)
+        }
 
         var changed = false
         for (_, rows) in grouped where rows.count > 1 {
