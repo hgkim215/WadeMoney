@@ -17,20 +17,29 @@ struct CategoryEditSheet: View {
     @State private var showDeleteConfirmation = false
     let isEditing: Bool
     let canDelete: Bool
+    let isNameTaken: (String) -> Bool
     let onSave: (String, String, String) -> Void
     let onRemove: (() -> Void)?
 
-    init(editing item: CategoryManageViewModel.Item?, onSave: @escaping (String, String, String) -> Void, onRemove: (() -> Void)?) {
+    init(
+        editing item: CategoryManageViewModel.Item?,
+        isNameTaken: @escaping (String) -> Bool = { _ in false },
+        onSave: @escaping (String, String, String) -> Void,
+        onRemove: (() -> Void)?
+    ) {
         _name = State(initialValue: item?.name ?? "")
         _icon = State(initialValue: item?.iconName ?? CategoryPalette.icons[0])
         _color = State(initialValue: item?.colorHex ?? CategoryPalette.colors[0])
         isEditing = item != nil
         canDelete = item?.canDelete ?? false
+        self.isNameTaken = isNameTaken
         self.onSave = onSave
         self.onRemove = onRemove
     }
 
-    private var canSave: Bool { !name.trimmingCharacters(in: .whitespaces).isEmpty }
+    private var trimmedName: String { name.trimmingCharacters(in: .whitespaces) }
+    private var isDuplicateName: Bool { !trimmedName.isEmpty && isNameTaken(trimmedName) }
+    private var canSave: Bool { !trimmedName.isEmpty && !isDuplicateName }
 
     var body: some View {
         ScrollView {
@@ -47,6 +56,11 @@ struct CategoryEditSheet: View {
                     Icon(icon, size: 24).foregroundStyle(Color(hex: color)).frame(width: 46, height: 46)
                         .background(Color(hex: color).opacity(0.15), in: RoundedRectangle(cornerRadius: WadeRadius.control))
                     TextField("이름", text: $name).font(WadeFont.pretendard(17, weight: .semibold))
+                }
+                if isDuplicateName {
+                    Text("같은 이름의 카테고리가 이미 있어요")
+                        .font(WadeFont.pretendard(12.5, weight: .semibold))
+                        .foregroundStyle(WadeColors.bad(scheme))
                 }
                 sectionLabel("아이콘")
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 44), spacing: 8)], spacing: 8) {
@@ -69,7 +83,7 @@ struct CategoryEditSheet: View {
                     }
                 }
                 Button {
-                    onSave(name.trimmingCharacters(in: .whitespaces), icon, color); dismiss()
+                    onSave(trimmedName, icon, color); dismiss()
                 } label: {
                     Text("저장").font(WadeFont.pretendard(17, weight: .heavy))
                         .foregroundStyle(canSave ? WadeColors.onPrimary(scheme) : WadeColors.ink3(scheme))

@@ -55,11 +55,13 @@ struct CategoryManageScreen: View {
         .navigationTitle("카테고리 관리")
         .sheet(item: $editingItem) { item in
             CategoryEditSheet(editing: item,
+                              isNameTaken: { viewModel?.isNameTaken($0, excluding: item.id) ?? false },
                               onSave: { n, i, c in viewModel?.update(id: item.id, name: n, iconName: i, colorHex: c) },
                               onRemove: { remove(item, vm: viewModel) })
         }
         .sheet(isPresented: $showNew) {
             CategoryEditSheet(editing: nil,
+                              isNameTaken: { viewModel?.isNameTaken($0) ?? false },
                               onSave: { n, i, c in viewModel?.add(name: n, iconName: i, colorHex: c) },
                               onRemove: nil)
         }

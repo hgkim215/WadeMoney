@@ -51,6 +51,11 @@ final class CategoryManageViewModel {
         archivedItems = ((try? categoryStore.archived()) ?? []).map(item)
     }
 
+    /// 편집 시트의 저장 버튼 활성화 판단용. `excluding`은 수정 중인 자기 자신.
+    func isNameTaken(_ name: String, excluding: UUID? = nil) -> Bool {
+        categoryStore.isNameTaken(name, excluding: excluding)
+    }
+
     func add(name: String, iconName: String, colorHex: String) {
         try? categoryStore.add(name: name, iconName: iconName, colorHex: colorHex); load()
     }

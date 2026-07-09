@@ -3,6 +3,9 @@ import SwiftData
 import WidgetKit
 import WadeMoneyCore
 
+/// 같은 이름의 카테고리를 또 만들려 할 때 던진다 — UI가 사전 차단하는 게 원칙이고 이건 마지막 방어선.
+struct DuplicateCategoryNameError: Error {}
+
 @MainActor
 final class CategoryStore {
     private let context: ModelContext
@@ -19,7 +22,15 @@ final class CategoryStore {
     func active() throws -> [CategoryRef] { try models(archived: false).map { $0.toRef() } }
     func archived() throws -> [CategoryRef] { try models(archived: true).map { $0.toRef() } }
 
+    /// 보관된 카테고리까지 포함해 같은 이름(공백 무시)이 이미 있는지. `excluding`은 수정 중인 자기 자신.
+    func isNameTaken(_ name: String, excluding: UUID? = nil) -> Bool {
+        let trimmed = name.trimmingCharacters(in: .whitespaces)
+        let all = (try? context.fetch(FetchDescriptor<CategoryModel>())) ?? []
+        return all.contains { $0.id != excluding && $0.name.trimmingCharacters(in: .whitespaces) == trimmed }
+    }
+
     func add(name: String, iconName: String, colorHex: String) throws {
+        guard !isNameTaken(name) else { throw DuplicateCategoryNameError() }
         let maxOrder = try context.fetch(FetchDescriptor<CategoryModel>())
             .map(\.sortOrder).max() ?? -1
         context.insert(CategoryModel(name: name, iconName: iconName, colorHex: colorHex, sortOrder: maxOrder + 1))
@@ -28,6 +39,7 @@ final class CategoryStore {
     }
 
     func update(id: UUID, name: String, iconName: String, colorHex: String) throws {
+        guard !isNameTaken(name, excluding: id) else { throw DuplicateCategoryNameError() }
         guard let m = try model(id) else { return }
         m.name = name
         m.iconName = iconName
