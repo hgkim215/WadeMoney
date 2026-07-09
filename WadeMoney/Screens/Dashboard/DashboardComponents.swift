@@ -271,8 +271,10 @@ struct DonutCard: View {
                             ForEach(legend) { item in
                                 HStack(spacing: 8) {
                                     RoundedRectangle(cornerRadius: 3).fill(Color(hex: item.colorHex)).frame(width: 10, height: 10)
+                                    // 범례는 한 줄 폭이 좁으니 줄바꿈 대신 글자를 줄여 전체 이름을 보여준다.
                                     Text(item.name).font(WadeFont.pretendard(13, weight: .semibold)).foregroundStyle(WadeColors.ink(scheme))
                                         .lineLimit(1)
+                                        .minimumScaleFactor(0.7)
                                     Spacer()
                                     Text(item.percentText).font(WadeFont.pretendard(13, weight: .heavy)).foregroundStyle(WadeColors.ink2(scheme))
                                 }

@@ -293,9 +293,11 @@ private struct CategoryChip: View {
                     .foregroundStyle(Color(hex: category.colorHex))
                     .frame(width: 28, height: 28)
                     .background(Color(hex: category.colorHex).opacity(0.13), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                // 칩 폭이 고정이라 줄바꿈 대신 글자를 줄여 전체 이름을 보여준다.
                 Text(category.name)
                     .font(WadeFont.pretendard(12.5, weight: .bold))
                     .lineLimit(1)
+                    .minimumScaleFactor(0.7)
             }
             .foregroundStyle(isSelected ? WadeColors.primary(scheme) : WadeColors.ink2(scheme))
             .frame(width: width, height: 44)

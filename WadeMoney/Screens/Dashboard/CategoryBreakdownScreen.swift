@@ -86,10 +86,12 @@ struct CategoryBreakdownScreen: View {
             Icon(row.iconName, size: 21).foregroundStyle(Color(hex: row.colorHex))
                 .frame(width: 38, height: 38)
                 .background(Color(hex: row.colorHex).opacity(0.13), in: RoundedRectangle(cornerRadius: WadeRadius.iconTile))
+            // 카테고리 이름은 말줄임 대신 최대 2줄까지 감싸서 전체를 보여준다.
             Text(row.name).font(WadeFont.pretendard(14.5, weight: .semibold)).foregroundStyle(WadeColors.ink(scheme))
-                .lineLimit(1)
+                .lineLimit(2)
+                .fixedSize(horizontal: false, vertical: true)
             Spacer()
-            // 금액이 잘리는 대신 카테고리 이름(lineLimit 1)이 줄어들도록 우선권을 준다.
+            // 금액은 항상 한 줄로 온전히 보여준다.
             VStack(alignment: .trailing, spacing: 2) {
                 Text("₩\(row.amountText)").font(WadeFont.pretendard(14.5, weight: .heavy)).foregroundStyle(WadeColors.ink(scheme))
                     .lineLimit(1)

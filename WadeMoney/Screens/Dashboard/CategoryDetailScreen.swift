@@ -121,7 +121,10 @@ struct CategoryDetailScreen: View {
                 .foregroundStyle(WadeColors.ink3(scheme))
                 .frame(width: 36, alignment: .leading)
             HStack(spacing: 6) {
-                Text(row.memo).font(WadeFont.pretendard(14.5, weight: .semibold)).foregroundStyle(WadeColors.ink(scheme)).lineLimit(1)
+                // 메모는 말줄임 대신 최대 2줄까지 감싸서 전체 내용을 보여준다.
+                Text(row.memo).font(WadeFont.pretendard(14.5, weight: .semibold)).foregroundStyle(WadeColors.ink(scheme))
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
                 if row.showsBudgetExcludedLabel {
                     Text("예산 제외")
                         .font(WadeFont.pretendard(10.5, weight: .heavy))
@@ -133,7 +136,7 @@ struct CategoryDetailScreen: View {
                 }
             }
             Spacer()
-            // 금액이 잘리는 대신 메모(lineLimit 1)가 줄어들도록 우선권을 준다.
+            // 금액은 항상 한 줄로 온전히 보여준다.
             Text(row.amountText).font(WadeFont.pretendard(15, weight: .heavy)).foregroundStyle(WadeColors.ink(scheme))
                 .lineLimit(1)
                 .layoutPriority(1)
