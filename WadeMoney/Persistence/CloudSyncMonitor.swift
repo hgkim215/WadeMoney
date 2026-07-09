@@ -1,3 +1,4 @@
+import CloudKit
 import Foundation
 import CoreData
 import Observation
@@ -91,6 +92,23 @@ final class CloudSyncMonitor {
         return hasExistingData ? .normal : .importing
     }
 
+    /// partialFailure(코드 2)의 최상위 메시지는 "Partial failure" 정도로 뭉뚱그려져 있어 원인 파악이 안 된다 —
+    /// 레코드별 세부 에러(CKError.partialErrorsByItemID)를 풀어서 실제 실패 사유를 보여준다.
+    /// 인스턴스 상태를 건드리지 않는 순수 함수라 알림 옵저버 클로저(메인 액터 밖)에서도 그대로 부른다.
+    nonisolated static func describeExportError(_ error: Error?) -> String? {
+        guard let error else { return nil }
+        guard let ckError = error as? CKError else { return error.localizedDescription }
+        guard ckError.code == .partialFailure,
+              let partialErrors = ckError.partialErrorsByItemID, !partialErrors.isEmpty
+        else {
+            return ckError.localizedDescription
+        }
+        let reasons = partialErrors.values.map { ($0 as NSError).localizedDescription }
+        guard let primary = reasons.first else { return ckError.localizedDescription }
+        let extraCount = reasons.count - 1
+        return extraCount > 0 ? "\(primary) (외 \(extraCount)건)" : primary
+    }
+
     /// iCloud 로그인 상태를 지금 다시 확인한다. `ModelContainer`는 건드리지 않는다 —
     /// 세션 중에는 재생성할 수 없기 때문에, 계정 로그인 여부만 다시 읽어 상태를 갱신한다.
     func recheckSignIn() {
@@ -113,7 +131,7 @@ final class CloudSyncMonitor {
             let type = event.type
             let isFinished = event.endDate != nil
             let succeeded = event.succeeded
-            let errorDescription = event.error?.localizedDescription
+            let errorDescription = CloudSyncMonitor.describeExportError(event.error)
             if let errorDescription {
                 // Console.app에서 "CloudSync" 카테고리로 필터링하면 실제 CKError 사유를 볼 수 있다 —
                 // 실패한 export가 UI에 "업로드 중"으로만 뭉뚱그려 보이던 문제의 진단 통로.

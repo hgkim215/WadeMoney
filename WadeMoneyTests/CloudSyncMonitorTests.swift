@@ -1,3 +1,4 @@
+import CloudKit
 import CoreData
 import Testing
 @testable import WadeMoney
@@ -104,6 +105,35 @@ struct CloudSyncMonitorTests {
     @Test func recheckedStateLeavesNonUnavailableStatesUnchanged() {
         let result = CloudSyncMonitor.recheckedState(current: .normal, cloudKitEnabled: true, isSignedIntoiCloud: false, hasExistingData: false)
         #expect(result == .normal)
+    }
+
+    // MARK: - describeExportError (partialFailure 세부 사유 풀어내기)
+
+    @Test func describeExportErrorReturnsNilForNoError() {
+        #expect(CloudSyncMonitor.describeExportError(nil) == nil)
+    }
+
+    @Test func describeExportErrorReturnsPlainDescriptionForNonPartialFailure() {
+        let error = CKError(.networkUnavailable)
+        #expect(CloudSyncMonitor.describeExportError(error) == error.localizedDescription)
+    }
+
+    @Test func describeExportErrorUnwrapsSinglePartialFailureReason() {
+        let inner = CKError(.invalidArguments, userInfo: [NSLocalizedDescriptionKey: "Unknown field 'CD_isExcludedFromBudget'"])
+        let outer = CKError(.partialFailure, userInfo: [CKPartialErrorsByItemIDKey: ["record-1": inner]])
+        #expect(CloudSyncMonitor.describeExportError(outer) == "Unknown field 'CD_isExcludedFromBudget'")
+    }
+
+    @Test func describeExportErrorAppendsCountWhenMultipleRecordsFail() {
+        let inner1 = CKError(.invalidArguments, userInfo: [NSLocalizedDescriptionKey: "Unknown field 'CD_isExcludedFromBudget'"])
+        let inner2 = CKError(.invalidArguments, userInfo: [NSLocalizedDescriptionKey: "Unknown field 'CD_isExcludedFromBudget'"])
+        let outer = CKError(.partialFailure, userInfo: [CKPartialErrorsByItemIDKey: ["record-1": inner1, "record-2": inner2]])
+        #expect(CloudSyncMonitor.describeExportError(outer) == "Unknown field 'CD_isExcludedFromBudget' (외 1건)")
+    }
+
+    @Test func describeExportErrorFallsBackToOuterDescriptionWhenPartialErrorsMissing() {
+        let outer = CKError(.partialFailure)
+        #expect(CloudSyncMonitor.describeExportError(outer) == outer.localizedDescription)
     }
 
     @Test func recheckSignInInstanceStaysUnavailableWithoutRealICloudAccount() {
