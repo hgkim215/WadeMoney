@@ -78,8 +78,11 @@ struct HeroBudgetCard: View {
                         if display.hasExpense {
                             HStack(alignment: .firstTextBaseline, spacing: 2) {
                                 Text("₩").font(WadeFont.pretendard(13, weight: .bold)).foregroundStyle(WadeColors.ink2(scheme))
+                                // 금액은 절대 말줄임하지 않는다 — 폭이 모자라면 글자를 줄여 전 자리수를 보여준다.
                                 Text(display.totalText).font(WadeFont.pretendard(30, weight: .heavy))
                                     .foregroundStyle(WadeColors.ink(scheme))
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(0.5)
                             }
                         } else {
                             VStack(alignment: .leading, spacing: 4) {
@@ -96,6 +99,8 @@ struct HeroBudgetCard: View {
                         if let dayB = display.dayBudget {
                             Text("일예산 \(dayB.dayBudgetText)원 중 \(dayB.remainText)원 남음")
                                 .font(WadeFont.pretendard(11)).foregroundStyle(WadeColors.ink3(scheme))
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.72)
                         } else if display.budgetText == nil, display.hasExpense {
                             Text("예산 미설정")
                                 .font(WadeFont.pretendard(11.5, weight: .bold))
@@ -121,9 +126,12 @@ struct HeroBudgetCard: View {
                             .font(WadeFont.pretendard(12))
                             .foregroundStyle(WadeColors.ink3(scheme))
                             .lineLimit(1)
-                            .minimumScaleFactor(0.78)
+                            .minimumScaleFactor(0.62)
                         Spacer()
                         Text("\(remain)원 남음").font(WadeFont.pretendard(12, weight: .bold)).foregroundStyle(WadeColors.ink2(scheme))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.72)
+                            .layoutPriority(1)
                     }
                 }
             }
@@ -286,6 +294,9 @@ struct DonutCard: View {
                     if hasExpense {
                         Text("총지출").font(WadeFont.pretendard(10.5, weight: .semibold)).foregroundStyle(WadeColors.ink3(scheme))
                         Text(total).font(WadeFont.pretendard(16, weight: .heavy)).foregroundStyle(WadeColors.ink(scheme))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.55)
+                            .frame(maxWidth: ringSize - 20)
                     }
                 }
             }
@@ -377,6 +388,8 @@ struct TrendCard: View {
                         Text("\(selectedBar.label) · ₩\(selectedBar.valueText)")
                             .font(WadeFont.pretendard(13, weight: .heavy))
                             .foregroundStyle(WadeColors.primary(scheme))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.7)
                     }
                 }
                 if bars.contains(where: { $0.heightFraction > 0 }) {

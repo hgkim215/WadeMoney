@@ -87,11 +87,15 @@ struct CategoryBreakdownScreen: View {
                 .frame(width: 38, height: 38)
                 .background(Color(hex: row.colorHex).opacity(0.13), in: RoundedRectangle(cornerRadius: WadeRadius.iconTile))
             Text(row.name).font(WadeFont.pretendard(14.5, weight: .semibold)).foregroundStyle(WadeColors.ink(scheme))
+                .lineLimit(1)
             Spacer()
+            // 금액이 잘리는 대신 카테고리 이름(lineLimit 1)이 줄어들도록 우선권을 준다.
             VStack(alignment: .trailing, spacing: 2) {
                 Text("₩\(row.amountText)").font(WadeFont.pretendard(14.5, weight: .heavy)).foregroundStyle(WadeColors.ink(scheme))
+                    .lineLimit(1)
                 Text(row.percentText).font(WadeFont.pretendard(11.5, weight: .bold)).foregroundStyle(WadeColors.ink3(scheme))
             }
+            .layoutPriority(1)
             Icon("chevron_right", size: 16, filled: false).foregroundStyle(WadeColors.ink3(scheme))
         }
         .padding(.horizontal, 16).padding(.vertical, 13)

@@ -145,6 +145,8 @@ struct HistoryScreen: View {
                 Spacer()
                 Text(group.sumText).font(WadeFont.pretendard(12.5, weight: .bold))
                     .foregroundStyle(group.sumIsIncome ? WadeColors.good(scheme) : WadeColors.ink2(scheme))
+                    .lineLimit(1)
+                    .layoutPriority(1)
             }
             .padding(.horizontal, 4)
             VStack(spacing: 0) {
@@ -194,8 +196,11 @@ struct HistoryScreen: View {
                 Text("\(row.categoryName) · \(row.timeText)").font(WadeFont.pretendard(11.5)).foregroundStyle(WadeColors.ink3(scheme))
             }
             Spacer()
+            // 금액이 잘리는 대신 메모(lineLimit 1)가 줄어들도록 우선권을 준다.
             Text(row.amountText).font(WadeFont.pretendard(15, weight: .heavy))
                 .foregroundStyle(row.isIncome ? WadeColors.good(scheme) : WadeColors.ink(scheme))
+                .lineLimit(1)
+                .layoutPriority(1)
         }
         .padding(.horizontal, 16).padding(.vertical, 13)
         .frame(minHeight: 64)

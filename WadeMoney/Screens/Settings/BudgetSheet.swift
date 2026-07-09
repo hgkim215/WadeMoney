@@ -28,7 +28,10 @@ struct BudgetSheet: View {
                 }
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
                     Text("₩").font(WadeFont.pretendard(26, weight: .bold))
+                    // 금액은 절대 말줄임하지 않는다 — 자리수가 커지면 글자를 줄여 전 구간을 보여준다.
                     Text(digits.isEmpty ? "0" : Won.string(amount)).font(WadeFont.pretendard(52, weight: .heavy))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.4)
                 }
                 .foregroundStyle(amount > 0 ? WadeColors.primary(scheme) : WadeColors.ink3(scheme))
                 AmountKeypad(onKey: { key in

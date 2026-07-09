@@ -110,7 +110,10 @@ struct AIReportScreen: View {
                 Text("이번 달 예상 지출").font(WadeFont.pretendard(13, weight: .bold)).foregroundStyle(WadeColors.ink3(scheme))
                 HStack(alignment: .firstTextBaseline, spacing: 2) {
                     Text("₩").font(WadeFont.pretendard(14, weight: .bold))
+                    // 금액은 절대 말줄임하지 않는다 — 폭이 모자라면 글자를 줄여 전 자리수를 보여준다.
                     Text(d.projectedText ?? "-").font(WadeFont.pretendard(26, weight: .heavy))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.5)
                 }
                 .foregroundStyle(WadeColors.ink(scheme))
                 if let over = d.overBudgetText {

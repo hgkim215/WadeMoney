@@ -90,8 +90,12 @@ struct CategoryDetailScreen: View {
                     Spacer()
                     HStack(alignment: .firstTextBaseline, spacing: 2) {
                         Text("₩").font(WadeFont.pretendard(15, weight: .bold)).foregroundStyle(WadeColors.ink2(scheme))
+                        // 금액은 절대 말줄임하지 않는다 — 폭이 모자라면 글자를 줄여 전 자리수를 보여준다.
                         Text(vm.totalText).font(WadeFont.pretendard(30, weight: .heavy)).foregroundStyle(WadeColors.ink(scheme))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.5)
                     }
+                    .layoutPriority(1)
                 }
             }
         }
@@ -129,7 +133,10 @@ struct CategoryDetailScreen: View {
                 }
             }
             Spacer()
+            // 금액이 잘리는 대신 메모(lineLimit 1)가 줄어들도록 우선권을 준다.
             Text(row.amountText).font(WadeFont.pretendard(15, weight: .heavy)).foregroundStyle(WadeColors.ink(scheme))
+                .lineLimit(1)
+                .layoutPriority(1)
         }
         .padding(.horizontal, 16).padding(.vertical, 13)
         .frame(minHeight: 64)

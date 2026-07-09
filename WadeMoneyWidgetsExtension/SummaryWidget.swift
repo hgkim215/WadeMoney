@@ -37,12 +37,17 @@ struct SummaryWidgetView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("오늘 지출").font(WadeFont.pretendard(11, weight: .semibold)).foregroundStyle(WadeColors.ink3(scheme))
+            // 금액은 절대 말줄임하지 않는다 — 위젯 폭이 모자라면 글자를 줄여 전 자리수를 보여준다.
             Text("₩\(entry.data.todayExpenseText)").font(WadeFont.pretendard(22, weight: .heavy)).foregroundStyle(WadeColors.ink(scheme))
+                .lineLimit(1)
+                .minimumScaleFactor(0.5)
             if let frac = entry.data.consumedFraction {
                 ProgressView(value: min(1, frac)).tint(WadeColors.primary(scheme))
             }
             if let remain = entry.data.monthRemainingText {
                 Text("이달 예산 \(remain)").font(WadeFont.pretendard(10.5)).foregroundStyle(WadeColors.ink3(scheme))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
             }
         }
         .padding(12)
