@@ -26,6 +26,11 @@ final class CloudSyncMonitor {
 
     private(set) var state: State
     private(set) var exportStatus: ExportStatus = .idle
+    /// import가 완료(성공/실패)될 때마다 메인 액터에서 호출된다.
+    /// 앱은 여기서 지연된 카테고리 시드와 중복 병합을 실행한다 — 재설치 직후
+    /// "시드가 import보다 먼저 돌아 중복이 클라우드에 누적"되는 문제의 치유 지점.
+    @ObservationIgnored
+    var onImportCompleted: (@MainActor () -> Void)?
     /// Logger는 스레드 세이프해서 actor 격리가 필요 없다 — 알림 옵저버 클로저(메인 액터 밖)에서도 그대로 쓴다.
     private nonisolated static let logger = Logger(subsystem: "com.kimhyeongi.WadeMoney", category: "CloudSync")
     /// deinit은 Swift 6에서 항상 nonisolated로 실행되므로, MainActor 격리 없이 접근 가능해야 한다.
@@ -70,6 +75,15 @@ final class CloudSyncMonitor {
     ) -> State {
         guard eventType == .import, isFinished else { return current }
         return succeeded ? .normal : .unavailable
+    }
+
+    /// import 이벤트가 "완료"됐는지(성공 여부 무관). onImportCompleted 발화 조건.
+    nonisolated static func isImportCompletion(
+        eventType: NSPersistentCloudKitContainer.EventType,
+        isFinished: Bool,
+        succeeded: Bool
+    ) -> Bool {
+        eventType == .import && isFinished
     }
 
     static func nextExportStatus(
@@ -143,6 +157,9 @@ final class CloudSyncMonitor {
                 self.exportStatus = CloudSyncMonitor.nextExportStatus(
                     current: self.exportStatus, eventType: type, isFinished: isFinished,
                     succeeded: succeeded, errorDescription: errorDescription)
+                if CloudSyncMonitor.isImportCompletion(eventType: type, isFinished: isFinished, succeeded: succeeded) {
+                    self.onImportCompleted?()
+                }
             }
         }
     }

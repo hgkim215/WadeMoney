@@ -107,6 +107,19 @@ struct CloudSyncMonitorTests {
         #expect(result == .normal)
     }
 
+    // MARK: - import 완료 알림 (시드 지연·중복 병합 트리거)
+
+    @Test func importCompletionNotifiedOnFinishedImport() {
+        #expect(CloudSyncMonitor.isImportCompletion(eventType: .import, isFinished: true, succeeded: true))
+        #expect(CloudSyncMonitor.isImportCompletion(eventType: .import, isFinished: true, succeeded: false))
+    }
+
+    @Test func importCompletionNotNotifiedForUnfinishedOrNonImportEvents() {
+        #expect(!CloudSyncMonitor.isImportCompletion(eventType: .import, isFinished: false, succeeded: false))
+        #expect(!CloudSyncMonitor.isImportCompletion(eventType: .export, isFinished: true, succeeded: true))
+        #expect(!CloudSyncMonitor.isImportCompletion(eventType: .setup, isFinished: true, succeeded: true))
+    }
+
     // MARK: - describeExportError (partialFailure 세부 사유 풀어내기)
 
     @Test func describeExportErrorReturnsNilForNoError() {
