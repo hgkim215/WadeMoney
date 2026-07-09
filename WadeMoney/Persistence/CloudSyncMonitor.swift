@@ -1,6 +1,7 @@
 import Foundation
 import CoreData
 import Observation
+import os
 
 /// 대시보드 배너와 설정 화면이 구독하는 단일 CloudKit 동기화 상태 소스.
 /// 앱 세션 내내 하나의 인스턴스를 `.environment(_:)`로 주입해 공유한다.
@@ -13,9 +14,19 @@ final class CloudSyncMonitor {
         case unavailable
     }
 
+    /// export(업로드) 이벤트의 현재 상태. 삭제 전 백업 확인, 설정 화면 상태 표시에 쓰인다.
+    /// "진행 중"과 "실패로 종료됨"을 구분해야 사용자에게 정확한 안내를 줄 수 있다 —
+    /// 둘 다 하나의 Bool로 뭉뚱그리면 실패해도 영원히 "업로드 중"으로 보인다.
+    enum ExportStatus: Equatable {
+        case idle
+        case uploading
+        case failed(reason: String)
+    }
+
     private(set) var state: State
-    /// 로컬 변경사항이 아직 iCloud로 업로드되지 않았으면 true (삭제 전 백업 확인에 사용).
-    private(set) var pendingExport: Bool = false
+    private(set) var exportStatus: ExportStatus = .idle
+    /// Logger는 스레드 세이프해서 actor 격리가 필요 없다 — 알림 옵저버 클로저(메인 액터 밖)에서도 그대로 쓴다.
+    private nonisolated static let logger = Logger(subsystem: "com.kimhyeongi.WadeMoney", category: "CloudSync")
     /// deinit은 Swift 6에서 항상 nonisolated로 실행되므로, MainActor 격리 없이 접근 가능해야 한다.
     /// NotificationCenter.removeObserver(_:)는 어느 스레드에서 호출해도 안전하다.
     /// (plain `nonisolated`는 @Observable 매크로의 @ObservationTracked 확장과 충돌해 빌드가 깨진다 — unsafe 필요.)
@@ -60,14 +71,16 @@ final class CloudSyncMonitor {
         return succeeded ? .normal : .unavailable
     }
 
-    static func nextPendingExport(
-        current: Bool,
+    static func nextExportStatus(
+        current: ExportStatus,
         eventType: NSPersistentCloudKitContainer.EventType,
         isFinished: Bool,
-        succeeded: Bool
-    ) -> Bool {
+        succeeded: Bool,
+        errorDescription: String?
+    ) -> ExportStatus {
         guard eventType == .export else { return current }
-        return isFinished ? !succeeded : true
+        guard isFinished else { return .uploading }
+        return succeeded ? .idle : .failed(reason: errorDescription ?? "알 수 없는 오류")
     }
 
     /// `unavailable`일 때만 의미 있는 재판정 — 컨테이너 자체가 CloudKit 없이 만들어졌으면
@@ -100,10 +113,18 @@ final class CloudSyncMonitor {
             let type = event.type
             let isFinished = event.endDate != nil
             let succeeded = event.succeeded
+            let errorDescription = event.error?.localizedDescription
+            if let errorDescription {
+                // Console.app에서 "CloudSync" 카테고리로 필터링하면 실제 CKError 사유를 볼 수 있다 —
+                // 실패한 export가 UI에 "업로드 중"으로만 뭉뚱그려 보이던 문제의 진단 통로.
+                CloudSyncMonitor.logger.error("CloudKit \(type == .export ? "export" : "import") failed: \(errorDescription, privacy: .public)")
+            }
             Task { @MainActor [weak self] in
                 guard let self else { return }
                 self.state = CloudSyncMonitor.nextState(current: self.state, eventType: type, isFinished: isFinished, succeeded: succeeded)
-                self.pendingExport = CloudSyncMonitor.nextPendingExport(current: self.pendingExport, eventType: type, isFinished: isFinished, succeeded: succeeded)
+                self.exportStatus = CloudSyncMonitor.nextExportStatus(
+                    current: self.exportStatus, eventType: type, isFinished: isFinished,
+                    succeeded: succeeded, errorDescription: errorDescription)
             }
         }
     }

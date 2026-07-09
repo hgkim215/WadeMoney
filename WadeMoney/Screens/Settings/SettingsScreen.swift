@@ -350,10 +350,13 @@ struct SettingsScreen: View {
     }
 
     private func checkBackupStatus() {
-        if syncMonitor.pendingExport {
-            showSettingsToast("아직 업로드 중이에요. 네트워크 연결을 확인하고 잠시 후 다시 확인해주세요.")
-        } else {
+        switch syncMonitor.exportStatus {
+        case .idle:
             showSettingsToast("모든 데이터가 iCloud에 안전하게 저장됐어요. 지금 앱을 삭제해도 괜찮아요.")
+        case .uploading:
+            showSettingsToast("아직 업로드 중이에요. 네트워크 연결을 확인하고 잠시 후 다시 확인해주세요.")
+        case .failed(let reason):
+            showSettingsToast("업로드에 실패했어요: \(reason)")
         }
     }
 

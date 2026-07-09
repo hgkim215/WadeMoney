@@ -27,7 +27,7 @@ struct CloudSyncMonitorTests {
     @Test func initUsesInitialStateRule() {
         let monitor = CloudSyncMonitor(cloudKitEnabled: true, isSignedIntoiCloud: true, hasExistingData: false)
         #expect(monitor.state == .importing)
-        #expect(monitor.pendingExport == false)
+        #expect(monitor.exportStatus == .idle)
     }
 
     @Test func nextStateIgnoresNonImportEvents() {
@@ -50,24 +50,35 @@ struct CloudSyncMonitorTests {
         #expect(result == .unavailable)
     }
 
-    @Test func nextPendingExportIgnoresImportEvents() {
-        let result = CloudSyncMonitor.nextPendingExport(current: true, eventType: .import, isFinished: true, succeeded: true)
-        #expect(result == true)
+    @Test func nextExportStatusIgnoresImportEvents() {
+        let result = CloudSyncMonitor.nextExportStatus(
+            current: .failed(reason: "이전 오류"), eventType: .import, isFinished: true, succeeded: true, errorDescription: nil)
+        #expect(result == .failed(reason: "이전 오류"))
     }
 
-    @Test func nextPendingExportTrueWhileExportInFlight() {
-        let result = CloudSyncMonitor.nextPendingExport(current: false, eventType: .export, isFinished: false, succeeded: false)
-        #expect(result == true)
+    @Test func nextExportStatusUploadingWhileExportInFlight() {
+        let result = CloudSyncMonitor.nextExportStatus(
+            current: .idle, eventType: .export, isFinished: false, succeeded: false, errorDescription: nil)
+        #expect(result == .uploading)
     }
 
-    @Test func nextPendingExportFalseAfterSuccessfulExport() {
-        let result = CloudSyncMonitor.nextPendingExport(current: true, eventType: .export, isFinished: true, succeeded: true)
-        #expect(result == false)
+    @Test func nextExportStatusIdleAfterSuccessfulExport() {
+        let result = CloudSyncMonitor.nextExportStatus(
+            current: .uploading, eventType: .export, isFinished: true, succeeded: true, errorDescription: nil)
+        #expect(result == .idle)
     }
 
-    @Test func nextPendingExportStaysTrueAfterFailedExport() {
-        let result = CloudSyncMonitor.nextPendingExport(current: true, eventType: .export, isFinished: true, succeeded: false)
-        #expect(result == true)
+    @Test func nextExportStatusFailedWithReasonAfterFailedExport() {
+        let result = CloudSyncMonitor.nextExportStatus(
+            current: .uploading, eventType: .export, isFinished: true, succeeded: false,
+            errorDescription: "Unknown field 'CD_isExcludedFromBudget'")
+        #expect(result == .failed(reason: "Unknown field 'CD_isExcludedFromBudget'"))
+    }
+
+    @Test func nextExportStatusFailedWithFallbackReasonWhenErrorDescriptionMissing() {
+        let result = CloudSyncMonitor.nextExportStatus(
+            current: .uploading, eventType: .export, isFinished: true, succeeded: false, errorDescription: nil)
+        #expect(result == .failed(reason: "알 수 없는 오류"))
     }
 
     @Test func recheckedStateStaysUnavailableWhenCloudKitDisabled() {
