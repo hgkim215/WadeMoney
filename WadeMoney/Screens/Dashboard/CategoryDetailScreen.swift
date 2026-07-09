@@ -120,21 +120,11 @@ struct CategoryDetailScreen: View {
                 .font(WadeFont.pretendard(12, weight: .semibold))
                 .foregroundStyle(WadeColors.ink3(scheme))
                 .frame(width: 36, alignment: .leading)
-            HStack(spacing: 6) {
-                // 메모는 말줄임 대신 최대 2줄까지 감싸서 전체 내용을 보여준다.
-                Text(row.memo).font(WadeFont.pretendard(14.5, weight: .semibold)).foregroundStyle(WadeColors.ink(scheme))
-                    .lineLimit(2)
-                    .fixedSize(horizontal: false, vertical: true)
-                if row.showsBudgetExcludedLabel {
-                    Text("예산 제외")
-                        .font(WadeFont.pretendard(10.5, weight: .heavy))
-                        .foregroundStyle(Color(hex: "#B4811F"))
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 3)
-                        .background(Color(hex: "#D3A850").opacity(scheme == .dark ? 0.18 : 0.16), in: Capsule())
-                        .fixedSize()
-                }
-            }
+            // 예산 제외 뱃지를 없애 메모가 쓸 가로 공간을 넉넉히 확보한다 —
+            // 대신 행 전체를 예산 제외 색 테두리로 감싼다(아래 overlay). 상세는 편집 시트에서 확인.
+            Text(row.memo).font(WadeFont.pretendard(14.5, weight: .semibold)).foregroundStyle(WadeColors.ink(scheme))
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
             Spacer()
             // 금액은 항상 한 줄로 온전히 보여준다.
             Text(row.amountText).font(WadeFont.pretendard(15, weight: .heavy)).foregroundStyle(WadeColors.ink(scheme))
@@ -143,6 +133,13 @@ struct CategoryDetailScreen: View {
         }
         .padding(.horizontal, 16).padding(.vertical, 13)
         .frame(minHeight: 64)
+        .overlay {
+            if row.showsBudgetExcludedLabel {
+                RoundedRectangle(cornerRadius: WadeRadius.smallTile, style: .continuous)
+                    .stroke(Color(hex: "#D3A850").opacity(scheme == .dark ? 0.6 : 0.7), lineWidth: 1.5)
+                    .padding(2)
+            }
+        }
     }
 
     private var emptyState: some View {
